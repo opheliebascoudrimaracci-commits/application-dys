@@ -289,37 +289,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     st.write("---")
     st.write("### 🖨️ Options d'impression :")
-
-    print_html = f"""
-    <!DOCTYPE html>
     
-  st.write("---")
-    st.write("### 🖨️ Options d'export et d'impression :")
-    
-    html_fiche_vierge = (
-        "<!DOCTYPE html>\n<html>\n<head>\n"
-        '<meta charset="utf-8">\n'
-        "<title>Fiche d'entrainement DYS</title>\n"
-        '<link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">\n'
-        "<style>\n"
-        f"    body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; }}\n"
-        '    .consigne {{ margin-bottom: 25px; text-decoration: underline; font-weight: bold; font-size: 18px; }}\n'
-        f"    .cadre {{ font-size: {size}px; line-height: 3.0; padding: 20px; border: 3px solid #84cc16; border-radius: 8px; background-color: #f0fdf4; }}\n"
-        "</style>\n</head>\n<body>\n"
-        '    <div class="consigne">Consigne : Entoure ou surligne les sons complexes et les pièges.</div>\n'
-        f'    <div class="cadre">{full_content_training}</div>\n'
-        "</body>\n</html>"
-    )
-
-    st.download_button(
-        label="📥 Télécharger la fiche d'entraînement (Prête à imprimer)",
-        data=html_fiche_vierge,
-        file_name="fiche_entrainement_dys.html",
-        mime="text/html"
-    )
-    
-    st.caption("💡 Astuce : Ouvrez le fichier téléchargé sur votre téléphone pour l'imprimer directement via le menu de votre navigateur.")
-
 def show_color_legend():
     with st.expander("📖 Légende et Code Couleur Pédagogique"):
         st.markdown("### 🧠 Surlignage des sons complexes (Fond pastel)")
