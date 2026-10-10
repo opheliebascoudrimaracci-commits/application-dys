@@ -4,6 +4,7 @@ import pytesseract
 from PIL import Image, ImageEnhance, ImageFilter
 import re
 import unicodedata
+import random
 
 # 1. Configuration unique de la page
 st.set_page_config(
@@ -18,7 +19,7 @@ st.markdown("<link href='https://fonts.googleapis.com/css2?family=Open+Dyslexic&
 st.title("✏️ Application Pédagogique & Adaptation DYS")
 st.subheader("Ophélie Bascou Drimaracci")
 
-tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
+tab1, tab2, tab3 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)", "✨ Générateur d'histoires magiques"])
 
 # Dictionnaire des sons complexes
 EXACT_COMPLEX_SOUNDS = {
@@ -290,6 +291,30 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     st.write("---")
     st.write("### 🖨️ Options d'impression :")
     
+    html_fiche_vierge = (
+        "<!DOCTYPE html>\n<html>\n<head>\n"
+        '<meta charset="utf-8">\n'
+        "<title>Fiche d'entrainement DYS</title>\n"
+        '<link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">\n'
+        "<style>\n"
+        f"    body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; }}\n"
+        '    .consigne {{ margin-bottom: 25px; text-decoration: underline; font-weight: bold; font-size: 18px; }}\n'
+        f"    .cadre {{ font-size: {size}px; line-height: 3.0; padding: 20px; border: 3px solid #84cc16; border-radius: 8px; background-color: #f0fdf4; }}\n"
+        "</style>\n</head>\n<body>\n"
+        '    <div class="consigne">Consigne : Entoure ou surligne les sons complexes et les pièges.</div>\n'
+        f'    <div class="cadre">{full_content_training}</div>\n'
+        "</body>\n</html>"
+    )
+
+    st.download_button(
+        label="📥 Télécharger la fiche d'entraînement (Prête à imprimer)",
+        data=html_fiche_vierge,
+        file_name="fiche_entrainement_dys.html",
+        mime="text/html"
+    )
+    
+    st.caption("💡 Astuce : Ouvrez le fichier téléchargé sur votre téléphone pour l'imprimer directement via le menu de votre navigateur.")
+    
 def show_color_legend():
     with st.expander("📖 Légende et Code Couleur Pédagogique"):
         st.markdown("### 🧠 Surlignage des sons complexes (Fond pastel)")
@@ -315,104 +340,4 @@ def show_color_legend():
         c_cols = st.columns(3)
         with c_cols[0]:
             st.markdown("<span style='color: #2563eb; font-weight: bold;'>C</span> : Son [k] (ex: *cas* e)", unsafe_allow_html=True)
-        with c_cols[1]:
-            st.markdown("<span style='color: #059669; font-weight: bold;'>C</span> : Son [s] (ex: *c*e)", unsafe_allow_html=True)
-        with c_cols[2]:
-            st.markdown("<span style='color: #0d9488; font-weight: bold;'>S</span> : Son [z] entre 2 voyelles", unsafe_allow_html=True)
-        
-        st.markdown("<span style='color: #b0b0b0; opacity: 0.8; font-weight: bold;'>Lettre grisée</span> : Lettre muette (ex: e, s, t finaux)", unsafe_allow_html=True)
-
-def build_controls(key_prefix):
-    st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
-    c1, c2, c3 = st.columns(3)
-    
-    with c1:
-        st.write("**Aides aux sons & syllabes :**")
-        show_colors = st.checkbox("Colorer selon votre code couleur de référence", value=True, key=f"{key_prefix}_colors")
-        show_arcs = st.checkbox("Afficher les ponts syllabiques", value=True, key=f"{key_prefix}_arcs")
-        show_phonemes = st.checkbox("Écrire les sons/phonèmes en dessous", value=True, key=f"{key_prefix}_phonemes")
-        
-    with c2:
-        st.write("**Aides à la ligne & visuel :**")
-        word_alt = st.checkbox("Alternance des mots (Bleu/Rouge)", value=False, key=f"{key_prefix}_walt")
-        line_alt = st.checkbox("Alternance des lignes", value=False, key=f"{key_prefix}_lalt")
-        soft_bg = st.checkbox("Surlignage doux du fond", value=False, key=f"{key_prefix}_bg")
-        
-    with c3:
-        st.write("**Typographie & Police DYS :**")
-        font_choice = st.selectbox(
-            "Police d'écriture :",
-            [
-                "OpenDyslexic (Police DYS spécialisée)",
-                "Comic Sans MS / Lexie Readable (Anti-confusion b/d)",
-                "Arial / Luciole (Grande clarté)"
-            ],
-            key=f"{key_prefix}_font"
-        )
-        size = st.slider("Taille de police (px) :", 16, 36, 24, key=f"{key_prefix}_size")
-        spacing = st.slider("Espacement des lignes :", 1.5, 4.0, 2.5, 0.1, key=f"{key_prefix}_space")
-        
-    return {
-        "show_colors": show_colors,
-        "show_arcs": show_arcs,
-        "show_phonemes": show_phonemes,
-        "word_alt": word_alt,
-        "line_alt": line_alt,
-        "soft_bg": soft_bg,
-        "size": size,
-        "spacing": spacing,
-        "font_choice": font_choice
-    }
-
-show_color_legend()
-st.write("---")
-
-# ONGLET 1 : Texte
-with tab1:
-    st.write("### Saisir ou coller un texte")
-    txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
-    if txt:
-        st.write("---")
-        opts = build_controls("t1")
-        render_full_dys_text(txt, **opts)
-
-# ONGLET 2 : Appareil photo direct ou Import de fichier
-with tab2:
-    st.write("### 📷 Capturer ou importer une photo")
-    
-    choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
-    
-    file = None
-    if choix_source == "Prendre une photo en direct":
-        file = st.camera_input("Cliquez pour prendre la photo du texte")
-    else:
-        file = st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
-
-    if file:
-        img = Image.open(file)
-        st.image(img, caption="Image sélectionnée", use_container_width=True)
-        try:
-            # Traitement doux : Niveaux de gris + Contraste + Netteté
-            img_gray = img.convert('L')
-            enhancer = ImageEnhance.Contrast(img_gray)
-            img_contrast = enhancer.enhance(1.8)
-            img_processed = img_contrast.filter(ImageFilter.SHARPEN)
-
-            # 2. Lecture OCR avec Tesseract optimisée
-            custom_config = r'--oem 3 --psm 6'
-            ext_txt = pytesseract.image_to_string(img_processed, lang="fra", config=custom_config)
-
-            if ext_txt.strip():
-                st.success("Texte extrait avec succès !")
-                with st.expander("Voir / Modifier le texte extrait"):
-                    ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
-                st.write("---")
-                opts2 = build_controls("t2")
-                render_full_dys_text(ext_txt, **opts2)
-            else:
-                st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
-        except Exception as e:
-            st.error(f"Erreur d'extraction OCR : {e}")
-
-st.write("---")
-st.caption("Ophélie Bascou Drimaracci - Application Pédagogique DYS")
+        with c
