@@ -142,16 +142,16 @@ def parse_word_to_blocks(word):
         return [{
             'text': word,
             'is_muted': False,
-            'is_complex': True,
+            'render_type': 'highlight',
             'color': PHONEME_COLORS.get(ph, '#8a2be2'),
             'phoneme': ph
         }]
     
     if w_lower == "c'est":
         return [
-            {'text': 'c', 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get('k'), 'phoneme': 'k'},
-            {'text': "'", 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None},
-            {'text': 'est', 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get('è'), 'phoneme': 'è'}
+            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get('k'), 'phoneme': 'k'},
+            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS.get('è'), 'phoneme': 'è'}
         ]
 
     i = 0
@@ -166,28 +166,28 @@ def parse_word_to_blocks(word):
                 blocks.append({
                     'text': char,
                     'is_muted': True,
-                    'is_complex': False,
+                    'render_type': 'muted',
                     'color': None,
                     'phoneme': None
                 })
                 i += 1
                 continue
 
-        # --- CAS 2 : Sons complexes (ou, on) ---
+        # --- CAS 2 : Sons complexes (ou, on) -> Surlignage ---
         if w_lower[i:i+2] == 'ou':
             ph = 'ou'
-            blocks.append({'text': word[i:i+2], 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
             i += 2
             continue
         elif w_lower[i:i+2] == 'on':
             ph = 'on'
-            blocks.append({'text': word[i:i+2], 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
             i += 2
             continue
 
         # --- CAS 3 : Consonnes doubles ---
         if i + 1 < n and c_lower in ['p', 't', 'm', 'n', 'l', 'b', 'd', 'f', 'r', 's'] and word[i+1].lower() == c_lower:
-            blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+            blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
 
@@ -198,25 +198,25 @@ def parse_word_to_blocks(word):
             
             if is_before_double:
                 ph = 'è'
-                blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
                 i += 1
                 continue
             elif is_final_mute:
-                blocks.append({'text': char, 'is_muted': True, 'is_complex': False, 'color': None, 'phoneme': None})
+                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
                 i += 1
                 continue
 
-        # --- CAS 5 : Règles contextuelles (C, S) ---
+        # --- CAS 5 : Règles contextuelles (C, S) -> Couleur de la lettre ---
         if c_lower == 'c':
             next_char = word[i+1].lower() if i + 1 < n else ''
             if next_char in ['e', 'i', 'y']:
                 ph = 's'
-                blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
             elif next_char not in ['h', '']:
                 ph = 'k'
-                blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
             else:
-                blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
             
@@ -227,22 +227,22 @@ def parse_word_to_blocks(word):
             
             if is_prev_vowel and is_next_vowel:
                 ph = 'z'
-                blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
             elif is_final:
-                blocks.append({'text': char, 'is_muted': True, 'is_complex': False, 'color': None, 'phoneme': None})
+                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             else:
-                blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
 
         # Fin de mot muette générale
         if i == n - 1 and c_lower in ['t', 'd', 'x'] and n > 2:
-            blocks.append({'text': char, 'is_muted': True, 'is_complex': False, 'color': None, 'phoneme': None})
+            blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 1
             continue
 
         # Par défaut : caractère standard
-        blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+        blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
     return blocks
