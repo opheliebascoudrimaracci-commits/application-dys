@@ -101,55 +101,109 @@ def is_muted_letter(word, index):
             
     return False
 
-from phonemizer import phonemize
 import re
-def count_syllables(word):
-    word = word.strip()
+import unicodedata
 
-    if not word:
+# Exceptions fréquentes : prononciation française courante.
+SYLLABLE_EXCEPTIONS = {
+    "aujourd'hui": 3,
+    "oiseau": 2,
+    "cheval": 2,
+    "chevaux": 2,
+    "beaucoup": 2,
+    "bateau": 2,
+    "maison": 2,
+    "bonjour": 2,
+    "famille": 2,
+    "fille": 1,
+    "ville": 1,
+    "homme": 1,
+    "femme": 1,
+    "monsieur": 2,
+    "madame": 2,
+    "extraordinaire": 5,
+    "magnifique": 3,
+    "ordinateur": 4,
+    "développement": 5,
+    "gentil": 2,
+    "oiseux": 2,
+}
+
+VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
+
+def normalize_word(word):
+    """Normalise la casse et retire la ponctuation extérieure."""
+    return word.strip().lower().strip(".,;:!?()[]{}\"'«»")
+
+
+def count_syllables(word):
+    """
+    Estime le nombre de syllabes françaises.
+    Ce n'est pas un dictionnaire phonétique complet.
+    """
+    w = normalize_word(word)
+
+    if not w:
         return 0
 
-    phonemes = phonemize(
-        word,
-        language="fr-fr",
-        backend="espeak",
-        strip=True,
-        preserve_punctuation=False,
-        with_stress=False
+    if w in SYLLABLE_EXCEPTIONS:
+        return SYLLABLE_EXCEPTIONS[w]
+
+    # Retire les traits d'union pour traiter les mots composés simplement.
+    w = w.replace("-", "")
+
+    # Les mots sans voyelle ont généralement une seule syllabe
+    # lorsqu'ils sont prononcés comme des mots.
+    if not any(c in VOWELS for c in w):
+        return 1
+
+    # Les groupes de lettres qui correspondent souvent à un seul
+    # noyau vocalique.
+    pattern = (
+        r"eau|oeu|œu|"
+        r"ai|ei|au|eu|ou|oi|ui|"
+        r"an|am|en|em|on|om|in|im|ain|aim|ein|"
+        r"un|um|"
+        r"[aeiouyàâäéèêëïîôöùûüÿ]"
     )
 
-    # Compte les noyaux vocaliques dans la transcription phonétique.
-    vowels = re.findall(
-        r"[iyɪeɛæaɑɒɔoʊuʌəœøɐɜɞɤɯ]",
-        phonemes
-    )
+    groups = re.findall(pattern, w)
 
-    return len(vowels)
+    # Ajustements orthographiques simples.
+    count = len(groups)
+
+    # Le e final est souvent muet.
+    if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")):
+        count -= 1
+
+    # Les terminaisons -es et -ent sont souvent muettes.
+    if w.endswith("es") and len(w) > 3:
+        count -= 1
+    elif w.endswith("ent") and len(w) > 4:
+        count -= 1
+
+    return max(1, count)
 
 
 def split_into_syllables_spans(word):
-    """Découpe approximativement un mot en tranches."""
-    w = word.strip().lower()
+    """
+    Découpe approximativement un mot en segments.
+    Les segments sont orthographiques, pas phonétiques.
+    """
+    w = word.strip()
 
     if not w:
         return []
 
-    if len(w) <= 3:
+    count = count_syllables(w)
+
+    # Impossible de garantir les vraies frontières sans dictionnaire.
+    # On retourne donc le mot entier plutôt qu'une fausse découpe.
+    if count <= 1:
         return [(0, len(w))]
 
-    pattern = r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?'
+    return [(0, len(w))]
 
-    matches = list(re.finditer(pattern, w))
-
-    if not matches:
-        return [(0, len(w))]
-
-    spans = [(m.start(), m.end()) for m in matches]
-
-    if spans[-1][1] < len(w):
-        spans[-1] = (spans[-1][0], len(w))
-
-    return spans
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     blocks = parse_word_to_blocks(word)
