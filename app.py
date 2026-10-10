@@ -17,45 +17,45 @@ tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image 
 # Dictionnaire exact basé sur votre image de référence des sons complexes
 EXACT_COMPLEX_SOUNDS = {
     # Marron (ON)
-    'on': ('#8B4513', 'ɔ̃'),
+    'on': ('#8B4513'),
     # Brun (UN)
-    'un': ('#A0522D', 'œ̃'),
+    'un': ('#A0522D'),
     # Rouge (OU)
-    'ou': ('#FF0000', 'u'),
+    'ou': ('#FF0000'),
     # Orange (AN, EN)
-    'an': ('#FF8C00', 'ɑ̃'),
-    'en': ('#FF8C00', 'ɑ̃'),
+    'an': ('#FF8C00'),
+    'en': ('#FF8C00'),
     # Jaune (O, AU, EAU)
-    'eau': ('#FFD700', 'o'),
-    'au': ('#FFD700', 'o'),
-    'o': ('#FFD700', 'o'),
+    'eau': ('#FFD700),
+    'au': ('#FFD700'),
+    'o': ('#FFD700'),
     # Violet (ET, EZ, ER, AI, EI)
-    'et': ('#800080', 'e'),
-    'ez': ('#800080', 'e'),
-    'er': ('#800080', 'e'),
-    'ai': ('#800080', 'e'),
-    'ei': ('#800080', 'e'),
-    'é': ('#800080', 'e'),
-    'ess': ('#800080', 'e'),  
-    'err': ('#800080', 'e'),  
-    'ell': ('#800080', 'e'),   
-    'eff': ('#800080', 'e'),  
-    'ett': ('#800080', 'e'),
+    'et': ('#800080'),
+    'ez': ('#800080'),
+    'er': ('#800080'),
+    'ai': ('#800080'),
+    'ei': ('#800080'),
+    'é': ('#800080'),
+    'ess': ('#800080'),  
+    'err': ('#800080'),  
+    'ell': ('#800080'),   
+    'eff': ('#800080'),  
+    'ett': ('#800080'),
     # Bleu (EU, OEU)
-    'oeu': ('#0000FF', 'ø'),
-    'eu': ('#0000FF', 'ø'),
+    'oeu': ('#0000FF'),
+    'eu': ('#0000FF'),
     # Vert Sapin (IN, AIN, EIN)
-    'ain': ('#1E4D2B', 'ɛ̃'),
-    'ein': ('#1E4D2B', 'ɛ̃'),
-    'in': ('#1E4D2B', 'ɛ̃'),
+    'ain': ('#1E4D2B'),
+    'ein': ('#1E4D2B'),
+    'in': ('#1E4D2B'),
     # Jaune / Doré (CH)
-    'ch': ('#DAA520', 'ʃ'),
+    'ch': ('#DAA520'),
     # Autres sons fréquents
-    'oi': ('#e74c3c', 'wa'),
-    'oin': ('#d35400', 'waɛ̃'),
-    'ien': ('#e67e22', 'jɛ̃'),
-    'ph': ('#8e44ad', 'f'),
-    'gn': ('#16a085', 'ɲ')
+    'oi': ('#e74c3c'),
+    'oin': ('#d35400'),
+    'ien': ('#e67e22'),
+    'ph': ('#8e44ad'),
+    'gn': ('#16a085')
 }
 
 def is_muted_letter(word, index):
