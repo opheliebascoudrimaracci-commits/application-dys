@@ -271,12 +271,27 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     html_output = f"<div style='font-size: {size}px; line-height: {spacing}; {style_bg}'>{full_content}</div>"
     st.markdown(html_output, unsafe_allow_html=True)
 
-def build_controls(key_prefix="main"):
-    st.sidebar.subheader("Paramètres d'affichage")
-    show_colors = st.sidebar.checkbox("Afficher les couleurs", value=True, key=f"{key_prefix}_colors")
-    show_arcs = st.sidebar.checkbox("Afficher les points de syllabes", value=True, key=f"{key_prefix}_arcs")
-    show_phonemes = st.sidebar.checkbox("Écrire les sons/phonèmes en dessous", value=True, key=f"{key_prefix}_phonemes")
+def build_controls(key_prefix):
+    st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
+    c1, c2, c3 = st.columns(3)
     
+    with c1:
+        st.write("**Aides aux sons & syllabes :**")
+        show_colors = st.checkbox("Colorer selon votre code couleur de référence", value=True, key=f"{key_prefix}_colors")
+        show_arcs = st.checkbox("Afficher les ponts syllabiques", value=True, key=f"{key_prefix}_arcs")
+        show_phonemes = st.checkbox("Écrire les sons/phonèmes en dessous", value=True, key=f"{key_prefix}_phonemes")
+        
+    with c2:
+        st.write("**Aides à la ligne & visuel :**")
+        word_alt = st.checkbox("Alternance des mots (Bleu/Rouge)", value=False, key=f"{key_prefix}_walt")
+        line_alt = st.checkbox("Alternance des lignes", value=False, key=f"{key_prefix}_lalt")
+        soft_bg = st.checkbox("Surlignage doux du fond", value=False, key=f"{key_prefix}_bg")
+        
+    with c3:
+        st.write("**Typographie :**")
+        size = st.slider("Taille de police (px) :", 16, 36, 24, key=f"{key_prefix}_size")
+        spacing = st.slider("Espacement des lignes :", 1.5, 4.0, 2.5, 0.1, key=f"{key_prefix}_space")
+        
     return {
         "show_colors": show_colors,
         "show_arcs": show_arcs,
