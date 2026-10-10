@@ -148,7 +148,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
         
         # Phonèmes en dessous
         if show_phonemes and block.get('phoneme'):
-            ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
+            ph_color = block.get('color') if (block.get('color'] and show_colors) else '#000000'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
         else:
             phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
@@ -156,7 +156,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     
-    # Nombre exact de points correspondant aux syllabes du mot
+    # Génération des points basée strictement sur le nombre de syllabes calculé
     num_syllables = count_syllables_approx(word) if show_arcs else 0
     w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
     
