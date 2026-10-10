@@ -131,8 +131,15 @@ def parse_word_to_blocks(word):
                         continue 
 
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
+                
+                # Gestion intelligente des nasales suivies d'une consonne double (ex: ann -> an + n)
+                actual_text = word[i:i+len(key)]
+                if key in ['an', 'en', 'in', 'on', 'un'] and i + len(key) < n and word[i+len(key)].lower() == key[-1]:
+                    actual_text += word[i+len(key)]
+                    i += 1 # Consomme le double caractère
+                
                 blocks.append({
-                    'text': word[i:i+len(key)],
+                    'text': actual_text,
                     'is_muted': False,
                     'render_type': 'highlight',
                     'color': color,
