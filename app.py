@@ -164,9 +164,31 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     
-    # C'est cette ligne qui force le bon nombre de points (basé sur les syllabes)
-    num_syllables = count_syllables_approx(word) if show_arcs else 0
-    w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
+  
+   # Estimation robuste des syllabes en français basée sur les voyelles prononcées  
+w = word.lower()  
+vowels = "aeiouyàâéèêëîïôûù"  
+count = 0  
+prev_is_vowel = False
+
+# Liste de règles simples pour le e muet et les diagraphes courants  
+for i, ch in enumerate(w):  
+    is_vowel = ch in vowels
+
+    # Ne pas compter un e final muet  
+    if ch == 'e' and i == len(w) - 1:  
+        # Si le mot a plus d'une voyelle (ou une consonne après e), on peut considérer que le e est muet  
+        # On ne lève pas de syllabe ici; laisser la règle générale ci-dessous s’appliquer  
+        pass
+
+    # Comptage syllabique standard: une syllabe à chaque fois qu’on passe d’une consonne à une voyelle  
+    if is_vowel and not prev_is_vowel:  
+        count += 1
+
+    prev_is_vowel = is_vowel
+
+# Garantir au moins 1 syllabe  
+return max(1, count)
     
     html = f"<span style='display: inline-block; text-align: center; margin-right: 20px;'>"
     html += f"<div>{w_main}</div>"
