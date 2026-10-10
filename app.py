@@ -12,39 +12,8 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Injection CSS propre pour le thème clair et les zones de texte
-st.markdown("""
-    <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
-    <style>
-    /* Fond principal blanc */
-    html, body, .stApp {
-        background-color: #FFFFFF !important;
-    }
-    
-    /* Textes en noir */
-    html, body, p, span, h1, h2, h3, h4, h5, h6, label, div.stMarkdown, div.stText {
-        color: #000000 !important;
-    }
-
-    /* Champs de saisie en fond blanc avec bordure claire */
-    textarea, input, div[data-baseweb="textarea"], div[data-baseweb="input"] {
-        background-color: #FFFFFF !important;
-        color: #000000 !important;
-        border: 2px solid #cccccc !important;
-        border-radius: 8px !important;
-    }
-
-    /* Texte explicatif dans la zone de texte */
-    textarea::placeholder, input::placeholder {
-        color: #666666 !important;
-    }
-
-    /* Protection des icônes d'extension */
-    [data-testid="stExpanderToggleIcon"] * {
-        font-family: inherit !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# 2. Injection minimale des polices sans syntaxe complexe
+st.markdown("<link href='https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap' rel='stylesheet'>", unsafe_allow_html=True)
 
 st.title("✏️ Application Pédagogique & Adaptation DYS")
 st.subheader("Ophélie Bascou Drimaracci")
@@ -312,15 +281,15 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
-    # Aperçu de la version adaptée
-    st.markdown(f"### 👁️ Aperçu adapté :")
+    # 1. Aperçu version adaptée
+    st.markdown("### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
-    # Aperçu de la fiche d'entraînement (Cadre vert pomme)
+    # 2. Aperçu version d'entraînement (Cadre Vert Pomme)
     st.markdown("---")
-    st.markdown(f"### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
+    st.markdown("### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
     st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
-    st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #f0fdf4; padding: 15px; border: 2px solid #84cc16; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #f0fdf4; padding: 15px; border: 3px solid #84cc16; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
     
     st.write("---")
     st.write("### 🖨️ Options d'impression :")
@@ -347,7 +316,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
             font-family: {font_family};
         }}
         .btn-blue {{ background-color: #4a90e2; }}
-        .btn-green {{ background-color: #2e7d32; }}
+        .btn-green {{ background-color: #84cc16; color: black; }}
         
         @media print {{
             .no-print {{ display: none !important; }}
@@ -368,7 +337,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
             }} else {{
                 content = `
                     <h3 style="margin-bottom: 25px; text-decoration: underline; font-family: {font_family};">Consigne : Entoure ou surligne les sons complexes et les pièges.</h3>
-                    <div style="font-size: {size}px; line-height: 3.0; font-family: {font_family}; padding: 15px; border: 2px solid #84cc16; border-radius: 8px; background-color: #f0fdf4;">{full_content_training}</div>
+                    <div style="font-size: {size}px; line-height: 3.0; font-family: {font_family}; padding: 15px; border: 3px solid #84cc16; border-radius: 8px; background-color: #f0fdf4;">{full_content_training}</div>
                 `;
             }}
             
