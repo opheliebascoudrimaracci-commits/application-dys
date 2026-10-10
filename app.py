@@ -72,16 +72,22 @@ def is_muted_letter(word, index):
             
     return False
 
+def count_syllables(word):
+    """Calcule le nombre de syllabes d'un mot."""
+    w = word.strip()
+    if len(w) <= 3:
+        return 1
+    matches = list(re.finditer(r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?', w, re.IGNORECASE))
+    return max(1, len(matches))
+
 def split_into_syllables_spans(word):
-    """Découpe un mot en tranches pour positionner les ponts."""
+    """Découpe un mot en tranches (gardé au cas où)."""
     w = word.strip()
     if len(w) <= 3:
         return [(0, len(w))]
-    
     matches = list(re.finditer(r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?', w, re.IGNORECASE))
     if not matches:
         return [(0, len(w))]
-        
     spans = [(m.start(), m.end()) for m in matches]
     if spans[-1][1] < len(w):
         spans[-1] = (spans[-1][0], len(w))
