@@ -28,7 +28,7 @@ st.subheader("Ophélie Bascou Drimaracci")
 
 tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
 
-# Dictionnaire des sons complexes
+# Dictionnaire des sons complexes (avec 'oi' en noir)
 EXACT_COMPLEX_SOUNDS = {
     'eau': ('#FFD700', 'o'),
     'au': ('#FFD700', 'o'),
@@ -48,7 +48,7 @@ EXACT_COMPLEX_SOUNDS = {
     'ai': ('#800080', 'è'),
     'ei': ('#800080', 'è'),
     'ch': ('#DAA520', 'ch'),
-    'oi': ('#000000', 'oi'),  # Fond noir (ou teinté de noir) pour le son 'oi'
+    'oi': ('#000000', 'oi'),  # 'oi' surligné en noir
     'oin': ('#d35400', 'oin'),
     'ien': ('#e67e22', 'ien'),
     'ph': ('#8e44ad', 'f'),
@@ -119,7 +119,6 @@ def count_syllables(word):
 
     return max(1, count)
 
-# Alias pour sécuriser les appels
 count_syllables_approx = count_syllables
 
 def parse_word_to_blocks(word):
@@ -278,7 +277,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     html += f"</span>"
     
     return html
-    
+
 def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing):
     if not text:
         return
@@ -313,6 +312,39 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     html_output = f"<div style='font-size: {size}px; line-height: {spacing}; {style_bg}'>{full_content}</div>"
     st.markdown(html_output, unsafe_allow_html=True)
 
+def show_color_legend():
+    """Affiche une légende interactive du code couleur utilisé dans l'application."""
+    with st.expander("📖 Légende et Code Couleur Pédagogique"):
+        st.markdown("### 🎨 Surlignage des sons complexes (Fond pastel)")
+        cols = st.columns(4)
+        with cols[0]:
+            st.markdown("<span style='background-color: #FF000033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ou</span> : Son [ou]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #8B451333; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>on</span> : Son [on]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #FF8C0033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>an / en</span> : Son [an]", unsafe_allow_html=True)
+        with cols[1]:
+            st.markdown("<span style='background-color: #FFD70033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eau / au / o</span> : Son [o]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #80008033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>et / é / ez</span> : Son [é/è]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #0000FF33; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eu / oeu</span> : Son [eu]", unsafe_allow_html=True)
+        with cols[2]:
+            st.markdown("<span style='background-color: #1E4D2B33; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>in / ain</span> : Son [in]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #00000033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>oi</span> : Son [oi]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #DAA52033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ch</span> : Son [ch]", unsafe_allow_html=True)
+        with cols[3]:
+            st.markdown("<span style='background-color: #8e44ad33; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>qu / ph</span> : [k] / [f]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #16a08533; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>gn</span> : Son [gn]", unsafe_allow_html=True)
+
+        st.markdown("---")
+        st.markdown("### 🔤 Couleur des lettres contextuelles & Muettes")
+        c_cols = st.columns(3)
+        with c_cols[0]:
+            st.markdown("<span style='color: #2563eb; font-weight: bold;'>C</span> : Son [k] (ex: *cas* e)", unsafe_allow_html=True)
+        with c_cols[1]:
+            st.markdown("<span style='color: #059669; font-weight: bold;'>C</span> : Son [s] (ex: *c*e)", unsafe_allow_html=True)
+        with c_cols[2]:
+            st.markdown("<span style='color: #0d9488; font-weight: bold;'>S</span> : Son [z] entre 2 voyelles", unsafe_allow_html=True)
+        
+        st.markdown("<span style='color: #b0b0b0; opacity: 0.8; font-weight: bold;'>Lettre grisée</span> : Lettre muette (ex: e, s, t finaux)", unsafe_allow_html=True)
+
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
     c1, c2, c3 = st.columns(3)
@@ -344,6 +376,10 @@ def build_controls(key_prefix):
         "size": size,
         "spacing": spacing
     }
+
+# Affichage de la légende en haut pour un accès facile
+show_color_legend()
+st.write("---")
 
 # ONGLET 1
 with tab1:
