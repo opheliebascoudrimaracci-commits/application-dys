@@ -293,8 +293,8 @@ with tab1:
     txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
     if txt:
         st.write("---")
-        opts = build_controls("t1") # ou le préfixe de votre onglet
-    render_full_dys_text(txt, opts)
+        opts = build_controls("t1")
+render_full_dys_text(txt, **opts)
 
 # ONGLET 2
 with tab2:
