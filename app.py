@@ -55,7 +55,7 @@ EXACT_COMPLEX_SOUNDS = {
     'oin': ('#d35400', 'oin'),
     'ien': ('#e67e22', 'ien'),
     'ph': ('#8e44ad', 'f'),
-    'gn': ('#16a085', 'gn')
+    'gn': ('#16a085', 'gn'),
     # Autres sons fréquents et graphies complexes
     'qu': ('#8e44ad', 'k'),   # Le "qu" qui fait "k"
     'ph': ('#8e44ad', 'f'),   # Le "ph" qui fait "f"
