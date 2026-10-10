@@ -48,7 +48,7 @@ EXACT_COMPLEX_SOUNDS = {
     'ai': ('#800080', 'è'),
     'ei': ('#800080', 'è'),
     'ch': ('#DAA520', 'ch'),
-    'oi': ('#e74c3c', 'oi'),
+    'oi': ('#000000', 'oi'),  # Fond noir (ou teinté de noir) pour le son 'oi'
     'oin': ('#d35400', 'oin'),
     'ien': ('#e67e22', 'ien'),
     'ph': ('#8e44ad', 'f'),
