@@ -92,25 +92,13 @@ def parse_word_to_blocks(word):
         return [
             {'text': "s", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
             {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': "ann", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
             {'text': "an", 'is_muted': False, 'render_type': 'highlight', 'color': '#E67E22', 'phoneme': 'an'},
             {'text': "on", 'is_muted': False, 'render_type': 'highlight', 'color': '#6E2C00', 'phoneme': 'on'},
             {'text': "c", 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'},
             {'text': "e", 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None}
         ]
 
-
-    if w_lower == "est":
-        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
-    
-    if w_lower == "c'est":
-        return [
-            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
-            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}
-        ]
-
-    i = 0
+i = 0
     n = len(word)
     sorted_keys = sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True)
     
@@ -134,21 +122,10 @@ def parse_word_to_blocks(word):
 
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
                 
-                # Capture propre des nasales avec consonne double (ex: ann -> an + n)
                 actual_text = word[i:i+len(key)]
-                if key in ['an', 'en', 'in', 'on', 'un'] and i + len(key) < n and word[i+len(key)].lower() == key[-1]:
-                    actual_text += word[i+len(key)]
-                    blocks.append({
-                        'text': actual_text,
-                        'is_muted': False,
-                        'render_type': 'highlight',
-                        'color': color,
-                        'phoneme': phoneme
-                    })
-                    i += len(key) + 1
-                    matched_complex = True
-                    break
-                
+                if key in ['an', 'en', 'in', 'on', 'un'] and i > 0 and word[i-1].lower() == 'n' and word[i].lower() == 'n':
+                    pass
+
                 blocks.append({
                     'text': actual_text,
                     'is_muted': False,
@@ -214,6 +191,17 @@ def parse_word_to_blocks(word):
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
+    return blocks
+    if w_lower == "est":
+        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
+    
+    if w_lower == "c'est":
+        return [
+            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
+            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}
+        ]
+
     return blocks
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family):
