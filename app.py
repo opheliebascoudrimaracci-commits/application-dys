@@ -164,7 +164,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     res = f"<div style='display: inline-flex; flex-direction: column; align-items: center; margin: 0 8px; vertical-align: top;'>"
     res += f"<div style='letter-spacing: 1px;'>{text_html}</div>"
     if show_arcs:
-        res += f"<div style='margin-top: 5px; font-size: 0.85em; opacity: 0.85;'>{arcs_html}</div>"
+        res += f"<div style='margin-top: 2px; height: 18px; display: flex; align-items: center;'>{dots_html}</div>"
     if show_phonemes:
         res += f"<div style='margin-top: 4px; letter-spacing: 2px;'>{phonemes_html}</div>"
     res += "</div>"
