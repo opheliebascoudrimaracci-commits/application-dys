@@ -1,4 +1,3 @@
-
 import streamlit as st
 import streamlit.components.v1 as components
 import pytesseract
@@ -258,7 +257,6 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     if not text:
         return
 
-    # Définition de la police CSS selon le choix
     fonts_map = {
         "OpenDyslexic (Police DYS spécialisée)": "'Open Dyslexic', sans-serif",
         "Comic Sans MS / Lexie Readable (Anti-confusion b/d)": "'Comic Sans MS', 'Comic Sans', cursive, sans-serif",
@@ -282,6 +280,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
                 word_html = f"<span style='color: {color}; font-weight: bold;'>{word_html}</span>"
             rendered_words_adapted.append(word_html)
             
+            # Version d'entraînement : texte brut espacé
             training_word_html = f"<span style='display: inline-block; margin-right: 18px;'>{word}</span>"
             rendered_words_training.append(training_word_html)
             
@@ -298,7 +297,15 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
+    # Affichage de la version adaptée à l'écran
+    st.markdown(f"### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
+    
+    # Aperçu de la version d'entraînement vierge à l'écran
+    st.markdown("---")
+    st.markdown(f"### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
+    st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #ffffff; padding: 15px; border: 1px dashed #ccc; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
     
     st.write("---")
     st.write("### 🖨️ Options d'impression :")
@@ -473,7 +480,6 @@ with tab2:
                     ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
                 st.write("---")
                 opts2 = build_controls("t2")
-                st.write("### 👁️ Aperçu adapté :")
                 render_full_dys_text(ext_txt, **opts2)
             else:
                 st.warning("Aucun texte trouvé dans l'image.")
