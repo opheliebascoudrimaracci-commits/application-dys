@@ -180,26 +180,46 @@ def count_syllables(word):
 
     return max(1, count)
 
-
 def split_into_syllables_spans(word):
-    """
-    Découpe approximativement un mot en segments.
-    Les segments sont orthographiques, pas phonétiques.
-    """
+    """Découpe approximativement un mot en segments."""
     w = word.strip()
 
     if not w:
         return []
 
-    count = count_syllables(w)
+    # Repérer les noyaux vocaliques écrits
+    pattern = (
+        r"eau|ain|aim|ein|"
+        r"an|am|en|em|on|om|in|im|un|um|"
+        r"oi|ou|au|eu|ai|ei|"
+        r"[aeiouyàâäéèêëïîôöùûüÿ]"
+    )
 
-    # Impossible de garantir les vraies frontières sans dictionnaire.
-    # On retourne donc le mot entier plutôt qu'une fausse découpe.
-    if count <= 1:
+    matches = list(re.finditer(pattern, w.lower()))
+
+    if not matches:
         return [(0, len(w))]
 
-    return [(0, len(w))]
+    # Déterminer les frontières entre les noyaux
+    boundaries = [0]
 
+    for i in range(len(matches) - 1):
+        left = matches[i]
+        right = matches[i + 1]
+
+        # Frontière approximative entre les deux noyaux
+        boundary = (left.end() + right.start()) // 2
+        boundary = max(boundaries[-1] + 1, boundary)
+
+        if boundary < len(w):
+            boundaries.append(boundary)
+
+    boundaries.append(len(w))
+
+    return [
+        (boundaries[i], boundaries[i + 1])
+        for i in range(len(boundaries) - 1)
+    ]
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     blocks = parse_word_to_blocks(word)
