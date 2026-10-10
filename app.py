@@ -238,8 +238,9 @@ def render_word_multilevel(word, show_colors=True, show_arcs=True, show_phonemes
     return res
 
 def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing):
-     if not text:
+    if not text:
         return
+        
     # 1. Application des styles CSS dynamiques (taille de police et interlignage)
     bg_style = "background-color: #fcf8e3; padding: 20px; border-radius: 10px;" if soft_bg else ""
     st.markdown(f"""
