@@ -56,15 +56,22 @@ EXACT_COMPLEX_SOUNDS = {
     'ien': ('#e67e22', 'ien'),
     'ph': ('#8e44ad', 'f'),
     'gn': ('#16a085', 'gn')
+    # Autres sons fréquents et graphies complexes
+    'qu': ('#8e44ad', 'k'),   # Le "qu" qui fait "k"
+    'ph': ('#8e44ad', 'f'),   # Le "ph" qui fait "f"
+    'gn': ('#16a085', 'gn'),
+    'oi': ('#e74c3c', 'oi'),
+    'oin': ('#d35400', 'oin'),
+    'ien': ('#e67e22', 'ien'),
 }
 def is_muted_letter(word, index):
     """Détermine si une lettre est muette (ex: e final, s/t/d/x finaux)."""
     w_lower = word.lower()
     length = len(w_lower)
     
-    # Ne pas griser le 'e' final si le mot se termine par une double consonne + e (ex: appelle, tasse)
+    # Ne jamais griser le 'e' final si le mot se termine par une double consonne + e (ex: appelle, terre, tasse)
     if index == length - 1 and w_lower[index] == 'e' and length > 2:
-        if w_lower.endswith(('lle', 'sse', 'rre', 'tte', 'ffe', 'nne', 'mme', 'ple')):
+        if re.search(r'([b-df-hj-np-tv-z])\1e$', w_lower):
             return False
         return True
 
@@ -74,7 +81,6 @@ def is_muted_letter(word, index):
             return True
             
     return False
-
 def count_syllables(word):
     """Calcule le nombre de syllabes d'un mot."""
     w = word.strip()
@@ -102,11 +108,50 @@ def parse_word_to_blocks(word):
     i = 0
     w_lower = word.lower()
     
+    voyelles = "aeiouyàâéèêëîïôûùü"
+    
     while i < len(word):
         matched = False
+        
+        # --- RÈGLE 1 : Double consonne + 'e' (ex: lle, rre, sse...) ---
+        double_match = re.match(r'^([b-df-hj-np-tv-z])\1e', w_lower[i:])
+        if double_match:
+            matched_str = word[i:i+3]
+            blocks.append({
+                'text': matched_str,
+                'color': '#800080',
+                'phoneme': 'é',
+                'is_complex': True,
+                'is_muted': False
+            })
+            i += 3
+            matched = True
+            continue
+
+        # --- RÈGLE 2 : Le 's' intervocalique (entre deux voyelles) qui fait [z] ---
+        if w_lower[i] == 's':
+            # Vérifier s'il est entre deux voyelles
+            est_entre_voyelles = (
+                i > 0 and i < len(word) - 1 and 
+                w_lower[i-1] in voyelles and 
+                w_lower[i+1] in voyelles
+            )
+            if est_entre_voyelles:
+                blocks.append({
+                    'text': word[i],
+                    'color': '#2980b9', # Couleur distinctive pour le 's' en [z] (ex: bleu)
+                    'phoneme': 'z',
+                    'is_complex': True,
+                    'is_muted': False
+                })
+                i += 1
+                matched = True
+                continue
+
+        # --- RÈGLE 3 : Sons complexes du dictionnaire ---
         for sound in sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True):
             if w_lower[i:].startswith(sound):
-                color, phoneme = EXACT_COMPLEX_SOUNDS[sound]
+                color, phoneme = EXACT_COMPLEX_SouNDS[sound] if 'EXACT_COMPLEX_SouNDS' else EXACT_COMPLEX_SOUNDS[sound]
                 blocks.append({
                     'text': word[i:i+len(sound)],
                     'color': color,
@@ -117,6 +162,7 @@ def parse_word_to_blocks(word):
                 i += len(sound)
                 matched = True
                 break
+                
         if not matched:
             char = word[i]
             muted = is_muted_letter(word, i)
@@ -151,25 +197,10 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
         dots_html = f"<span style='color: #4a90e2; font-size: 1.2em; font-weight: bold;'>{dots}</span>"
 
     # 3. Étage Phonèmes (uniquement sous les sons complexes ou muets)
-    phonemes_html = ""
-    if show_phonemes:
-        p_list = []
-        for b in blocks:
-            if b['is_muted']:
-                p_list.append("<span style='color: #ccc; font-size: 0.7em;'>[⦰]</span>")
-            elif b['is_complex'] and b['phoneme']:
-                c = b['color'] if show_colors else '#888888'
-                p_list.append(f"<span style='color: {c}; font-size: 0.7em; font-weight: bold;'>[{b['phoneme']}]</span>")
-            else:
-                p_list.append("&nbsp;" * len(b['text']))
-        phonemes_html = "".join(p_list)
-
-    res = f"<div style='display: inline-flex; flex-direction: column; align-items: center; margin: 0 8px; vertical-align: top;'>"
+       res = f"<div style='display: inline-flex; flex-direction: column; align-items: center; margin: 0 8px; vertical-align: top;'>"
     res += f"<div style='letter-spacing: 1px;'>{text_html}</div>"
     if show_arcs:
         res += f"<div style='margin-top: 2px; height: 18px; display: flex; align-items: center;'>{dots_html}</div>"
-    if show_phonemes:
-        res += f"<div style='margin-top: 4px; letter-spacing: 2px;'>{phonemes_html}</div>"
     res += "</div>"
     
     return res
@@ -211,6 +242,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
 def build_controls(key_prefix):
     st.write("### ⚙️ Options d'adaptation DYS (Cumulables)")
     c1, c2, c3 = st.columns(3)
+    show_phonemes = st.checkbox("Écrire les sons simples en dessous", value=False, key=f"{key_prefix}_phonemes")
     
     with c1:
         st.write("**Aides aux sons & syllabes :**")
