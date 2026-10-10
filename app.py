@@ -88,11 +88,9 @@ def count_syllables(word):
 
     w = w.replace("-", "")
 
-    # Groupe les voyelles successives en noyaux syllabiques
     noyaux = re.findall(r'[aeiouyàâäéèêëïîôöùûüÿ]+', w)
     count = len(noyaux)
 
-    # Ajustement pour le e muet final
     if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")) and len(w) > 2:
         count -= 1
 
@@ -128,22 +126,19 @@ def parse_word_to_blocks(word):
         char = word[i]
         c_lower = char.lower()
         
-        # 'h' muet
         if c_lower == 'h':
             if i == 0 or word[i-1].lower() not in ['c', 'p']:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
                 i += 1
                 continue
 
-        # Sons complexes basés sur EXACT_COMPLEX_SOUNDS
         matched_complex = False
         for key in sorted_keys:
             if w_lower[i:i+len(key)] == key:
-                # REGLE IMPORTANTE : in, an, on, en ne sont pas des voyelles nasales si suivis d'une voyelle
                 if key in ['in', 'an', 'on', 'en', 'un']:
                     next_idx = i + len(key)
                     if next_idx < n and w_lower[next_idx] in VOWELS:
-                        continue # On ne capture pas comme son nasal (ex: maminounou -> ma-mi-nou-nou)
+                        continue 
 
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
                 blocks.append({
@@ -159,13 +154,11 @@ def parse_word_to_blocks(word):
         if matched_complex:
             continue
 
-        # Consonnes doubles
         if i + 1 < n and c_lower in ['p', 't', 'm', 'n', 'l', 'b', 'd', 'f', 'r', 's'] and word[i+1].lower() == c_lower:
             blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
 
-        # Le 'e' avant double consonne ou final
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
             is_final_mute = (i == n - 1 and n > 2)
@@ -180,7 +173,6 @@ def parse_word_to_blocks(word):
                 i += 1
                 continue
 
-        # Règles contextuelles pour C
         if c_lower == 'c':
             next_char = word[i+1].lower() if i + 1 < n else ''
             if next_char in ['e', 'i', 'y']:
@@ -192,7 +184,6 @@ def parse_word_to_blocks(word):
             i += 1
             continue
             
-        # Règles contextuelles pour S
         if c_lower == 's':
             is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
             is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
@@ -303,13 +294,15 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
+    # Affichage version adaptée
     st.markdown(f"### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
+    # Affichage version d'entraînement avec cadre VERT POMME
     st.markdown("---")
     st.markdown(f"### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
     st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
-    st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #ffffff; padding: 15px; border: 1px dashed #ccc; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #f0fdf4; padding: 15px; border: 2px solid #84cc16; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
     
     st.write("---")
     st.write("### 🖨️ Options d'impression :")
@@ -357,7 +350,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
             }} else {{
                 content = `
                     <h3 style="margin-bottom: 25px; text-decoration: underline; font-family: {font_family};">Consigne : Entoure ou surligne les sons complexes et les pièges.</h3>
-                    <div style="font-size: {size}px; line-height: 3.0; font-family: {font_family};">{full_content_training}</div>
+                    <div style="font-size: {size}px; line-height: 3.0; font-family: {font_family}; padding: 15px; border: 2px solid #84cc16; border-radius: 8px; background-color: #f0fdf4;">{full_content_training}</div>
                 `;
             }}
             
