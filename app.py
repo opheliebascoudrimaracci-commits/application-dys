@@ -148,7 +148,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
         
         # Phonèmes en dessous
         if show_phonemes and block.get('phoneme'):
-            ph_color = block.get('color') if (block.get('color' and show_colors) else '#000000'
+            ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
         else:
             phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
