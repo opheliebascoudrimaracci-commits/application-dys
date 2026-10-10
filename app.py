@@ -1,7 +1,7 @@
 import streamlit as st
 import streamlit.components.v1 as components
 import pytesseract
-from PIL import Image
+from PIL import Image, ImageEnhance, ImageFilter
 import re
 import unicodedata
 
@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Injection minimale des polices sans syntaxe complexe
+# 2. Injection minimale des polices
 st.markdown("<link href='https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap' rel='stylesheet'>", unsafe_allow_html=True)
 
 st.title("✏️ Application Pédagogique & Adaptation DYS")
@@ -74,13 +74,11 @@ def count_syllables(word):
         return sum(count_syllables(p) for p in parts if p)
 
     w = w.replace("-", "")
-
     noyaux = re.findall(r'[aeiouyàâäéèêëïîôöùûüÿ]+', w)
     count = len(noyaux)
 
     if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")) and len(w) > 2:
         count -= 1
-
     if w.endswith("es") and len(w) > 3:
         count -= 1
     elif w.endswith("ent") and len(w) > 4:
@@ -281,11 +279,9 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
-    # 1. Aperçu version adaptée
     st.markdown("### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
-    # 2. Aperçu version d'entraînement (Cadre Vert Pomme)
     st.markdown("---")
     st.markdown("### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
     st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
@@ -436,11 +432,10 @@ def build_controls(key_prefix):
         "font_choice": font_choice
     }
 
-# Affichage de la légende en haut
 show_color_legend()
 st.write("---")
 
-# ONGLET 1
+# ONGLET 1 : Texte
 with tab1:
     st.write("### Saisir ou coller un texte")
     txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
@@ -449,24 +444,42 @@ with tab1:
         opts = build_controls("t1")
         render_full_dys_text(txt, **opts)
 
-# ONGLET 2
+# ONGLET 2 : Appareil photo direct ou Import de fichier
 with tab2:
-    st.write("### Importer une image")
-    file = st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"])
+    st.write("### 📷 Capturer ou importer une photo")
+    
+    # Choix entre la caméra directe du téléphone ou l'import d'un fichier existant
+    choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"])
+    
+    file = None
+    if choix_source == "Prendre une photo en direct":
+        file = st.camera_input("Cliquez pour prendre la photo du texte")
+    else:
+        file = st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"])
+
     if file:
         img = Image.open(file)
-        st.image(img, caption="Image importée", use_container_width=True)
+        st.image(img, caption="Image sélectionnée", use_container_width=True)
         try:
-            ext_txt = pytesseract.image_to_string(img, lang="fra")
+            # 1. Nettoyage de l'image (Niveaux de gris + Contraste + Netteté)
+            img_gray = img.convert('L')
+            enhancer = ImageEnhance.Contrast(img_gray)
+            img_contrast = enhancer.enhance(2.0)
+            img_processed = img_contrast.filter(ImageFilter.SHARPEN)
+
+            # 2. Lecture OCR avec Tesseract
+            custom_config = r'--oem 3 --psm 6'
+            ext_txt = pytesseract.image_to_string(img_processed, lang="fra", config=custom_config)
+
             if ext_txt.strip():
-                st.success("Texte extrait avec succès !")
+                st.success("Texte extrait et nettoyé avec succès !")
                 with st.expander("Voir / Modifier le texte extrait"):
                     ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
                 st.write("---")
                 opts2 = build_controls("t2")
                 render_full_dys_text(ext_txt, **opts2)
             else:
-                st.warning("Aucun texte trouvé dans l'image.")
+                st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
         except Exception as e:
             st.error(f"Erreur d'extraction OCR : {e}")
 
