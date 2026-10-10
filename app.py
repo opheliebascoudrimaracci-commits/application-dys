@@ -292,70 +292,56 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     print_html = f"""
     <!DOCTYPE html>
+    
+    st.write("---")
+    st.write("### 🖨️ Options d'export et d'impression :")
+    
+    html_fiche_vierge = f"""
+    <!DOCTYPE html>
     <html>
     <head>
+    <meta charset="utf-8">
+    <title>Fiche d'entraînement DYS</title>
     <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
     <style>
         body {{
             font-family: {font_family};
-            margin: 20px;
+            padding: 30px;
+            background-color: #FFFFFF;
+            color: #000000;
         }}
-        .btn {{
-            border: none;
-            color: white;
-            padding: 10px 18px;
-            border-radius: 6px;
-            font-size: 15px;
+        .consigne {{
+            margin-bottom: 25px;
+            text-decoration: underline;
             font-weight: bold;
-            cursor: pointer;
-            margin-right: 10px;
-            font-family: {font_family};
+            font-size: 18px;
         }}
-        .btn-blue {{ background-color: #4a90e2; }}
-        .btn-green {{ background-color: #84cc16; color: black; }}
-        
-        @media print {{
-            .no-print {{ display: none !important; }}
+        .cadre {{
+            font-size: {size}px;
+            line-height: 3.0;
+            padding: 20px;
+            border: 3px solid #84cc16;
+            border-radius: 8px;
+            background-color: #f0fdf4;
         }}
     </style>
     </head>
     <body>
-        <div class="no-print">
-            <button class="btn btn-blue" onclick="printSection('corrected')">🖨️ Imprimer version corrigée (Adaptée)</button>
-            <button class="btn btn-green" onclick="printSection('training')">📝 Imprimer fiche d'entraînement (Vierge)</button>
-        </div>
-
-        <script>
-        function printSection(type) {{
-            var content = '';
-            if (type === 'corrected') {{
-                content = `<div style="font-size: {size}px; line-height: {spacing}; font-family: {font_family};">{full_content_adapted}</div>`;
-            }} else {{
-                content = `
-                    <h3 style="margin-bottom: 25px; text-decoration: underline; font-family: {font_family};">Consigne : Entoure ou surligne les sons complexes et les pièges.</h3>
-                    <div style="font-size: {size}px; line-height: 3.0; font-family: {font_family}; padding: 15px; border: 3px solid #84cc16; border-radius: 8px; background-color: #f0fdf4;">{full_content_training}</div>
-                `;
-            }}
-            
-            var printWindow = window.open('', '_blank');
-            printWindow.document.write('<html><head><title>Impression Fiche DYS</title>');
-            printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">');
-            printWindow.document.write("<style>body {{ font-family: {font_family}; padding: 20px; }}</style>");
-            printWindow.document.write('</head><body>');
-            printWindow.document.write(content);
-            printWindow.document.write('</body></html>');
-            printWindow.document.close();
-            printWindow.focus();
-            setTimeout(function() {{
-                printWindow.print();
-                printWindow.close();
-            }}, 250);
-        }}
-        </script>
+        <div class="consigne">Consigne : Entoure ou surligne les sons complexes et les pièges.</div>
+        <div class="cadre">{full_content_training}</div>
     </body>
     </html>
     """
-    components.html(print_html, height=80)
+    
+    st.download_button(
+        label="📥 Télécharger la fiche d'entraînement (Prête à imprimer)",
+        data=html_fiche_vierge,
+        file_name="fiche_entrainement_dys.html",
+        mime="text/html"
+    )
+    
+    st.caption("💡 Astuce : Ouvrez le fichier téléchargé sur votre téléphone pour l'imprimer directement via le menu de votre navigateur.")
+
 
 def show_color_legend():
     """Affiche une légende interactive du code couleur utilisé dans l'application."""
