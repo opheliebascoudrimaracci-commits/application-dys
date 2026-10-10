@@ -238,15 +238,13 @@ def parse_word_to_blocks(word):
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     blocks = parse_word_to_blocks(word)
     word_html_parts = []
-    phoneme_html_parts = []
     arc_html_parts = []
     
     for block in blocks:
         text = block['text']
-        # Utilisation de .get pour éviter tout risque de KeyError si un champ manque
         r_type = block.get('render_type', 'normal')
         
-        # 1. Lettres muettes (plus claires et douces)
+        # 1. Lettres muettes (gris clair doux)
         if r_type == 'muted':
             part_html = f"<span style='color: #b0b0b0; opacity: 0.5;'>{text}</span>"
             
@@ -255,7 +253,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
             bg_color = block['color'] + '33' 
             part_html = f"<span style='background-color: {bg_color}; padding: 2px 4px; border-radius: 4px; font-weight: bold;'>{text}</span>"
             
-        # 3. Lettres contextuelles -> Changement de la couleur de la lettre
+        # 3. Lettres contextuelles -> Changement de couleur de la lettre
         elif r_type == 'color_text' and show_colors and block.get('color'):
             part_html = f"<span style='color: {block['color']}; font-weight: bold;'>{text}</span>"
             
@@ -265,29 +263,19 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
             
         word_html_parts.append(part_html)
         
-        # Phonèmes en dessous
-        if show_phonemes and block.get('phoneme'):
-            ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
-            phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
-        else:
-            phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
-            
-        # Arcs / points syllabiques
+        # Points / arcs sous chaque bloc (si activé)
         if show_arcs:
             arc_html_parts.append("•" if not block.get('is_muted', False) else " ")
         else:
             arc_html_parts.append(" ")
             
     w_main = "".join(word_html_parts)
-    w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     w_arcs = " ".join(arc_html_parts) if show_arcs else ""
     
-    html = f"<span style='display: inline-block; text-align: center; margin-right: 15px;'>"
+    html = f"<span style='display: inline-block; text-align: center; margin-right: 20px;'>"
     html += f"<div>{w_main}</div>"
     if show_arcs:
-        html += f"<div style='font-size: 0.8em; color: #4a90e2; letter-spacing: 2px;'>{w_arcs}</div>"
-    if show_phonemes:
-        html += f"<div style='font-size: 0.75em;'>{w_ph}</div>"
+        html += f"<div style='font-size: 0.9em; color: #4a90e2; letter-spacing: 2px; margin-top: 2px;'>{w_arcs}</div>"
     html += f"</span>"
     
     return html
