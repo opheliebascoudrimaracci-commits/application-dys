@@ -104,38 +104,31 @@ def is_muted_letter(word, index):
 
 import re
 
+from phonemizer import phonemize
+import re
+
 def count_syllables(word):
-    """Estime le nombre de syllabes d'un mot français."""
-    w = word.strip().lower()
+    word = word.strip()
 
-    if not w:
+    if not word:
         return 0
 
-    # Retirer la ponctuation aux extrémités
-    w = re.sub(r"^[^a-zàâäéèêëïîôöùûüÿç]+|[^a-zàâäéèêëïîôöùûüÿç]+$", "", w)
+    phonemes = phonemize(
+        word,
+        language="fr-fr",
+        backend="espeak",
+        strip=True,
+        preserve_punctuation=False,
+        with_stress=False
+    )
 
-    if not w:
-        return 0
+    # Compte les noyaux vocaliques dans la transcription phonétique.
+    vowels = re.findall(
+        r"[iyɪeɛæaɑɒɔoʊuʌəœøɐɜɞɤɯ]",
+        phonemes
+    )
 
-    # Cas fréquents de mots courts
-    if len(w) <= 3:
-        return 1
-
-    # Terminaisons souvent muettes
-    if w.endswith("ent") and len(w) > 4:
-        w = w[:-3]
-    elif w.endswith(("es", "e")) and len(w) > 3:
-        w = w[:-1]
-
-    # Groupes vocaliques qui représentent généralement un seul noyau
-    pattern = r"eau|au|ai|ei|oi|ou|où|eu|œu|ui|ie|é|è|ê|ë|à|â|ä|î|ï|ô|ö|ù|û|ü|ÿ|y|[aeiou]"
-    groups = re.findall(pattern, w)
-
-    # Fusionner les voyelles consécutives reconnues par le motif
-    count = len(groups)
-
-    # Une estimation : chaque groupe vocalique correspond à une syllabe
-    return max(1, count)
+    return len(vowels)
 
 
 def split_into_syllables_spans(word):
