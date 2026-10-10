@@ -14,8 +14,6 @@ st.subheader("Ophélie Bascou Drimaracci")
 
 tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
 
-# Dictionnaire exact basé sur votre image de référence des sons complexes
-EXACT_COMPLEX_SOUNDS = {
    # Dictionnaire des sons complexes
 EXACT_COMPLEX_SOUNDS = {
     # Marron (ON)
