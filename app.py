@@ -92,8 +92,7 @@ def parse_word_to_blocks(word):
         return [
             {'text': "s", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
             {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': "a", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': "nn", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': "ann", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
             {'text': "an", 'is_muted': False, 'render_type': 'highlight', 'color': '#E67E22', 'phoneme': 'an'},
             {'text': "on", 'is_muted': False, 'render_type': 'highlight', 'color': '#6E2C00', 'phoneme': 'on'},
             {'text': "c", 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'},
