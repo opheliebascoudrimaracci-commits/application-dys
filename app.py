@@ -430,4 +430,58 @@ with tab2:
                 with st.expander("Voir / Modifier le texte extrait"):
                     ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
                 st.write("---")
-                opts2 = b
+                opts2 = build_controls("t2")
+                render_full_dys_text(ext_txt, **opts2)
+            else:
+                st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
+        except Exception as e:
+            st.error(f"Erreur d'extraction OCR : {e}")
+
+# ONGLET 3 : Générateur d'histoires magiques
+with tab3:
+    st.write("### ✨ Générateur d'histoires magiques")
+    
+    niveau = st.selectbox(
+        "Choisissez le niveau de difficulté :",
+        ["Débutant (mots simples, phrases courtes)", "Intermédiaire (vocabulaire varié)", "Avancé (récit plus long et complexe)"],
+        key="gen_niveau"
+    )
+
+    nom_hero = st.text_input("Nom du personnage principal (laissez vide pour un choix aléatoire) :", placeholder="Ex: Léo, Léna, Noé...", key="gen_nom")
+
+    if "Débutant" in niveau:
+        h = nom_hero if nom_hero else "Le petit chat"
+        lieux = ["dans le jardin", "dans la forêt", "dans la maison"]
+        actions = ["trouve un jouet.", "voit un oiseau.", "court vite."]
+        
+        if st.button("✨ Créer l'histoire", key="btn_gen_deb"):
+            st.session_state['histoire_generee'] = f"{h} joue {random.choice(lieux)} et {random.choice(actions)}"
+
+    elif "Intermédiaire" in niveau:
+        h = nom_hero if nom_hero else random.choice(["Un petit chat curieux", "Un petit dragon maladroit", "Une fée étourdie", "Un courageux chevalier"])
+        lieux = ["dans une forêt enchantée", "sur une île aux nuages", "dans un château de cristal"]
+        objets = ["une baguette magique", "une étoile scintillante", "un livre mystérieux"]
+        actions = ["découvre un trésor caché.", "rencontre un ami extraordinaire.", "apprend à voler."]
+        
+        if st.button("✨ Créer l'histoire", key="btn_gen_int"):
+            st.session_state['histoire_generee'] = f"{h} se promène {random.choice(lieux)} lorsqu'il trouve {random.choice(objets)} et {random.choice(actions)}"
+
+    else:
+        h = nom_hero if nom_hero else random.choice(["Le jeune prince du royaume", "L'elfe des grands arbres", "La courageuse exploratrice"])
+        lieux = ["au sommet de la montagne interdite", "dans le labyrinthe des murmures secrets", "au cœur de la vallée des anciens sorts"]
+        evenements = ["découvre un parchemin magique qui révèle un grand secret", "part à la recherche de la clé perdue du temps", "doit résoudre une énigme difficile pour sauver son village"]
+        
+        if st.button("✨ Créer l'histoire", key="btn_gen_adv"):
+            st.session_state['histoire_generee'] = f"Il était une fois, {h.lower()} qui vivait {random.choice(lieux)}. Un beau matin, il {random.choice(evenements)} avec l'aide de ses fidèles amis."
+
+    if 'histoire_generee' in st.session_state:
+        st.write("---")
+        st.write("### Texte de l'histoire générée :")
+        
+        # Options d'adaptation spécifiques pour l'histoire générée
+        opts_gen = build_controls("t3")
+        st.write("---")
+        render_full_dys_text(st.session_state['histoire_generee'], **opts_gen)
+
+st.write("---")
+st.caption("Ophélie Bascou Drimaracci - Application Pédagogique DYS")
