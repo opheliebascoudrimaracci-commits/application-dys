@@ -137,46 +137,44 @@ def normalize_word(word):
 
 
 def count_syllables(word):
-    """
-    Estime le nombre de syllabes françaises.
-    Ce n'est pas un dictionnaire phonétique complet.
-    """
+
+def count_syllables(word):
+    """Estime le nombre de syllabes d'un mot français."""
     w = normalize_word(word)
 
     if not w:
         return 0
 
+    # Exceptions connues
     if w in SYLLABLE_EXCEPTIONS:
         return SYLLABLE_EXCEPTIONS[w]
 
-    # Retire les traits d'union pour traiter les mots composés simplement.
+    # Apostrophes : traite les deux parties séparément
+    if "'" in w or "’" in w:
+        parts = re.split(r"['’]", w)
+        return sum(count_syllables(p) for p in parts if p)
+
     w = w.replace("-", "")
 
-    # Les mots sans voyelle ont généralement une seule syllabe
-    # lorsqu'ils sont prononcés comme des mots.
     if not any(c in VOWELS for c in w):
         return 1
 
-    # Les groupes de lettres qui correspondent souvent à un seul
-    # noyau vocalique.
+    # Groupes vocaliques fréquents
     pattern = (
         r"eau|oeu|œu|"
-        r"ai|ei|au|eu|ou|oi|ui|"
-        r"an|am|en|em|on|om|in|im|ain|aim|ein|"
-        r"un|um|"
+        r"ain|aim|ein|"
+        r"oi|ou|au|eu|ai|ei|"
+        r"an|am|en|em|on|om|in|im|un|um|"
         r"[aeiouyàâäéèêëïîôöùûüÿ]"
     )
 
-    groups = re.findall(pattern, w)
+    count = len(re.findall(pattern, w))
 
-    # Ajustements orthographiques simples.
-    count = len(groups)
-
-    # Le e final est souvent muet.
+    # E final généralement muet
     if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")):
         count -= 1
 
-    # Les terminaisons -es et -ent sont souvent muettes.
+    # Terminaisons souvent muettes
     if w.endswith("es") and len(w) > 3:
         count -= 1
     elif w.endswith("ent") and len(w) > 4:
