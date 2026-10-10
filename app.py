@@ -1,11 +1,10 @@
 import streamlit as st
 import pytesseract
 from PIL import Image
-import re
 
 st.markdown("""
     <style>
-    /* Force la couleur du texte en blanc pour tout le corps de l'application */
+    /* Forcer la couleur du texte en blanc pour tout le contenu */
     body, .stMarkdown, p, span, label {
         color: #FFFFFF !important;
     }
@@ -13,7 +12,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.set_page_config(
-    page_title="Ophélie Bascou Drimaracci - Outils Pédagogiques DYS",
+    page_title="Ophélie Bascou Drimaracci",
     page_icon="✏️",
     layout="wide"
 )
