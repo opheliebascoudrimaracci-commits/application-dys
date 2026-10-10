@@ -103,23 +103,24 @@ def split_into_syllables_spans(word):
     return spans
 
 def parse_word_to_blocks(word):
-    """Découpe un mot en blocs : sons complexes colorés, lettres muettes grisées ou lettres neutres."""
+    """Découpe un mot en blocs avec gestion prioritaire des sons contextuels et complexes."""
     blocks = []
     i = 0
     w_lower = word.lower()
-    
     voyelles = "aeiouyàâéèêëîïôûùü"
     
     while i < len(word):
         matched = False
+        char = w_lower[i]
+        next_char = w_lower[i+1] if i + 1 < len(w_lower) else ''
         
-        # --- RÈGLE 1 : Double consonne + 'e' (ex: lle, rre, sse...) ---
+        # --- 1. RÈGLE : Double consonne + 'e' (ex: lle, rre, sse...) -> Son [é] ---
         double_match = re.match(r'^([b-df-hj-np-tv-z])\1e', w_lower[i:])
         if double_match:
             matched_str = word[i:i+3]
             blocks.append({
                 'text': matched_str,
-                'color': '#800080',
+                'color': '#800080',  # Violet pour le son [é]
                 'phoneme': 'é',
                 'is_complex': True,
                 'is_muted': False
@@ -128,19 +129,31 @@ def parse_word_to_blocks(word):
             matched = True
             continue
 
-        # --- RÈGLE 2 : Le 's' intervocalique (entre deux voyelles) qui fait [z] ---
-        if w_lower[i] == 's':
-            # Vérifier s'il est entre deux voyelles
-            est_entre_voyelles = (
-                i > 0 and i < len(word) - 1 and 
-                w_lower[i-1] in voyelles and 
-                w_lower[i+1] in voyelles
-            )
+        # --- 2. LE C CONTEXTUEL (ex: case -> [k], cerise -> [s]) ---
+        if char == 'c':
+            if next_char in ['e', 'i', 'y', 'é', 'è']:
+                phoneme = 's'
+            else:
+                phoneme = 'k'
+            blocks.append({
+                'text': word[i],
+                'color': '',       # Pas de couleur spéciale sur la lettre elle-même
+                'phoneme': phoneme, # Affiche [k] ou [s] en dessous
+                'is_complex': True,
+                'is_muted': False
+            })
+            i += 1
+            matched = True
+            continue
+            
+        # --- 3. LE S INTERVOCALIQUE (entre deux voyelles -> [z]) ---
+        elif char == 's':
+            est_entre_voyelles = (i > 0 and i < len(word) - 1 and w_lower[i-1] in voyelles and next_char in voyelles)
             if est_entre_voyelles:
                 blocks.append({
                     'text': word[i],
-                    'color': '#2980b9', # Couleur distinctive pour le 's' en [z] (ex: bleu)
-                    'phoneme': 'z',
+                    'color': '',
+                    'phoneme': 'z',  # Affiche [z] en dessous
                     'is_complex': True,
                     'is_muted': False
                 })
@@ -148,10 +161,10 @@ def parse_word_to_blocks(word):
                 matched = True
                 continue
 
-        # --- RÈGLE 3 : Sons complexes du dictionnaire ---
+        # --- 4. SONS COMPLEXES DU DICTIONNAIRE (ex: ou, on, in, qu...) ---
         for sound in sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True):
             if w_lower[i:].startswith(sound):
-                color, phoneme = EXACT_COMPLEX_SouNDS[sound] if 'EXACT_COMPLEX_SouNDS' else EXACT_COMPLEX_SOUNDS[sound]
+                color, phoneme = EXACT_COMPLEX_SOUNDS[sound]
                 blocks.append({
                     'text': word[i:i+len(sound)],
                     'color': color,
@@ -163,17 +176,20 @@ def parse_word_to_blocks(word):
                 matched = True
                 break
                 
-        if not matched:
-            char = word[i]
-            muted = is_muted_letter(word, i)
-            blocks.append({
-                'text': char,
-                'color': '',
-                'phoneme': '',
-                'is_complex': False,
-                'is_muted': muted
-            })
-            i += 1
+        if matched:
+            continue
+
+        # --- 5. LETTRE CLASSIQUE OU MUETTE ---
+        muted = is_muted_letter(word, i)
+        blocks.append({
+            'text': word[i],
+            'color': '',
+            'phoneme': '',
+            'is_complex': False,
+            'is_muted': muted
+        })
+        i += 1
+        
     return blocks
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
