@@ -43,7 +43,7 @@ EXACT_COMPLEX_SOUNDS = {
     'ou': ('#FF0000', 'ou'),
     # Orange (AN, EN)
     'an': ('#FF8C00', 'an'),
-    'en': ('#FF8C00', 'an'),
+    'en': ('#FF8C00', 'en'),
     # Jaune (O, AU, EAU)
     'eau': ('#FFD700', 'o'),
     'au': ('#FFD700', 'o'),
@@ -180,14 +180,52 @@ def count_syllables(word):
 
     return max(1, count)
 
+
 def split_into_syllables_spans(word):
-    """Découpe approximativement un mot en segments."""
+    """Découpe les mots fréquents en syllabes approximatives."""
     w = word.strip()
+    key = w.lower()
+
+    # Découpages connus : à enrichir selon les besoins
+    known = {
+        "bonjour": ["bon", "jour"],
+        "napoléon": ["na", "po", "lé", "on"],
+        "comment": ["com", "ment"],
+        "mathis": ["ma", "this"],
+        "théâtre": ["thé", "âtre"],
+        "famille": ["fa", "mille"],
+        "maison": ["mai", "son"],
+        "beaucoup": ["beau", "coup"],
+        "oiseau": ["oi", "seau"],
+        "ordinateur": ["or", "di", "na", "teur"],
+        "magnifique": ["ma", "gni", "fique"],
+        "cheval": ["che", "val"],
+        "bateau": ["ba", "teau"],
+        "m'appelle": ["m'ap", "pelle"],
+    }
 
     if not w:
         return []
 
-    # Repérer les noyaux vocaliques écrits
+    parts = known.get(key)
+
+    if parts:
+        spans = []
+        pos = 0
+
+        for part in parts:
+            # Cherche le segment dans le mot d'origine
+            end = pos + len(part)
+            spans.append((pos, min(end, len(w)))
+            )
+            pos = end
+
+        if pos < len(w) and spans:
+            spans[-1] = (spans[-1][0], len(w))
+
+        return spans
+
+    # Secours : découpage approximatif basé sur les noyaux vocaliques
     pattern = (
         r"eau|ain|aim|ein|"
         r"an|am|en|em|on|om|in|im|un|um|"
@@ -195,23 +233,25 @@ def split_into_syllables_spans(word):
         r"[aeiouyàâäéèêëïîôöùûüÿ]"
     )
 
-    matches = list(re.finditer(pattern, w.lower()))
+    matches = list(re.finditer(pattern, key))
 
-    if not matches:
+    if len(matches) <= 1:
         return [(0, len(w))]
 
-    # Déterminer les frontières entre les noyaux
     boundaries = [0]
 
     for i in range(len(matches) - 1):
         left = matches[i]
         right = matches[i + 1]
 
-        # Frontière approximative entre les deux noyaux
-        boundary = (left.end() + right.start()) // 2
-        boundary = max(boundaries[-1] + 1, boundary)
+        # Place une frontière avant la dernière consonne
+        # du groupe entre les noyaux, si possible.
+        boundary = left.end()
 
-        if boundary < len(w):
+        if right.start() > boundary:
+            boundary = right.start()
+
+        if boundary > boundaries[-1] and boundary < len(w):
             boundaries.append(boundary)
 
     boundaries.append(len(w))
@@ -220,6 +260,7 @@ def split_into_syllables_spans(word):
         (boundaries[i], boundaries[i + 1])
         for i in range(len(boundaries) - 1)
     ]
+
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     blocks = parse_word_to_blocks(word)
