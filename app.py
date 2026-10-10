@@ -280,7 +280,12 @@ def build_controls(key_prefix="main"):
     return {
         "show_colors": show_colors,
         "show_arcs": show_arcs,
-        "show_phonemes": show_phonemes
+        "show_phonemes": show_phonemes,
+        "word_alt": word_alt,
+        "line_alt": line_alt,
+        "soft_bg": soft_bg,
+        "size": size,
+        "spacing": spacing
     }
 # ONGLET 1
 with tab1:
@@ -288,9 +293,8 @@ with tab1:
     txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
     if txt:
         st.write("---")
-        opts = build_controls("t1")
-        st.write("### 👁️ Aperçu adapté :")
-        render_full_dys_text(txt, *opts)
+        opts = build_controls("t1") # ou le préfixe de votre onglet
+    render_full_dys_text(txt, opts)
 
 # ONGLET 2
 with tab2:
