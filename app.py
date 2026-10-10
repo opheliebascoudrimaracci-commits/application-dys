@@ -321,9 +321,9 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     st.caption("💡 Astuce : Ouvrez le fichier téléchargé sur votre téléphone pour l'imprimer directement via le menu de votre navigateur.")
 
 def show_color_legend():
-    """Affiche une légende interactive du code couleur utilisé dans l'application."""
+   """Affiche une légende interactive du code couleur utilisé dans l'application."""
     with st.expander("📖 Légende et Code Couleur Pédagogique"):
-        st.markdown("### 🎨 Surlignage des sons complexes (Fond pastel)")
+        st.markdown("### 🧠 Surlignage des sons complexes (Fond pastel)")
         cols = st.columns(4)
         with cols[0]:
             st.markdown("<span style='background-color: #FF000033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ou</span> : Son [ou]", unsafe_allow_html=True)
