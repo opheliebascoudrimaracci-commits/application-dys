@@ -255,19 +255,20 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     
     for block in blocks:
         text = block['text']
-        r_type = block['render_type']
+        # Utilisation de .get pour éviter tout risque de KeyError si un champ manque
+        r_type = block.get('render_type', 'normal')
         
-       # 1. Lettres muettes (plus claires et douces)
+        # 1. Lettres muettes (plus claires et douces)
         if r_type == 'muted':
             part_html = f"<span style='color: #b0b0b0; opacity: 0.5;'>{text}</span>"
             
         # 2. Sons complexes -> Surlignage de fond pastel
-        elif r_type == 'highlight' and show_colors and block['color']:
-            bg_color = block['color'] + '33' # Transparence douce
+        elif r_type == 'highlight' and show_colors and block.get('color'):
+            bg_color = block['color'] + '33' 
             part_html = f"<span style='background-color: {bg_color}; padding: 2px 4px; border-radius: 4px; font-weight: bold;'>{text}</span>"
             
         # 3. Lettres contextuelles -> Changement de la couleur de la lettre
-        elif r_type == 'color_text' and show_colors and block['color']:
+        elif r_type == 'color_text' and show_colors and block.get('color'):
             part_html = f"<span style='color: {block['color']}; font-weight: bold;'>{text}</span>"
             
         # 4. Lettres normales
@@ -277,15 +278,15 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
         word_html_parts.append(part_html)
         
         # Phonèmes en dessous
-        if show_phonemes and block['phoneme']:
-            ph_color = block['color'] if (block['color'] and show_colors) else '#000000'
+        if show_phonemes and block.get('phoneme'):
+            ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
         else:
             phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
             
         # Arcs / points syllabiques
         if show_arcs:
-            arc_html_parts.append("•" if not block['is_muted'] else " ")
+            arc_html_parts.append("•" if not block.get('is_muted', False) else " ")
         else:
             arc_html_parts.append(" ")
             
