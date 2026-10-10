@@ -1,3 +1,4 @@
+
 import streamlit as st
 import streamlit.components.v1 as components
 import pytesseract
@@ -12,17 +13,19 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Injection CSS avec la police OpenDyslexic (depuis Google Fonts)
+# 2. Injection CSS globale avec chargement des polices DYS
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
     <style>
-    .stApp, html, body, [class*="css"] {
-        font-family: 'Open Dyslexic', sans-serif !important;
+    html, body, p, span, h1, h2, h3, h4, h5, h6, label, div.stMarkdown, div.stText {
+        color: #000000 !important;
+    }
+    .stApp {
         background-color: #FFFFFF !important;
     }
-    h1, h2, h3, h4, h5, h6, p, span, label {
-        color: #000000 !important;
-        font-family: 'Open Dyslexic', sans-serif !important;
+    /* Empêcher la déformation des icônes d'extension Streamlit */
+    [data-testid="stExpanderToggleIcon"] * {
+        font-family: inherit !important;
     }
     </style>
 """, unsafe_allow_html=True)
@@ -208,7 +211,7 @@ def parse_word_to_blocks(word):
         
     return blocks
 
-def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
+def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family):
     blocks = parse_word_to_blocks(word)
     word_html_parts = []
     phoneme_html_parts = []
@@ -241,7 +244,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     num_syllables = count_syllables_approx(word) if show_arcs else 0
     w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
     
-    html = f"<span style='display: inline-block; text-align: center; margin-right: 20px; font-family: \"Open Dyslexic\", sans-serif;'>"
+    html = f"<span style='display: inline-block; text-align: center; margin-right: 20px; font-family: {font_family};'>"
     html += f"<div>{w_main}</div>"
     if show_arcs:
         html += f"<div style='font-size: 0.9em; color: #4a90e2; letter-spacing: 4px; margin-top: 2px;'>{w_arcs}</div>"
@@ -251,9 +254,17 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     
     return html
 
-def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing):
+def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing, font_choice):
     if not text:
         return
+
+    # Définition de la police CSS selon le choix
+    fonts_map = {
+        "OpenDyslexic (Police DYS spécialisée)": "'Open Dyslexic', sans-serif",
+        "Comic Sans MS / Lexie Readable (Anti-confusion b/d)": "'Comic Sans MS', 'Comic Sans', cursive, sans-serif",
+        "Arial / Luciole (Grande clarté)": "Arial, sans-serif"
+    }
+    font_family = fonts_map.get(font_choice, "'Open Dyslexic', sans-serif")
         
     lines = text.split('\n')
     rendered_lines_adapted = []
@@ -265,7 +276,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
         rendered_words_training = []
         
         for word_idx, word in enumerate(words):
-            word_html = render_word_multilevel(word, show_colors, show_arcs, show_phonemes)
+            word_html = render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family)
             if word_alt and not show_colors:
                 color = "#0055ff" if word_idx % 2 == 0 else "#cc0000"
                 word_html = f"<span style='color: {color}; font-weight: bold;'>{word_html}</span>"
@@ -287,7 +298,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
-    st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
+    st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
     st.write("---")
     st.write("### 🖨️ Options d'impression :")
@@ -299,7 +310,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
     <style>
         body {{
-            font-family: 'Open Dyslexic', sans-serif;
+            font-family: {font_family};
             margin: 20px;
         }}
         .btn {{
@@ -311,7 +322,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
             font-weight: bold;
             cursor: pointer;
             margin-right: 10px;
-            font-family: 'Open Dyslexic', sans-serif;
+            font-family: {font_family};
         }}
         .btn-blue {{ background-color: #4a90e2; }}
         .btn-green {{ background-color: #2e7d32; }}
@@ -331,18 +342,18 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
         function printSection(type) {{
             var content = '';
             if (type === 'corrected') {{
-                content = `<div style="font-size: {size}px; line-height: {spacing}; font-family: 'Open Dyslexic', sans-serif;">{full_content_adapted}</div>`;
+                content = `<div style="font-size: {size}px; line-height: {spacing}; font-family: {font_family};">{full_content_adapted}</div>`;
             }} else {{
                 content = `
-                    <h3 style="margin-bottom: 25px; text-decoration: underline; font-family: 'Open Dyslexic', sans-serif;">Consigne : Entoure ou surligne les sons complexes et les pièges.</h3>
-                    <div style="font-size: {size}px; line-height: 3.0; font-family: 'Open Dyslexic', sans-serif;">{full_content_training}</div>
+                    <h3 style="margin-bottom: 25px; text-decoration: underline; font-family: {font_family};">Consigne : Entoure ou surligne les sons complexes et les pièges.</h3>
+                    <div style="font-size: {size}px; line-height: 3.0; font-family: {font_family};">{full_content_training}</div>
                 `;
             }}
             
             var printWindow = window.open('', '_blank');
             printWindow.document.write('<html><head><title>Impression Fiche DYS</title>');
             printWindow.document.write('<link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">');
-            printWindow.document.write("<style>body {{ font-family: 'Open Dyslexic', sans-serif; padding: 20px; }}</style>");
+            printWindow.document.write("<style>body {{ font-family: {font_family}; padding: 20px; }}</style>");
             printWindow.document.write('</head><body>');
             printWindow.document.write(content);
             printWindow.document.write('</body></html>');
@@ -409,7 +420,16 @@ def build_controls(key_prefix):
         soft_bg = st.checkbox("Surlignage doux du fond", value=False, key=f"{key_prefix}_bg")
         
     with c3:
-        st.write("**Typographie :**")
+        st.write("**Typographie & Police DYS :**")
+        font_choice = st.selectbox(
+            "Police d'écriture :",
+            [
+                "OpenDyslexic (Police DYS spécialisée)",
+                "Comic Sans MS / Lexie Readable (Anti-confusion b/d)",
+                "Arial / Luciole (Grande clarté)"
+            ],
+            key=f"{key_prefix}_font"
+        )
         size = st.slider("Taille de police (px) :", 16, 36, 24, key=f"{key_prefix}_size")
         spacing = st.slider("Espacement des lignes :", 1.5, 4.0, 2.5, 0.1, key=f"{key_prefix}_space")
         
@@ -421,7 +441,8 @@ def build_controls(key_prefix):
         "line_alt": line_alt,
         "soft_bg": soft_bg,
         "size": size,
-        "spacing": spacing
+        "spacing": spacing,
+        "font_choice": font_choice
     }
 
 # Affichage de la légende en haut
