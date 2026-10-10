@@ -2,18 +2,21 @@ import streamlit as st
 import pytesseract
 from PIL import Image
 
-# 1. La configuration de la page DOIT être en premier
+# 1. Configuration unique de la page
 st.set_page_config(
     page_title="Ophélie Bascou Drimaracci",
     page_icon="✏️",
     layout="wide"
 )
 
-# 2. Ensuite seulement, on injecte le style CSS pour le texte en blanc
+# 2. Injection CSS pour forcer le fond blanc et le texte en noir
 st.markdown("""
     <style>
-    body, .stMarkdown, p, span, label, h1, h2, h3 {
-        color: #FFFFFF !important;
+    .stApp {
+        background-color: #FFFFFF !important;
+    }
+    h1, h2, h3, h4, h5, h6, p, span, label {
+        color: #000000 !important;
     }
     </style>
 """, unsafe_allow_html=True)
