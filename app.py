@@ -100,13 +100,75 @@ def is_muted_letter(word, index):
             return True
             
     return False
-def count_syllables(word):
-    """Calcule le nombre de syllabes d'un mot."""
-    w = word.strip()
-    if len(w) <= 3:
-        return 1
-    matches = list(re.finditer(r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?', w, re.IGNORECASE))
-    return max(1, len(matches))
+def count_syllables_approx(word):
+    # Estimation robuste des syllabes en français basée sur les voyelles prononcées
+    w = word.lower()
+    vowels = "aeiouyàâéèêëîïôûù"
+    count = 0
+    prev_is_vowel = False
+    
+    for i, char in enumerate(w):
+        is_vowel = char in vowels
+        # On ne compte pas le 'e' muet final s'il y a d'autres voyelles
+        if char == 'e' and i == len(w) - 1 and len(w) > 2:
+            continue
+        if is_vowel and not prev_is_vowel:
+            count += 1
+        prev_is_vowel = is_vowel
+        
+    return max(1, count)
+
+def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
+    blocks = parse_word_to_blocks(word)
+    word_html_parts = []
+    phoneme_html_parts = []
+    
+    for block in blocks:
+        text = block['text']
+        r_type = block.get('render_type', 'normal')
+        
+        # 1. Lettres muettes (gris clair doux)
+        if r_type == 'muted':
+            part_html = f"<span style='color: #b0b0b0; opacity: 0.5;'>{text}</span>"
+            
+        # 2. Sons complexes -> Surlignage de fond pastel
+        elif r_type == 'highlight' and show_colors and block.get('color'):
+            bg_color = block['color'] + '33' 
+            part_html = f"<span style='background-color: {bg_color}; padding: 2px 4px; border-radius: 4px; font-weight: bold;'>{text}</span>"
+            
+        # 3. Lettres contextuelles -> Changement de couleur de la lettre
+        elif r_type == 'color_text' and show_colors and block.get('color'):
+            part_html = f"<span style='color: {block['color']}; font-weight: bold;'>{text}</span>"
+            
+        # 4. Lettres normales
+        else:
+            part_html = text
+            
+        word_html_parts.append(part_html)
+        
+        # Phonèmes en dessous
+        if show_phonemes and block.get('phoneme'):
+            ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
+            phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
+        else:
+            phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
+            
+    w_main = "".join(word_html_parts)
+    w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
+    
+    # Nombre exact de points correspondant aux syllabes du mot
+    num_syllables = count_syllables_approx(word) if show_arcs else 0
+    w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
+    
+    html = f"<span style='display: inline-block; text-align: center; margin-right: 20px;'>"
+    html += f"<div>{w_main}</div>"
+    if show_arcs:
+        html += f"<div style='font-size: 0.9em; color: #4a90e2; letter-spacing: 4px; margin-top: 2px;'>{w_arcs}</div>"
+    if show_phonemes:
+        html += f"<div style='font-size: 0.75em; margin-top: 2px;'>{w_ph}</div>"
+    html += f"</span>"
+    
+    return html
 
 def split_into_syllables_spans(word):
     """Découpe un mot en tranches (gardé au cas où)."""
