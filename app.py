@@ -87,18 +87,17 @@ def parse_word_to_blocks(word):
     blocks = []
     w_lower = word.lower()
     
-    # Règle nette pour s'annonce / annonce
-    if w_lower in ["s'annonce", "annonce"]:
+    if w_lower == "est":
+        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
+    
+    if w_lower == "c'est":
         return [
-            {'text': "s", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
             {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': "an", 'is_muted': False, 'render_type': 'highlight', 'color': '#E67E22', 'phoneme': 'an'},
-            {'text': "on", 'is_muted': False, 'render_type': 'highlight', 'color': '#6E2C00', 'phoneme': 'on'},
-            {'text': "c", 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'},
-            {'text': "e", 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None}
+            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}
         ]
 
-i = 0
+    i = 0
     n = len(word)
     sorted_keys = sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True)
     
@@ -191,17 +190,6 @@ i = 0
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
-    return blocks
-    if w_lower == "est":
-        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
-    
-    if w_lower == "c'est":
-        return [
-            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
-            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}
-        ]
-
     return blocks
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family):
