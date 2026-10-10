@@ -289,7 +289,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     st.write("---")
     st.write("### 🖨️ Options d'impression :")
-    
+
     print_html = f"""
     <!DOCTYPE html>
     
