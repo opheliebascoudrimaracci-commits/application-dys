@@ -293,10 +293,9 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     print_html = f"""
     <!DOCTYPE html>
     
-    st.write("---")
+  st.write("---")
     st.write("### 🖨️ Options d'export et d'impression :")
     
-        html_fiche_vierge = f"""<!DOCTYPE html>
     html_fiche_vierge = (
         "<!DOCTYPE html>\n<html>\n<head>\n"
         '<meta charset="utf-8">\n'
