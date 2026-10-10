@@ -1,6 +1,8 @@
 import streamlit as st
 import pytesseract
 from PIL import Image
+import re
+import unicodedata
 
 # 1. Configuration unique de la page
 st.set_page_config(
@@ -21,129 +23,49 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-
-st.set_page_config(
-    page_title="Ophélie Bascou Drimaracci",
-    page_icon="✏️",
-    layout="wide"
-)
-
 st.title("✏️ Application Pédagogique & Adaptation DYS")
 st.subheader("Ophélie Bascou Drimaracci")
 
 tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
 
-   # Dictionnaire des sons complexes
+# Dictionnaire des sons complexes
 EXACT_COMPLEX_SOUNDS = {
-    # Marron (ON)
-    'on': ('#8B4513', 'on'),
-    # Brun (UN)
-    'un': ('#A0522D', 'un'),
-    # Rouge (OU)
-    'ou': ('#FF0000', 'ou'),
-    # Orange (AN, EN)
-    'an': ('#FF8C00', 'an'),
-    'en': ('#FF8C00', 'en'),
-    # Jaune (O, AU, EAU)
     'eau': ('#FFD700', 'o'),
     'au': ('#FFD700', 'o'),
-    'o': ('#FFD700', 'o'),
-    # Violet (ET, EZ, ER, AI, EI, ESS, ERR, ELL, EFF, ETT)
+    'oeu': ('#0000FF', 'eu'),
+    'eu': ('#0000FF', 'eu'),
+    'ain': ('#1E4D2B', 'in'),
+    'ein': ('#1E4D2B', 'in'),
+    'in': ('#1E4D2B', 'in'),
+    'on': ('#8B4513', 'on'),
+    'un': ('#A0522D', 'un'),
+    'ou': ('#FF0000', 'ou'),
+    'an': ('#FF8C00', 'an'),
+    'en': ('#FF8C00', 'en'),
     'et': ('#800080', 'é'),
-    'é': ('#800080', 'é'),
     'ez': ('#800080', 'é'),
     'er': ('#800080', 'é'),
     'ai': ('#800080', 'è'),
     'ei': ('#800080', 'è'),
-    'esse': ('#800080', 'é'),
-    'erre'': ('#800080', 'é'),
-    'elle': ('#800080', 'é'),
-    'effe': ('#800080', 'é'),
-    'ette': ('#800080', 'é'),
-    # Bleu (EU, OEU)
-    'oeu': ('#0000FF', 'eu'),
-    'eu': ('#0000FF', 'eu'),
-    # Vert Sapin (IN, AIN, EIN)
-    'ain': ('#1E4D2B', 'in'),
-    'ein': ('#1E4D2B', 'in'),
-    'in': ('#1E4D2B', 'in'),
-    # Jaune / Doré (CH)
     'ch': ('#DAA520', 'ch'),
-    # Autres sons fréquents
     'oi': ('#e74c3c', 'oi'),
     'oin': ('#d35400', 'oin'),
     'ien': ('#e67e22', 'ien'),
     'ph': ('#8e44ad', 'f'),
     'gn': ('#16a085', 'gn'),
-    # Autres sons fréquents et graphies complexes
-    'qu': ('#8e44ad', 'k'),   # Le "qu" qui fait "k"
-    'ph': ('#8e44ad', 'f'),   # Le "ph" qui fait "f"
-    'gn': ('#16a085', 'gn'),
-    'oi': ('#e74c3c', 'oi'),
-    'oin': ('#d35400', 'oin'),
-    'ien': ('#e67e22', 'ien'),
-}
-def is_muted_letter(word, index):
-    """Détermine si une lettre est muette (ex: e final, s/t/d/x finaux)."""
-    w_lower = word.lower()
-    length = len(w_lower)
-    
-    # Ne jamais griser le 'e' final si le mot se termine par une double consonne + e (ex: appelle, terre, tasse)
-    if index == length - 1 and w_lower[index] == 'e' and length > 2:
-        if re.search(r'([b-df-hj-np-tv-z])\1e$', w_lower):
-            return False
-        return True
-
-    # Consonnes finales muettes courantes
-    if index == length - 1 and w_lower[index] in ['s', 't', 'd', 'x', 'z']:
-        if w_lower not in ['bus', 'gaz', 'riz', 'six', 'dix','ent']:
-            return True
-            
-    return False
-
-import re
-import unicodedata
-
-# Exceptions fréquentes : prononciation française courante.
-SYLLABLE_EXCEPTIONS = {
-    "aujourd'hui": 3,
-    "oiseau": 2,
-    "cheval": 2,
-    "chevaux": 2,
-    "beaucoup": 2,
-    "bateau": 2,
-    "maison": 2,
-    "bonjour": 2,
-    "famille": 2,
-    "fille": 1,
-    "ville": 1,
-    "homme": 1,
-    "femme": 1,
-    "monsieur": 2,
-    "madame": 2,
-    "extraordinaire": 5,
-    "magnifique": 3,
-    "ordinateur": 4,
-    "développement": 5,
-    "gentil": 2,
-    "oiseux": 2,
+    'qu': ('#8e44ad', 'k'),
+    'o': ('#FFD700', 'o'),
+    'é': ('#800080', 'é'),
 }
 
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
-def normalize_word(word):
-    """Normalise la casse et retire la ponctuation extérieure."""
-    return word.strip().lower().strip(".,;:!?()[]{}\"'«»")
-
-
 def count_syllables(word):
     """Estimation des syllabes françaises par règles et exceptions."""
-    w = normalize_word(word)
-
+    w = word.strip().lower().strip(".,;:!?()[]{}\"'«»")
     if not w:
         return 0
 
-    # Exceptions de prononciation fréquentes
     exceptions = {
         "bonjour": 2,
         "napoléon": 4,
@@ -171,14 +93,12 @@ def count_syllables(word):
     if w in exceptions:
         return exceptions[w]
 
-    # Les apostrophes ne créent pas automatiquement une syllabe.
     if "'" in w or "’" in w:
         parts = re.split(r"['’]", w)
         return sum(count_syllables(p) for p in parts if p)
 
     w = w.replace("-", "")
 
-    # Fusionner les groupes vocaliques fréquents
     pattern = (
         r"eau|oeu|œu|"
         r"ain|aim|ein|"
@@ -189,11 +109,9 @@ def count_syllables(word):
 
     count = len(re.findall(pattern, w))
 
-    # E final souvent muet
     if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")):
         count -= 1
 
-    # Terminaisons souvent muettes
     if w.endswith("es") and len(w) > 3:
         count -= 1
     elif w.endswith("ent") and len(w) > 4:
@@ -201,183 +119,61 @@ def count_syllables(word):
 
     return max(1, count)
 
-
-def split_into_syllables_spans(word):
-    """Découpe les mots fréquents en syllabes approximatives."""
-    w = word.strip()
-    key = w.lower()
-
-    # Découpages connus : à enrichir selon les besoins
-    known = {
-        "bonjour": ["bon", "jour"],
-        "napoléon": ["na", "po", "lé", "on"],
-        "comment": ["com", "ment"],
-        "mathis": ["ma", "this"],
-        "théâtre": ["thé", "âtre"],
-        "famille": ["fa", "mille"],
-        "maison": ["mai", "son"],
-        "beaucoup": ["beau", "coup"],
-        "oiseau": ["oi", "seau"],
-        "ordinateur": ["or", "di", "na", "teur"],
-        "magnifique": ["ma", "gni", "fique"],
-        "cheval": ["che", "val"],
-        "bateau": ["ba", "teau"],
-        "m'appelle": ["m'ap", "pelle"],
-    }
-
-    if not w:
-        return []
-
-    parts = known.get(key)
-
-    if parts:
-        spans = []
-        pos = 0
-
-        for part in parts:
-            # Cherche le segment dans le mot d'origine
-            end = pos + len(part)
-            spans.append((pos, min(end, len(w)))
-            )
-            pos = end
-
-        if pos < len(w) and spans:
-            spans[-1] = (spans[-1][0], len(w))
-
-        return spans
-
-    # Secours : découpage approximatif basé sur les noyaux vocaliques
-    pattern = (
-        r"eau|ain|aim|ein|"
-        r"an|am|en|em|on|om|in|im|un|um|"
-        r"oi|ou|au|eu|ai|ei|"
-        r"[aeiouyàâäéèêëïîôöùûüÿ]"
-    )
-
-    matches = list(re.finditer(pattern, key))
-
-    if len(matches) <= 1:
-        return [(0, len(w))]
-
-    boundaries = [0]
-
-    for i in range(len(matches) - 1):
-        left = matches[i]
-        right = matches[i + 1]
-
-        # Place une frontière avant la dernière consonne
-        # du groupe entre les noyaux, si possible.
-        boundary = left.end()
-
-        if right.start() > boundary:
-            boundary = right.start()
-
-        if boundary > boundaries[-1] and boundary < len(w):
-            boundaries.append(boundary)
-
-    boundaries.append(len(w))
-
-    return [
-        (boundaries[i], boundaries[i + 1])
-        for i in range(len(boundaries) - 1)
-    ]
-
-
-def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
-    blocks = parse_word_to_blocks(word)
-    word_html_parts = []
-    phoneme_html_parts = []
-    
-    for block in blocks:
-        text = block['text']
-        r_type = block.get('render_type', 'normal')
-        
-        # 1. Lettres muettes (gris clair doux)
-        if r_type == 'muted':
-            part_html = f"<span style='color: #b0b0b0; opacity: 0.5;'>{text}</span>"
-            
-        # 2. Sons complexes -> Surlignage de fond pastel
-        elif r_type == 'highlight' and show_colors and block.get('color'):
-            bg_color = block['color'] + '33' 
-            part_html = f"<span style='background-color: {bg_color}; padding: 2px 4px; border-radius: 4px; font-weight: bold;'>{text}</span>"
-            
-        # 3. Lettres contextuelles -> Changement de couleur de la lettre
-        elif r_type == 'color_text' and show_colors and block.get('color'):
-            part_html = f"<span style='color: {block['color']}; font-weight: bold;'>{text}</span>"
-            
-        # 4. Lettres normales
-        else:
-            part_html = text
-            
-        word_html_parts.append(part_html)
-        
-        # Phonèmes en dessous
-        if show_phonemes and block.get('phoneme'):
-            ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
-            phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
-        else:
-            phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
-            
-    w_main = "".join(word_html_parts)
-    w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
-
-
-    return html
-
-
-# Dictionnaire de couleurs unifié
-PHONEME_COLORS = {
-    'ou': '#ff6b6b',  # Rouge pastel (surlignage)
-    'on': '#f08c00',  # Orange pastel (surlignage)
-    'è': '#cc5de8',   # Violet pastel (surlignage)
-    'é': '#cc5de8',   # Violet pastel (surlignage)
-    'k': '#2563eb',   # Bleu (couleur de la lettre c)
-    's': '#059669',   # Vert (couleur de la lettre c)
-    'z': '#0d9488'    # Turquoise (couleur de la lettre s entre deux voyelles)
-}
+# Alias pour sécuriser les appels
+count_syllables_approx = count_syllables
 
 def parse_word_to_blocks(word):
     blocks = []
     w_lower = word.lower()
     
-    # 1. Mots entiers spécifiques
     if w_lower == "est":
+        color, ph = EXACT_COMPLEX_SOUNDS.get('et', ('#800080', 'è'))
         return [{
             'text': word,
             'is_muted': False,
             'render_type': 'highlight',
-            'color': PHONEME_COLORS['è'],
-            'phoneme': 'è'
+            'color': color,
+            'phoneme': ph
         }]
     
     if w_lower == "c'est":
         return [
-            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['k'], 'phoneme': 'k'},
+            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
             {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['è'], 'phoneme': 'è'}
+            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#800080', 'phoneme': 'è'}
         ]
 
     i = 0
     n = len(word)
+    sorted_keys = sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True)
+    
     while i < n:
         char = word[i]
         c_lower = char.lower()
         
-        # --- 'h' muet (Mathis, Théâtre) ---
+        # --- 'h' muet ---
         if c_lower == 'h':
             if i == 0 or word[i-1].lower() not in ['c', 'p']:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
                 i += 1
                 continue
 
-        # --- Sons complexes (ou, on) -> Surlignage de fond ---
-        if w_lower[i:i+2] == 'ou':
-            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['ou'], 'phoneme': 'ou'})
-            i += 2
-            continue
-        elif w_lower[i:i+2] == 'on':
-            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['on'], 'phoneme': 'on'})
-            i += 2
+        # --- Sons complexes basés sur EXACT_COMPLEX_SOUNDS ---
+        matched_complex = False
+        for key in sorted_keys:
+            if w_lower[i:i+len(key)] == key:
+                color, phoneme = EXACT_COMPLEX_SOUNDS[key]
+                blocks.append({
+                    'text': word[i:i+len(key)],
+                    'is_muted': False,
+                    'render_type': 'highlight',
+                    'color': color,
+                    'phoneme': phoneme
+                })
+                i += len(key)
+                matched_complex = True
+                break
+        if matched_complex:
             continue
 
         # --- Consonnes doubles ---
@@ -386,13 +182,14 @@ def parse_word_to_blocks(word):
             i += 1
             continue
 
-        # --- Le 'e' avant double consonne (ex: appelle -> [è]) -> Surlignage de fond ---
+        # --- Le 'e' avant double consonne ---
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
             is_final_mute = (i == n - 1 and n > 2)
             
             if is_before_double:
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['è'], 'phoneme': 'è'})
+                color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#800080', 'è'))
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': color, 'phoneme': phoneme})
                 i += 1
                 continue
             elif is_final_mute:
@@ -400,26 +197,26 @@ def parse_word_to_blocks(word):
                 i += 1
                 continue
 
-        # --- Règles contextuelles (C) -> Changement de couleur de la LETTRE ---
+        # --- Règles contextuelles (C) ---
         if c_lower == 'c':
             next_char = word[i+1].lower() if i + 1 < n else ''
             if next_char in ['e', 'i', 'y']:
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['s'], 'phoneme': 's'})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'})
             elif next_char not in ['h', '']:
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['k'], 'phoneme': 'k'})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'})
             else:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
             
-        # --- Règles contextuelles (S) -> Changement de couleur de la LETTRE (ex: entre deux voyelles) ---
+        # --- Règles contextuelles (S) ---
         if c_lower == 's':
-            is_prev_vowel = (i > 0 and word[i-1].lower() in 'aeiouyàâéèêëîïôûù')
-            is_next_vowel = (i + 1 < n and word[i+1].lower() in 'aeiouyàâéèêëîïôûù')
+            is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
+            is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
             is_final = (i == n - 1)
             
             if is_prev_vowel and is_next_vowel:
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['z'], 'phoneme': 'z'})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#0d9488', 'phoneme': 'z'})
             elif is_final:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             else:
@@ -433,7 +230,7 @@ def parse_word_to_blocks(word):
             i += 1
             continue
 
-        # Par défaut : caractère standard
+        # Par défaut
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
@@ -443,55 +240,39 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     blocks = parse_word_to_blocks(word)
     word_html_parts = []
     phoneme_html_parts = []
-    arc_html_parts = []
     
     for block in blocks:
         text = block['text']
         r_type = block.get('render_type', 'normal')
         
-        # 1. Lettres muettes (gris clair doux)
         if r_type == 'muted':
             part_html = f"<span style='color: #b0b0b0; opacity: 0.5;'>{text}</span>"
-            
-        # 2. Sons complexes -> Surlignage de fond pastel
         elif r_type == 'highlight' and show_colors and block.get('color'):
             bg_color = block['color'] + '33' 
             part_html = f"<span style='background-color: {bg_color}; padding: 2px 4px; border-radius: 4px; font-weight: bold;'>{text}</span>"
-            
-        # 3. Lettres contextuelles -> Changement de couleur de la lettre
         elif r_type == 'color_text' and show_colors and block.get('color'):
             part_html = f"<span style='color: {block['color']}; font-weight: bold;'>{text}</span>"
-            
-        # 4. Lettres normales
         else:
             part_html = text
             
         word_html_parts.append(part_html)
         
-        # Phonèmes en dessous
         if show_phonemes and block.get('phoneme'):
             ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
         else:
             phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
             
-        # Arcs / points : un seul point par bloc non muet (pour correspondre au rythme des sons/syllabes)
-        if show_arcs:
-            if not block.get('is_muted', False):
-                arc_html_parts.append("•")
-            else:
-                arc_html_parts.append(" ") # Pas de point pour les lettres muettes
-        else:
-            arc_html_parts.append(" ")
-            
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
-    w_arcs = " ".join(arc_html_parts) if show_arcs else ""
+    
+    num_syllables = count_syllables_approx(word) if show_arcs else 0
+    w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
     
     html = f"<span style='display: inline-block; text-align: center; margin-right: 20px;'>"
     html += f"<div>{w_main}</div>"
     if show_arcs:
-        html += f"<div style='font-size: 0.9em; color: #4a90e2; letter-spacing: 2px; margin-top: 2px;'>{w_arcs}</div>"
+        html += f"<div style='font-size: 0.9em; color: #4a90e2; letter-spacing: 4px; margin-top: 2px;'>{w_arcs}</div>"
     if show_phonemes:
         html += f"<div style='font-size: 0.75em; margin-top: 2px;'>{w_ph}</div>"
     html += f"</span>"
@@ -563,6 +344,7 @@ def build_controls(key_prefix):
         "size": size,
         "spacing": spacing
     }
+
 # ONGLET 1
 with tab1:
     st.write("### Saisir ou coller un texte")
@@ -571,6 +353,7 @@ with tab1:
         st.write("---")
         opts = build_controls("t1")
         render_full_dys_text(txt, **opts)
+
 # ONGLET 2
 with tab2:
     st.write("### Importer une image")
@@ -587,7 +370,7 @@ with tab2:
                 st.write("---")
                 opts2 = build_controls("t2")
                 st.write("### 👁️ Aperçu adapté :")
-                render_full_dys_text(ext_txt, *opts2)
+                render_full_dys_text(ext_txt, **opts2)
             else:
                 st.warning("Aucun texte trouvé dans l'image.")
         except Exception as e:
