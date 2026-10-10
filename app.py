@@ -192,31 +192,47 @@ def parse_word_to_blocks(word):
         
     return blocks
 
-def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
+def render_word_multilevel(word, show_colors=True, show_arcs=True, show_phonemes=True):
     blocks = parse_word_to_blocks(word)
     
-    # 1. Étage Texte principal (sons complexes colorés, lettres muettes en gris)
+    # 1. Étage Texte principal
     text_html = ""
     for b in blocks:
         if b['is_muted']:
             text_html += f"<span style='color: #b0b0b0; opacity: 0.6;'>{b['text']}</span>"
-        elif show_colors and b['is_complex']:
+        elif show_colors and b['color']:
             text_html += f"<span style='color: {b['color']}; font-weight: bold;'>{b['text']}</span>"
         else:
             text_html += f"<span>{b['text']}</span>"
             
-  # 2. Étage Points de syllabes (un point par syllabe)
+    # 2. Étage Points de syllabes
     dots_html = ""
     if show_arcs:
         nb_syllables = count_syllables(word)
         dots = " &nbsp; ".join(["•"] * nb_syllables)
         dots_html = f"<span style='color: #4a90e2; font-size: 1.2em; font-weight: bold;'>{dots}</span>"
 
-    # 3. Étage Phonèmes (uniquement sous les sons complexes ou muets)
-       res = f"<div style='display: inline-flex; flex-direction: column; align-items: center; margin: 0 8px; vertical-align: top;'>"
+    # 3. Étage Sons simples (phonèmes)
+    phonemes_html = ""
+    if show_phonemes:
+        p_list = []
+        for b in blocks:
+            if b['is_muted']:
+                p_list.append("&nbsp;" * len(b['text']))
+            elif b['is_complex'] and b['phoneme']:
+                c = b['color'] if (show_colors and b['color']) else '#888888'
+                p_list.append(f"<span style='color: {c}; font-size: 0.75em; font-weight: bold;'>[{b['phoneme']}]</span>")
+            else:
+                p_list.append("&nbsp;" * len(b['text']))
+        phonemes_html = "".join(p_list)
+
+    # Assemblage final de la carte du mot
+    res = f"<div style='display: inline-flex; flex-direction: column; align-items: center; margin: 0 8px; vertical-align: top;'>"
     res += f"<div style='letter-spacing: 1px;'>{text_html}</div>"
     if show_arcs:
         res += f"<div style='margin-top: 2px; height: 18px; display: flex; align-items: center;'>{dots_html}</div>"
+    if show_phonemes:
+        res += f"<div style='margin-top: 2px; letter-spacing: 2px;'>{phonemes_html}</div>"
     res += "</div>"
     
     return res
