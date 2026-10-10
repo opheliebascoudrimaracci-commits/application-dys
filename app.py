@@ -67,20 +67,13 @@ def is_muted_letter(word, index):
             
     return False
 
-def split_into_syllables_spans(word):
-    """Découpe un mot en tranches pour positionner les ponts."""
+def count_syllables(word):
+    """Calcule le nombre de syllabes d'un mot."""
     w = word.strip()
     if len(w) <= 3:
-        return [(0, len(w))]
-    
+        return 1
     matches = list(re.finditer(r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?', w, re.IGNORECASE))
-    if not matches:
-        return [(0, len(w))]
-        
-    spans = [(m.start(), m.end()) for m in matches]
-    if spans[-1][1] < len(w):
-        spans[-1] = (spans[-1][0], len(w))
-    return spans
+    return max(1, len(matches))
 
 def parse_word_to_blocks(word):
     """Découpe un mot en blocs : sons complexes colorés, lettres muettes grisées ou lettres neutres."""
@@ -129,20 +122,14 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
         else:
             text_html += f"<span>{b['text']}</span>"
             
-    # 2. Étage Ponts syllabiques (arcs sous chaque syllabe sans réécrire le mot)
+    # 2. Étage Ponts syllabiques (arcs purs sans réécrire le texte)
     arcs_html = ""
     if show_arcs:
-        spans = split_into_syllables_spans(word)
-        if len(spans) > 1:
-            arcs_parts = []
-            for start, end in spans:
-                syllable_text = word[start:end]
-                arcs_parts.append(f"<span style='border-bottom: 2px solid #4a90e2; padding-bottom: 3px; margin: 0 2px;'>{syllable_text}</span>")
-            arcs_html = " ‿ ".join(arcs_parts)
-        else:
-            arcs_html = f"<span style='border-bottom: 2px solid #4a90e2; padding-bottom: 3px;'>{word}</span>"
+        nb_syllables = count_syllables(word)
+        arcs = " ".join(["◡"] * nb_syllables)
+        arcs_html = f"<span style='color: #4a90e2; font-size: 1.2em; font-weight: bold;'>{arcs}</span>"
 
-    # 3. Étage Phonèmes (uniquement sous les sons complexes ou muets)
+    # 3. Étage Phonèmes (uniquement sous les sons complexes ou lettres muettes)
     phonemes_html = ""
     if show_phonemes:
         p_list = []
@@ -159,7 +146,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     res = f"<div style='display: inline-flex; flex-direction: column; align-items: center; margin: 0 8px; vertical-align: top;'>"
     res += f"<div style='letter-spacing: 1px;'>{text_html}</div>"
     if show_arcs:
-        res += f"<div style='margin-top: 5px; font-size: 0.85em; opacity: 0.85;'>{arcs_html}</div>"
+        res += f"<div style='margin-top: -2px; line-height: 1;'>{arcs_html}</div>"
     if show_phonemes:
         res += f"<div style='margin-top: 4px; letter-spacing: 2px;'>{phonemes_html}</div>"
     res += "</div>"
@@ -241,19 +228,5 @@ with tab2:
         img = Image.open(file)
         st.image(img, caption="Image importée", use_container_width=True)
         try:
-            ext_txt = pytesseract.image_to_string(img, lang="fra")
-            if ext_txt.strip():
-                st.success("Texte extrait avec succès !")
-                with st.expander("Voir / Modifier le texte extrait"):
-                    ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
-                st.write("---")
-                opts2 = build_controls("t2")
-                st.write("### 👁️ Aperçu adapté :")
-                render_full_dys_text(ext_txt, *opts2)
-            else:
-                st.warning("Aucun texte trouvé dans l'image.")
-        except Exception as e:
-            st.error(f"Erreur d'extraction OCR : {e}")
+            ext_txt =
 
-st.write("---")
-st.caption("Ophélie Bascou Drimaracci - Application Pédagogique DYS")
