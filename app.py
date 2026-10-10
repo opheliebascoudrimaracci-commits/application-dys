@@ -255,37 +255,40 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     
     for block in blocks:
         text = block['text']
+        r_type = block['render_type']
         
-        # 1. Gestion des lettres muettes (grises)
-        if block['is_muted']:
-            part_html = f"<span style='color: #cccccc; opacity: 0.6;'>{text}</span>"
+       # 1. Lettres muettes (plus claires et douces)
+        if r_type == 'muted':
+            part_html = f"<span style='color: #b0b0b0; opacity: 0.5;'>{text}</span>"
             
-        # 2. Gestion des sons complexes / lettres spécifiques avec SURLIGNAGE DE FOND
-        elif block['is_complex'] and show_colors and block['color']:
-            # On ajoute '33' à la fin du code couleur hexadécimal pour faire un fond pastel transparent (ex: rouge clair, violet clair...)
-            bg_color = block['color'] + '33' 
-            part_html = f"<span style='background-color: {bg_color}; padding: 2px 3px; border-radius: 4px; font-weight: bold;'>{text}</span>"
+        # 2. Sons complexes -> Surlignage de fond pastel
+        elif r_type == 'highlight' and show_colors and block['color']:
+            bg_color = block['color'] + '33' # Transparence douce
+            part_html = f"<span style='background-color: {bg_color}; padding: 2px 4px; border-radius: 4px; font-weight: bold;'>{text}</span>"
             
-        # 3. Lettres normales
+        # 3. Lettres contextuelles -> Changement de la couleur de la lettre
+        elif r_type == 'color_text' and show_colors and block['color']:
+            part_html = f"<span style='color: {block['color']}; font-weight: bold;'>{text}</span>"
+            
+        # 4. Lettres normales
         else:
             part_html = text
             
         word_html_parts.append(part_html)
         
-        # Gestion des phonèmes en dessous
+        # Phonèmes en dessous
         if show_phonemes and block['phoneme']:
-            ph_color = block['color'] if (block['color'] and show_colors) else '#ffffff'
+            ph_color = block['color'] if (block['color'] and show_colors) else '#000000'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
         else:
             phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
             
-        # Gestion des points / arcs syllabiques
+        # Arcs / points syllabiques
         if show_arcs:
             arc_html_parts.append("•" if not block['is_muted'] else " ")
         else:
             arc_html_parts.append(" ")
             
-    # Assemblage final du mot
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     w_arcs = " ".join(arc_html_parts) if show_arcs else ""
@@ -299,7 +302,6 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     html += f"</span>"
     
     return html
-
 
 def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing):
     if not text:
