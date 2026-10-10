@@ -140,18 +140,12 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
         else:
             text_html += f"<span>{b['text']}</span>"
             
-    # 2. Étage Ponts syllabiques (arcs sous chaque syllabe sans réécrire le mot)
-    arcs_html = ""
+  # 2. Étage Points de syllabes (un point par syllabe)
+    dots_html = ""
     if show_arcs:
-        spans = split_into_syllables_spans(word)
-        if len(spans) > 1:
-            arcs_parts = []
-            for start, end in spans:
-                syllable_text = word[start:end]
-                arcs_parts.append(f"<span style='border-bottom: 2px solid #4a90e2; padding-bottom: 3px; margin: 0 2px;'>{syllable_text}</span>")
-            arcs_html = " ‿ ".join(arcs_parts)
-        else:
-            arcs_html = f"<span style='border-bottom: 2px solid #4a90e2; padding-bottom: 3px;'>{word}</span>"
+        nb_syllables = count_syllables(word)
+        dots = " &nbsp; ".join(["•"] * nb_syllables)
+        dots_html = f"<span style='color: #4a90e2; font-size: 1.2em; font-weight: bold;'>{dots}</span>"
 
     # 3. Étage Phonèmes (uniquement sous les sons complexes ou muets)
     phonemes_html = ""
