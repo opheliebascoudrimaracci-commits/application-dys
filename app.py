@@ -180,41 +180,8 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
             
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
-    
-  
-   # Estimation robuste des syllabes en français basée sur les voyelles prononcées  
-w = word.lower()  
-vowels = "aeiouyàâéèêëîïôûù"  
-count = 0  
-prev_is_vowel = False
 
-# Liste de règles simples pour le e muet et les diagraphes courants  
-for i, ch in enumerate(w):  
-    is_vowel = ch in vowels
 
-    # Ne pas compter un e final muet  
-    if ch == 'e' and i == len(w) - 1:  
-        # Si le mot a plus d'une voyelle (ou une consonne après e), on peut considérer que le e est muet  
-        # On ne lève pas de syllabe ici; laisser la règle générale ci-dessous s’appliquer  
-        pass
-
-    # Comptage syllabique standard: une syllabe à chaque fois qu’on passe d’une consonne à une voyelle  
-    if is_vowel and not prev_is_vowel:  
-        count += 1
-
-    prev_is_vowel = is_vowel
-
-# Garantir au moins 1 syllabe  
-return max(1, count)
-    
-    html = f"<span style='display: inline-block; text-align: center; margin-right: 20px;'>"
-    html += f"<div>{w_main}</div>"
-    if show_arcs:
-        html += f"<div style='font-size: 0.9em; color: #4a90e2; letter-spacing: 4px; margin-top: 2px;'>{w_arcs}</div>"
-    if show_phonemes:
-        html += f"<div style='font-size: 0.75em; margin-top: 2px;'>{w_ph}</div>"
-    html += f"</span>"
-    
     return html
 
 def split_into_syllables_spans(word):
