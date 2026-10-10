@@ -241,29 +241,6 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     if not text:
         return
         
-    # 1. Application des styles CSS dynamiques (taille de police et interlignage)
-    bg_style = "background-color: #fcf8e3; padding: 20px; border-radius: 10px;" if soft_bg else ""
-    st.markdown(f"""
-        <style>
-        .dys-box {{
-            font-size: {size}px;
-            line-height: {spacing};
-            {bg_style}
-        }}
-        </style>
-    """, unsafe_allow_html=True)
-    
-    # 2. Découpage du texte et rendu mot par mot
-    words = text.split()
-    rendered_words = []
-    
-    for word in words:
-        w_html = render_word_multilevel(word, show_colors=show_colors, show_arcs=show_arcs, show_phonemes=show_phonemes)
-        rendered_words.append(w_html)
-        
-    # 3. Affichage final du texte adapté dans Streamlit
-    st.markdown(f"<div class='dys-box'>{' '.join(rendered_words)}</div>", unsafe_allow_html=True)
-        
     lines = text.split('\n')
     rendered_lines = []
     
