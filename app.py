@@ -103,91 +103,102 @@ def split_into_syllables_spans(word):
     return spans
 
 def parse_word_to_blocks(word):
-    """Découpe un mot en blocs avec gestion prioritaire des sons contextuels et complexes."""
     blocks = []
-    i = 0
     w_lower = word.lower()
-    voyelles = "aeiouyàâéèêëîïôûùü"
+    i = 0
+    n = len(word)
     
-    while i < len(word):
-        matched = False
-        char = w_lower[i]
-        next_char = w_lower[i+1] if i + 1 < len(w_lower) else ''
+    # 1. Traitement des exceptions ou mots entiers spécifiques (ex: "est")
+    if w_lower == "est":
+        return [{
+            'text': word,
+            'is_muted': False,
+            'is_complex': True,
+            'color': '#8a2be2', # Violet pour le son [è]
+            'phoneme': 'è'
+        }]
+    
+    while i < n:
+        char = word[i]
+        c_lower = char.lower()
         
-        # --- 1. RÈGLE : Double consonne + 'e' (ex: lle, rre, sse...) -> Son [é] ---
-        double_match = re.match(r'^([b-df-hj-np-tv-z])\1e', w_lower[i:])
-        if double_match:
-            matched_str = word[i:i+3]
-            blocks.append({
-                'text': matched_str,
-                'color': '#800080',  # Violet pour le son [é]
-                'phoneme': 'é',
-                'is_complex': True,
-                'is_muted': False
-            })
-            i += 3
-            matched = True
-            continue
-
-        # --- 2. LE C CONTEXTUEL (ex: case -> [k], cerise -> [s]) ---
-        if char == 'c':
-            if next_char in ['e', 'i', 'y', 'é', 'è']:
-                phoneme = 's'
-            else:
-                phoneme = 'k'
-            blocks.append({
-                'text': word[i],
-                'color': '',       # Pas de couleur spéciale sur la lettre elle-même
-                'phoneme': phoneme, # Affiche [k] ou [s] en dessous
-                'is_complex': True,
-                'is_muted': False
-            })
-            i += 1
-            matched = True
-            continue
-            
-        # --- 3. LE S INTERVOCALIQUE (entre deux voyelles -> [z]) ---
-        elif char == 's':
-            est_entre_voyelles = (i > 0 and i < len(word) - 1 and w_lower[i-1] in voyelles and next_char in voyelles)
-            if est_entre_voyelles:
+        # --- CAS 1 : Les h muets (ex: Mathis, homme, etc.) ---
+        if c_lower == 'h':
+            # Si le h n'est pas précédé d'un c, p, ph... il est muet
+            if i == 0 or word[i-1].lower() not in ['c', 'p']:
                 blocks.append({
-                    'text': word[i],
-                    'color': '',
-                    'phoneme': 'z',  # Affiche [z] en dessous
-                    'is_complex': True,
-                    'is_muted': False
+                    'text': char,
+                    'is_muted': True,
+                    'is_complex': False,
+                    'color': None,
+                    'phoneme': None
                 })
                 i += 1
-                matched = True
                 continue
 
-        # --- 4. SONS COMPLEXES DU DICTIONNAIRE (ex: ou, on, in, qu...) ---
-        for sound in sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True):
-            if w_lower[i:].startswith(sound):
-                color, phoneme = EXACT_COMPLEX_SOUNDS[sound]
-                blocks.append({
-                    'text': word[i:i+len(sound)],
-                    'color': color,
-                    'phoneme': phoneme,
-                    'is_complex': True,
-                    'is_muted': False
-                })
-                i += len(sound)
-                matched = True
-                break
-                
-        if matched:
+        # --- CAS 2 : Traitement de "c'est" ---
+        if w_lower[i:i+4] == "c'est":
+            blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': '#888888', 'phoneme': 'k'})
+            blocks.append({'text': word[i+1], 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+            blocks.append({'text': word[i+2:], 'is_muted': False, 'is_complex': True, 'color': '#8a2be2', 'phoneme': 'è'})
+            break
+
+        # --- CAS 3 : Phonèmes complexes (ou, on, in, an, etc.) ---
+        if w_lower[i:i+2] == 'ou':
+            blocks.append({'text': word[i:i+2], 'is_muted': False, 'is_complex': True, 'color': '#ff0000', 'phoneme': 'ou'})
+            i += 2
+            continue
+        elif w_lower[i:i+2] == 'on':
+            blocks.append({'text': word[i:i+2], 'is_muted': False, 'is_complex': True, 'color': '#d97706', 'phoneme': 'on'})
+            i += 2
+            continue
+        elif w_lower[i:i+2] == 'elle' or w_lower[i:i+2] == 'elle': # ex: appelle
+            # Le "e" précédant "lle" fait le son [è]
+            pass
+
+        # --- CAS 4 : Consonnes doubles classiques (pp, tt, mm, nn...) -> Texte normal ---
+        if i + 1 < n and c_lower in ['p', 't', 'm', 'n', 'l', 'b', 'd', 'f', 'r', 's'] and word[i+1].lower() == c_lower:
+            # On traite la première consonne normalement
+            blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+            i += 1
             continue
 
-        # --- 5. LETTRE CLASSIQUE OU MUETTE ---
-        muted = is_muted_letter(word, i)
-        blocks.append({
-            'text': word[i],
-            'color': '',
-            'phoneme': '',
-            'is_complex': False,
-            'is_muted': muted
-        })
+        # --- CAS 5 : Règles contextuelles de prononciation (C, S, X) ---
+        # C -> [k] ou [s]
+        if c_lower == 'c':
+            next_char = word[i+1].lower() if i + 1 < n else ''
+            if next_char in ['e', 'i', 'y']:
+                blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': None, 'phoneme': 's'})
+            elif next_char not in ['h', '']:
+                blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': None, 'phoneme': 'k'})
+            else:
+                blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+            i += 1
+            continue
+            
+        # S entre deux voyelles -> [z]
+        if c_lower == 's':
+            is_prev_vowel = (i > 0 and word[i-1].lower() in 'aeiouyàâéèêëîïôûù')
+            is_next_vowel = (i + 1 < n and word[i+1].lower() in 'aeiouyàâéèêëîïôûù')
+            is_final = (i == n - 1)
+            
+            if is_prev_vowel and is_next_vowel:
+                blocks.append({'text': char, 'is_muted': False, 'is_complex': True, 'color': None, 'phoneme': 'z'})
+            elif is_final and c_lower in ['s', 't', 'x', 'e']: # Lettres muettes de fin
+                blocks.append({'text': char, 'is_muted': True, 'is_complex': False, 'color': None, 'phoneme': None})
+            else:
+                blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
+            i += 1
+            continue
+
+        # Lettres muettes finales standards (t, d, x, e en fin de mot)
+        if i == n - 1 and c_lower in ['t', 'd', 'x', 'e'] and n > 2:
+            blocks.append({'text': char, 'is_muted': True, 'is_complex': False, 'color': None, 'phoneme': None})
+            i += 1
+            continue
+
+        # Par défaut : caractère standard
+        blocks.append({'text': char, 'is_muted': False, 'is_complex': False, 'color': None, 'phoneme': None})
         i += 1
         
     return blocks
