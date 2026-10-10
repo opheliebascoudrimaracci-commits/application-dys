@@ -484,4 +484,4 @@ with tab3:
         render_full_dys_text(st.session_state['histoire_generee'], **opts_gen)
 
 st.write("---")
-st.caption("Ophélie Bascou Drimaracci - Application
+st.caption("Ophélie Bascou Drimaracci - Application")
