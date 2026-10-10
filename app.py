@@ -62,9 +62,12 @@ def is_muted_letter(word, index):
     w_lower = word.lower()
     length = len(w_lower)
     
-    # 'e' final (pour les mots de plus de 2 lettres)
-    if w_lower[index] == 'e' and index == length - 1 and length > 2:
+    # Ne pas griser le 'e' final si le mot se termine par une double consonne + e (ex: appelle, tasse)
+    if index == length - 1 and w_lower[index] == 'e' and length > 2:
+        if w_lower.endswith(('lle', 'sse', 'rre', 'tte', 'ffe', 'nne', 'mme', 'ple')):
+            return False
         return True
+
     # Consonnes finales muettes courantes
     if index == length - 1 and w_lower[index] in ['s', 't', 'd', 'x', 'z']:
         if w_lower not in ['bus', 'gaz', 'riz', 'six', 'dix']:
