@@ -21,34 +21,35 @@ st.subheader("Ophélie Bascou Drimaracci")
 
 tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
 
-# Dictionnaire des sons complexes
+# Dictionnaire des sons complexes (couleurs plus vives et ajout de 'ge' pour [j])
 EXACT_COMPLEX_SOUNDS = {
     'eau': ('#FFD700', 'o'),
     'au': ('#FFD700', 'o'),
-    'oeu': ('#0000FF', 'eu'),
-    'eu': ('#0000FF', 'eu'),
-    'ain': ('#1E4D2B', 'in'),
-    'ein': ('#1E4D2B', 'in'),
-    'in': ('#1E4D2B', 'in'),
-    'on': ('#8B4513', 'on'),
-    'un': ('#A0522D', 'un'),
+    'oeu': ('#0066FF', 'eu'),
+    'eu': ('#0066FF', 'eu'),
+    'ain': ('#0E6636', 'in'),
+    'ein': ('#0E6636', 'in'),
+    'in': ('#0E6636', 'in'),
+    'on': ('#6E2C00', 'on'),
+    'un': ('#B9770E', 'un'),
     'ou': ('#FF0000', 'ou'),
-    'an': ('#FF8C00', 'an'),
-    'en': ('#FF8C00', 'en'),
-    'et': ('#800080', 'é'),
-    'ez': ('#800080', 'é'),
-    'er': ('#800080', 'é'),
-    'ai': ('#800080', 'è'),
-    'ei': ('#800080', 'è'),
-    'ch': ('#DAA520', 'ch'),
-    'oi': ('#000000', 'oi'),
-    'oin': ('#d35400', 'oin'),
-    'ien': ('#e67e22', 'ien'),
-    'ph': ('#8e44ad', 'f'),
-    'gn': ('#16a085', 'gn'),
-    'qu': ('#8e44ad', 'k'),
+    'an': ('#E67E22', 'an'),
+    'en': ('#E67E22', 'an'),
+    'et': ('#8E44AD', 'é'),
+    'ez': ('#8E44AD', 'é'),
+    'er': ('#8E44AD', 'é'),
+    'ai': ('#C0392B', 'è'),
+    'ei': ('#C0392B', 'è'),
+    'ch': ('#D4AC0D', 'ch'),
+    'ge': ('#C2185B', 'j'),
+    'oi': ('#212F3D', 'oi'),
+    'oin': ('#D35400', 'oin'),
+    'ien': ('#CA6F1E', 'ien'),
+    'ph': ('#8E44AD', 'f'),
+    'gn': ('#16A085', 'gn'),
+    'qu': ('#8E44AD', 'k'),
     'o': ('#FFD700', 'o'),
-    'é': ('#800080', 'é'),
+    'é': ('#8E44AD', 'é'),
 }
 
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
@@ -85,9 +86,21 @@ count_syllables_approx = count_syllables
 def parse_word_to_blocks(word):
     blocks = []
     w_lower = word.lower()
+    
+    if w_lower in ["s'annonce", "annonce"]:
+        return [
+            {'text': "s", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': "ann", 'is_muted': False, 'render_type': 'highlight', 'color': '#E67E22', 'phoneme': 'an'},
+            {'text': "on", 'is_muted': False, 'render_type': 'highlight', 'color': '#6E2C00', 'phoneme': 'on'},
+            {'text': "c", 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'},
+            {'text': "e", 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None}
+        ]
+
     if w_lower == "est":
         color, ph = EXACT_COMPLEX_SOUNDS.get('et', ('#800080', 'è'))
         return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': color, 'phoneme': ph}]
+    
     if w_lower == "c'est":
         return [
             {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
@@ -102,6 +115,7 @@ def parse_word_to_blocks(word):
     while i < n:
         char = word[i]
         c_lower = char.lower()
+        
         if c_lower == 'h':
             if i == 0 or word[i-1].lower() not in ['c', 'p']:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
@@ -115,6 +129,7 @@ def parse_word_to_blocks(word):
                     next_idx = i + len(key)
                     if next_idx < n and w_lower[next_idx] in VOWELS:
                         continue 
+
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
                 blocks.append({
                     'text': word[i:i+len(key)],
@@ -137,6 +152,7 @@ def parse_word_to_blocks(word):
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
             is_final_mute = (i == n - 1 and n > 2)
+            
             if is_before_double:
                 color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#800080', 'è'))
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': color, 'phoneme': phoneme})
@@ -162,6 +178,7 @@ def parse_word_to_blocks(word):
             is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
             is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
             is_final = (i == n - 1)
+            
             if is_prev_vowel and is_next_vowel:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#0d9488', 'phoneme': 'z'})
             elif is_final:
@@ -189,15 +206,17 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_fam
     for block in blocks:
         text = block['text']
         r_type = block.get('render_type', 'normal')
+        
         if r_type == 'muted':
             part_html = f"<span style='color: #b0b0b0; opacity: 0.5;'>{text}</span>"
         elif r_type == 'highlight' and show_colors and block.get('color'):
-            bg_color = block['color'] + '33' 
+            bg_color = block['color'] + '73' 
             part_html = f"<span style='background-color: {bg_color}; padding: 2px 4px; border-radius: 4px; font-weight: bold;'>{text}</span>"
         elif r_type == 'color_text' and show_colors and block.get('color'):
             part_html = f"<span style='color: {block['color']}; font-weight: bold;'>{text}</span>"
         else:
             part_html = text
+            
         word_html_parts.append(part_html)
         
         if show_phonemes and block.get('phoneme'):
@@ -208,6 +227,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_fam
             
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
+    
     num_syllables = count_syllables_approx(word) if show_arcs else 0
     w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
     
@@ -218,11 +238,13 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_fam
     if show_phonemes:
         html += f"<div style='font-size: 0.75em; margin-top: 2px;'>{w_ph}</div>"
     html += f"</span>"
+    
     return html
 
 def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing, font_choice, export_key="default"):
     if not text:
         return
+
     fonts_map = {
         "OpenDyslexic (Police DYS spécialisée)": "'Open Dyslexic', sans-serif",
         "Comic Sans MS / Lexie Readable (Anti-confusion b/d)": "'Comic Sans MS', 'Comic Sans', cursive, sans-serif",
@@ -245,6 +267,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
                 color = "#0055ff" if word_idx % 2 == 0 else "#cc0000"
                 word_html = f"<span style='color: {color}; font-weight: bold;'>{word_html}</span>"
             rendered_words_adapted.append(word_html)
+            
             training_word_html = f"<span style='display: inline-block; margin-right: 18px;'>{word}</span>"
             rendered_words_training.append(training_word_html)
             
@@ -258,6 +281,7 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
         
     full_content_adapted = "<br><br>".join(rendered_lines_adapted)
     full_content_training = "<br><br><br>".join(rendered_lines_training)
+    
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
     st.markdown("### 👁️ Aperçu adapté :")
@@ -318,23 +342,24 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
 
 def show_color_legend():
     with st.expander("📖 Légende et Code Couleur Pédagogique"):
-        st.markdown("### 🧠 Surlignage des sons complexes (Fond pastel)")
+        st.markdown("### 🧠 Surlignage des sons complexes (Fond pastel soutenu)")
         cols = st.columns(4)
         with cols[0]:
-            st.markdown("<span style='background-color: #FF000033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ou</span> : Son [ou]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #8B451333; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>on</span> : Son [on]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #FF8C0033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>an / en</span> : Son [an]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #FF000073; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ou</span> : Son [ou] (Rouge vif)", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #6E2C0073; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>on</span> : Son [on] (Marron)", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #E67E2273; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>an / en</span> : Son [an] (Orange)", unsafe_allow_html=True)
         with cols[1]:
-            st.markdown("<span style='background-color: #FFD70033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eau / au / o</span> : Son [o]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #80008033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>et / é / ez</span> : Son [é/è]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #0000FF33; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eu / oeu</span> : Son [eu]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #FFD70073; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eau / au / o</span> : Son [o] (Jaune)", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #8E44AD73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>et / é / ez</span> : Son [é/è] (Violet)", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #0066FF73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eu / oeu</span> : Son [eu] (Bleu)", unsafe_allow_html=True)
         with cols[2]:
-            st.markdown("<span style='background-color: #1E4D2B33; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>in / ain</span> : Son [in]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #00000033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>oi</span> : Son [oi]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #DAA52033; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ch</span> : Son [ch]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #0E663673; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>in / ain</span> : Son [in] (Vert sapin)", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #212F3D73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>oi</span> : Son [oi] (Noir)", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #D4AC0D73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ch</span> : Son [ch] (Moutarde)", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #C2185B73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ge</span> : Son [j] (Rose)", unsafe_allow_html=True)
         with cols[3]:
-            st.markdown("<span style='background-color: #8e44ad33; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>qu / ph</span> : [k] / [f]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #16a08533; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>gn</span> : Son [gn]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #8E44AD73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>qu / ph</span> : [k] / [f]", unsafe_allow_html=True)
+            st.markdown("<span style='background-color: #16A08573; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>gn</span> : Son [gn] (Turquoise)", unsafe_allow_html=True)
 
         st.markdown("---")
         st.markdown("### 🔤 Couleur des lettres contextuelles & Muettes")
@@ -397,6 +422,7 @@ with tab1:
         st.write("---")
         opts = build_controls("t1")
         render_full_dys_text(txt, **opts, export_key="onglet1")
+
 # ONGLET 2 : Appareil photo direct ou Import de fichier
 with tab2:
     st.write("### 📷 Capturer ou importer une photo")
@@ -425,10 +451,10 @@ with tab2:
         except Exception as e:
             st.error(f"Erreur d'extraction OCR : {e}")
 
-# SECTION DÉDIÉE : Le Générateur d'histoires magiques (Minimum 5, 10 et 20 phrases)
+# SECTION DÉDIÉE : Le Générateur d'histoires magiques
 st.write("---")
 st.markdown("## ✨ Générateur d'histoires magiques")
-st.write("Créez une histoire sur-mesure en choisissant son niveau de difficulté (Niveau 1 : 5+ phrases, Niveau 2 : 10+ phrases, Niveau 3 : 20+ phrases) et le prénom du héros !")
+st.write("Créez une histoire sur-mesure en choisissant son niveau de difficulté et le prénom du héros !")
 
 col_gen1, col_gen2 = st.columns(2)
 with col_gen1:
