@@ -347,3 +347,141 @@ def show_color_legend():
         
         st.markdown("<span style='color: #b0b0b0; opacity: 0.8; font-weight: bold;'>Lettre grisée</span> : Lettre muette (ex: e, s, t finaux)", unsafe_allow_html=True)
         
+def build_controls(key_prefix):
+    st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
+    c1, c2, c3 = st.columns(3)
+    
+    with c1:
+        st.write("**Aides aux sons & syllabes :**")
+        show_colors = st.checkbox("Colorer selon votre code couleur de référence", value=True, key=f"{key_prefix}_colors")
+        show_arcs = st.checkbox("Afficher les ponts syllabiques", value=True, key=f"{key_prefix}_arcs")
+        show_phonemes = st.checkbox("Écrire les sons/phonèmes en dessous", value=True, key=f"{key_prefix}_phonemes")
+        
+    with c2:
+        st.write("**Aides à la ligne & visuel :**")
+        word_alt = st.checkbox("Alternance des mots (Bleu/Rouge)", value=False, key=f"{key_prefix}_walt")
+        line_alt = st.checkbox("Alternance des lignes", value=False, key=f"{key_prefix}_lalt")
+        soft_bg = st.checkbox("Surlignage doux du fond", value=False, key=f"{key_prefix}_bg")
+        
+    with c3:
+        st.write("**Typographie & Police DYS :**")
+        font_choice = st.selectbox(
+            "Police d'écriture :",
+            [
+                "OpenDyslexic (Police DYS spécialisée)",
+                "Comic Sans MS / Lexie Readable (Anti-confusion b/d)",
+                "Arial / Luciole (Grande clarté)"
+            ],
+            key=f"{key_prefix}_font"
+        )
+        size = st.slider("Taille de police (px) :", 16, 36, 24, key=f"{key_prefix}_size")
+        spacing = st.slider("Espacement des lignes :", 1.5, 4.0, 2.5, 0.1, key=f"{key_prefix}_space")
+        
+    return {
+        "show_colors": show_colors,
+        "show_arcs": show_arcs,
+        "show_phonemes": show_phonemes,
+        "word_alt": word_alt,
+        "line_alt": line_alt,
+        "soft_bg": soft_bg,
+        "size": size,
+        "spacing": spacing,
+        "font_choice": font_choice
+    }
+
+show_color_legend()
+st.write("---")
+
+# ONGLET 1 : Texte
+with tab1:
+    st.write("### Saisir ou coller un texte")
+    txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
+    if txt:
+        st.write("---")
+        opts = build_controls("t1")
+        render_full_dys_text(txt, **opts)
+
+# ONGLET 2 : Appareil photo direct ou Import de fichier
+with tab2:
+    st.write("### 📷 Capturer ou importer une photo")
+    
+    choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
+    
+    file = None
+    if choix_source == "Prendre une photo en direct":
+        file = st.camera_input("Cliquez pour prendre la photo du texte")
+    else:
+        file = st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
+
+    if file:
+        img = Image.open(file)
+        st.image(img, caption="Image sélectionnée", use_container_width=True)
+        try:
+            img_gray = img.convert('L')
+            enhancer = ImageEnhance.Contrast(img_gray)
+            img_contrast = enhancer.enhance(1.8)
+            img_processed = img_contrast.filter(ImageFilter.SHARPEN)
+
+            custom_config = r'--oem 3 --psm 6'
+            ext_txt = pytesseract.image_to_string(img_processed, lang="fra", config=custom_config)
+
+            if ext_txt.strip():
+                st.success("Texte extrait avec succès !")
+                with st.expander("Voir / Modifier le texte extrait"):
+                    ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
+                st.write("---")
+                opts2 = build_controls("t2")
+                render_full_dys_text(ext_txt, **opts2)
+            else:
+                st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
+        except Exception as e:
+            st.error(f"Erreur d'extraction OCR : {e}")
+
+# ONGLET 3 : Générateur d'histoires magiques
+with tab3:
+    st.write("### ✨ Générateur d'histoires magiques")
+    
+    niveau = st.selectbox(
+        "Choisissez le niveau de difficulté :",
+        ["Débutant (mots simples, phrases courtes)", "Intermédiaire (vocabulaire varié)", "Avancé (récit plus long et complexe)"],
+        key="gen_niveau"
+    )
+
+    nom_hero = st.text_input("Nom du personnage principal (laissez vide pour un choix aléatoire) :", placeholder="Ex: Léo, Léna, Noé...", key="gen_nom")
+
+    if "Débutant" in niveau:
+        h = nom_hero if nom_hero else "Le petit chat"
+        lieux = ["dans le jardin", "dans la forêt", "dans la maison"]
+        actions = ["trouve un jouet.", "voit un oiseau.", "court vite."]
+        
+        if st.button("✨ Créer l'histoire", key="btn_gen_deb"):
+            st.session_state['histoire_generee'] = f"{h} joue {random.choice(lieux)} et {random.choice(actions)}"
+
+    elif "Intermédiaire" in niveau:
+        h = nom_hero if nom_hero else random.choice(["Un petit chat curieux", "Un petit dragon maladroit", "Une fée étourdie", "Un courageux chevalier"])
+        lieux = ["dans une forêt enchantée", "sur une île aux nuages", "dans un château de cristal"]
+        objets = ["une baguette magique", "une étoile scintillante", "un livre mystérieux"]
+        actions = ["découvre un trésor caché.", "rencontre un ami extraordinaire.", "apprend à voler."]
+        
+        if st.button("✨ Créer l'histoire", key="btn_gen_int"):
+            st.session_state['histoire_generee'] = f"{h} se promène {random.choice(lieux)} lorsqu'il trouve {random.choice(objets)} et {random.choice(actions)}"
+
+    else:
+        h = nom_hero if nom_hero else random.choice(["Le jeune prince du royaume", "L'elfe des grands arbres", "La courageuse exploratrice"])
+        lieux = ["au sommet de la montagne interdite", "dans le labyrinthe des murmures secrets", "au cœur de la vallée des anciens sorts"]
+        evenements = ["découvre un parchemin magique qui révèle un grand secret", "part à la recherche de la clé perdue du temps", "doit résoudre une énigme difficile pour sauver son village"]
+        
+        if st.button("✨ Créer l'histoire", key="btn_gen_adv"):
+            st.session_state['histoire_generee'] = f"Il était une fois, {h.lower()} qui vivait {random.choice(lieux)}. Un beau matin, il {random.choice(evenements)} avec l'aide de ses fidèles amis."
+
+    if 'histoire_generee' in st.session_state:
+        st.write("---")
+        st.write("### Texte de l'histoire générée :")
+        
+        # Options d'adaptation spécifiques pour l'histoire générée
+        opts_gen = build_controls("t3")
+        st.write("---")
+        render_full_dys_text(st.session_state['histoire_generee'], **opts_gen)
+
+st.write("---")
+st.caption("Ophélie Bascou Drimaracci - Application
