@@ -156,7 +156,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     
-    # Génération des points basée strictement sur le nombre de syllabes calculé
+    # C'est cette ligne qui force le bon nombre de points (basé sur les syllabes)
     num_syllables = count_syllables_approx(word) if show_arcs else 0
     w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
     
