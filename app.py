@@ -102,11 +102,8 @@ def is_muted_letter(word, index):
     return False
 
 
-import re
-
 from phonemizer import phonemize
 import re
-
 def count_syllables(word):
     word = word.strip()
 
