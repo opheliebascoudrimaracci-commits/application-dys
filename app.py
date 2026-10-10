@@ -448,31 +448,29 @@ with tab1:
 with tab2:
     st.write("### 📷 Capturer ou importer une photo")
     
-    # Choix entre la caméra directe du téléphone ou l'import d'un fichier existant
-    choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"])
+    choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
     
     file = None
     if choix_source == "Prendre une photo en direct":
         file = st.camera_input("Cliquez pour prendre la photo du texte")
     else:
-        file = st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"])
+        file = st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
 
     if file:
         img = Image.open(file)
         st.image(img, caption="Image sélectionnée", use_container_width=True)
         try:
-            # 1. Nettoyage de l'image (Niveaux de gris + Contraste + Netteté)
+            # 1. Binarisation : on élimine les ombres grises de la photo
             img_gray = img.convert('L')
-            enhancer = ImageEnhance.Contrast(img_gray)
-            img_contrast = enhancer.enhance(2.0)
-            img_processed = img_contrast.filter(ImageFilter.SHARPEN)
+            threshold = 160
+            img_processed = img_gray.point(lambda p: 255 if p > threshold else 0)
 
-            # 2. Lecture OCR avec Tesseract
+            # 2. Lecture OCR avec Tesseract optimisée
             custom_config = r'--oem 3 --psm 6'
             ext_txt = pytesseract.image_to_string(img_processed, lang="fra", config=custom_config)
 
             if ext_txt.strip():
-                st.success("Texte extrait et nettoyé avec succès !")
+                st.success("Texte extrait avec succès !")
                 with st.expander("Voir / Modifier le texte extrait"):
                     ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
                 st.write("---")
