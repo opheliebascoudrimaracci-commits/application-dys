@@ -264,16 +264,19 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
             
         word_html_parts.append(part_html)
         
-        # Gestion des phonèmes en dessous (si activé)
+        # Phonèmes en dessous
         if show_phonemes and block.get('phoneme'):
             ph_color = block.get('color') if (block.get('color') and show_colors) else '#000000'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-weight: bold;'>[{block['phoneme']}]</span>")
         else:
             phoneme_html_parts.append("<span style='visibility: hidden;'>•</span>")
             
-        # Points / arcs sous chaque bloc (si activé)
+        # Arcs / points : un seul point par bloc non muet (pour correspondre au rythme des sons/syllabes)
         if show_arcs:
-            arc_html_parts.append("•" if not block.get('is_muted', False) else " ")
+            if not block.get('is_muted', False):
+                arc_html_parts.append("•")
+            else:
+                arc_html_parts.append(" ") # Pas de point pour les lettres muettes
         else:
             arc_html_parts.append(" ")
             
@@ -290,7 +293,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     html += f"</span>"
     
     return html
-
+    
 def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing):
     if not text:
         return
