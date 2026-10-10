@@ -87,17 +87,19 @@ def parse_word_to_blocks(word):
     blocks = []
     w_lower = word.lower()
     
-    # Règle nette et prioritaire pour les mots commençant par ann-
+    # Règle nette pour s'annonce / annonce
     if w_lower in ["s'annonce", "annonce"]:
         return [
             {'text': "s", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
             {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': "a", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': "nn", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
             {'text': "an", 'is_muted': False, 'render_type': 'highlight', 'color': '#E67E22', 'phoneme': 'an'},
-            {'text': "n", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
             {'text': "on", 'is_muted': False, 'render_type': 'highlight', 'color': '#6E2C00', 'phoneme': 'on'},
             {'text': "c", 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'},
             {'text': "e", 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None}
         ]
+
 
     if w_lower == "est":
         return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
