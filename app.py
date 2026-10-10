@@ -22,7 +22,6 @@ st.markdown("""
     .stApp {
         background-color: #FFFFFF !important;
     }
-    /* Empêcher la déformation des icônes d'extension Streamlit */
     [data-testid="stExpanderToggleIcon"] * {
         font-family: inherit !important;
     }
@@ -67,7 +66,7 @@ EXACT_COMPLEX_SOUNDS = {
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 def count_syllables(word):
-    """Estimation des syllabes françaises par règles et exceptions."""
+    """Estimation robuste des syllabes oralisées en français."""
     w = word.strip().lower().strip(".,;:!?()[]{}\"'«»")
     if not w:
         return 0
@@ -77,6 +76,7 @@ def count_syllables(word):
         "dans": 1, "une": 1, "tu": 1, "vas": 1, "je": 1, "m'appelle": 2,
         "aujourd'hui": 3, "oiseau": 2, "beaucoup": 2, "famille": 2, "fille": 1,
         "maison": 2, "cheval": 2, "bateau": 2, "ordinateur": 4, "magnifique": 3,
+        "maminounou": 4,
     }
 
     if w in exceptions:
@@ -88,17 +88,12 @@ def count_syllables(word):
 
     w = w.replace("-", "")
 
-    pattern = (
-        r"eau|oeu|œu|"
-        r"ain|aim|ein|"
-        r"oi|ou|au|eu|ai|ei|"
-        r"an|am|en|em|on|om|in|im|un|um|"
-        r"[aeiouyàâäéèêëïîôöùûüÿ]"
-    )
+    # Groupe les voyelles successives en noyaux syllabiques
+    noyaux = re.findall(r'[aeiouyàâäéèêëïîôöùûüÿ]+', w)
+    count = len(noyaux)
 
-    count = len(re.findall(pattern, w))
-
-    if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")):
+    # Ajustement pour le e muet final
+    if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")) and len(w) > 2:
         count -= 1
 
     if w.endswith("es") and len(w) > 3:
@@ -133,15 +128,23 @@ def parse_word_to_blocks(word):
         char = word[i]
         c_lower = char.lower()
         
+        # 'h' muet
         if c_lower == 'h':
             if i == 0 or word[i-1].lower() not in ['c', 'p']:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
                 i += 1
                 continue
 
+        # Sons complexes basés sur EXACT_COMPLEX_SOUNDS
         matched_complex = False
         for key in sorted_keys:
             if w_lower[i:i+len(key)] == key:
+                # REGLE IMPORTANTE : in, an, on, en ne sont pas des voyelles nasales si suivis d'une voyelle
+                if key in ['in', 'an', 'on', 'en', 'un']:
+                    next_idx = i + len(key)
+                    if next_idx < n and w_lower[next_idx] in VOWELS:
+                        continue # On ne capture pas comme son nasal (ex: maminounou -> ma-mi-nou-nou)
+
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
                 blocks.append({
                     'text': word[i:i+len(key)],
@@ -156,11 +159,13 @@ def parse_word_to_blocks(word):
         if matched_complex:
             continue
 
+        # Consonnes doubles
         if i + 1 < n and c_lower in ['p', 't', 'm', 'n', 'l', 'b', 'd', 'f', 'r', 's'] and word[i+1].lower() == c_lower:
             blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
 
+        # Le 'e' avant double consonne ou final
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
             is_final_mute = (i == n - 1 and n > 2)
@@ -175,6 +180,7 @@ def parse_word_to_blocks(word):
                 i += 1
                 continue
 
+        # Règles contextuelles pour C
         if c_lower == 'c':
             next_char = word[i+1].lower() if i + 1 < n else ''
             if next_char in ['e', 'i', 'y']:
@@ -186,6 +192,7 @@ def parse_word_to_blocks(word):
             i += 1
             continue
             
+        # Règles contextuelles pour S
         if c_lower == 's':
             is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
             is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
@@ -280,7 +287,6 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
                 word_html = f"<span style='color: {color}; font-weight: bold;'>{word_html}</span>"
             rendered_words_adapted.append(word_html)
             
-            # Version d'entraînement : texte brut espacé
             training_word_html = f"<span style='display: inline-block; margin-right: 18px;'>{word}</span>"
             rendered_words_training.append(training_word_html)
             
@@ -297,11 +303,9 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
-    # Affichage de la version adaptée à l'écran
     st.markdown(f"### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
-    # Aperçu de la version d'entraînement vierge à l'écran
     st.markdown("---")
     st.markdown(f"### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
     st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
