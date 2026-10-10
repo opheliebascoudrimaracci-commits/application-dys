@@ -3,6 +3,15 @@ import pytesseract
 from PIL import Image
 import re
 
+st.markdown("""
+    <style>
+    /* Force la couleur du texte en blanc pour tout le corps de l'application */
+    body, .stMarkdown, p, span, label {
+        color: #FFFFFF !important;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 st.set_page_config(
     page_title="Ophélie Bascou Drimaracci - Outils Pédagogiques DYS",
     page_icon="✏️",
