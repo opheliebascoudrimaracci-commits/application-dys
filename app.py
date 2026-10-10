@@ -129,9 +129,10 @@ def parse_word_to_blocks(word):
         char = word[i]
         c_lower = char.lower()
         
-        # --- CAS 1 : 'h' muet (ex: Mathis) ---
+        # --- CAS 1 : 'h' muet (ex: Mathis, Théâtre) ---
         if c_lower == 'h':
-            if i == 0 or word[i-1].lower() not in ['c', 'p', 't']:
+            # Le h est muet s'il n'est pas le composant principal d'un son comme 'ch' ou 'ph'
+            if i == 0 or word[i-1].lower() not in ['c', 'p']:
                 blocks.append({
                     'text': char,
                     'is_muted': True,
