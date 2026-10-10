@@ -16,48 +16,49 @@ tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image 
 
 # Dictionnaire exact basé sur votre image de référence des sons complexes
 EXACT_COMPLEX_SOUNDS = {
+   # Dictionnaire des sons complexes
+EXACT_COMPLEX_SOUNDS = {
     # Marron (ON)
-    'on': ('#8B4513'),
+    'on': ('#8B4513', 'on'),
     # Brun (UN)
-    'un': ('#A0522D'),
+    'un': ('#A0522D', 'un'),
     # Rouge (OU)
-    'ou': ('#FF0000'),
+    'ou': ('#FF0000', 'ou'),
     # Orange (AN, EN)
-    'an': ('#FF8C00'),
-    'en': ('#FF8C00'),
+    'an': ('#FF8C00', 'an'),
+    'en': ('#FF8C00', 'an'),
     # Jaune (O, AU, EAU)
-    'eau': ('#FFD700),
-    'au': ('#FFD700'),
-    'o': ('#FFD700'),
-    # Violet (ET, EZ, ER, AI, EI)
-    'et': ('#800080'),
-    'ez': ('#800080'),
-    'er': ('#800080'),
-    'ai': ('#800080'),
-    'ei': ('#800080'),
-    'é': ('#800080'),
-    'ess': ('#800080'),  
-    'err': ('#800080'),  
-    'ell': ('#800080'),   
-    'eff': ('#800080'),  
-    'ett': ('#800080'),
+    'eau': ('#FFD700', 'o'),
+    'au': ('#FFD700', 'o'),
+    'o': ('#FFD700', 'o'),
+    # Violet (ET, EZ, ER, AI, EI, ESS, ERR, ELL, EFF, ETT)
+    'et': ('#800080', 'é'),
+    'é': ('#800080', 'é'),
+    'ez': ('#800080', 'é'),
+    'er': ('#800080', 'é'),
+    'ai': ('#800080', 'è'),
+    'ei': ('#800080', 'è'),
+    'ess': ('#800080', 'é'),
+    'err': ('#800080', 'é'),
+    'ell': ('#800080', 'é'),
+    'eff': ('#800080', 'é'),
+    'ett': ('#800080', 'é'),
     # Bleu (EU, OEU)
-    'oeu': ('#0000FF'),
-    'eu': ('#0000FF'),
+    'oeu': ('#0000FF', 'eu'),
+    'eu': ('#0000FF', 'eu'),
     # Vert Sapin (IN, AIN, EIN)
-    'ain': ('#1E4D2B'),
-    'ein': ('#1E4D2B'),
-    'in': ('#1E4D2B'),
+    'ain': ('#1E4D2B', 'in'),
+    'ein': ('#1E4D2B', 'in'),
+    'in': ('#1E4D2B', 'in'),
     # Jaune / Doré (CH)
-    'ch': ('#DAA520'),
+    'ch': ('#DAA520', 'ch'),
     # Autres sons fréquents
-    'oi': ('#e74c3c'),
-    'oin': ('#d35400'),
-    'ien': ('#e67e22'),
-    'ph': ('#8e44ad'),
-    'gn': ('#16a085')
+    'oi': ('#e74c3c', 'oi'),
+    'oin': ('#d35400', 'oin'),
+    'ien': ('#e67e22', 'ien'),
+    'ph': ('#8e44ad', 'f'),
+    'gn': ('#16a085', 'gn')
 }
-
 def is_muted_letter(word, index):
     """Détermine si une lettre est muette (ex: e final, s/t/d/x finaux)."""
     w_lower = word.lower()
