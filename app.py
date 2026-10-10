@@ -137,8 +137,6 @@ def normalize_word(word):
 
 
 def count_syllables(word):
-
-def count_syllables(word):
     """Estime le nombre de syllabes d'un mot français."""
     w = normalize_word(word)
 
