@@ -460,7 +460,6 @@ with tab2:
         img = Image.open(file)
         st.image(img, caption="Image sélectionnée", use_container_width=True)
         try:
-                    try:
             # Traitement doux : Niveaux de gris + Contraste + Netteté
             img_gray = img.convert('L')
             enhancer = ImageEnhance.Contrast(img_gray)
@@ -470,6 +469,18 @@ with tab2:
             # 2. Lecture OCR avec Tesseract optimisée
             custom_config = r'--oem 3 --psm 6'
             ext_txt = pytesseract.image_to_string(img_processed, lang="fra", config=custom_config)
+
+            if ext_txt.strip():
+                st.success("Texte extrait avec succès !")
+                with st.expander("Voir / Modifier le texte extrait"):
+                    ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
+                st.write("---")
+                opts2 = build_controls("t2")
+                render_full_dys_text(ext_txt, **opts2)
+            else:
+                st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
+        except Exception as e:
+            st.error(f"Erreur d'extraction OCR : {e}")
 
 st.write("---")
 st.caption("Ophélie Bascou Drimaracci - Application Pédagogique DYS")
