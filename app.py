@@ -3,7 +3,11 @@ import pytesseract
 from PIL import Image
 import re
 
-st.set_page_config(page_title="Outils DYS", page_icon="✏️", layout="wide")
+st.set_page_config(
+    page_title="Ophélie Bascou Drimaracci - Outils Pédagogiques",
+    page_icon="✏️",
+    layout="wide"
+)
 
 st.title("✏️ Application Pédagogique & Adaptation DYS")
 st.subheader("Ophélie Bascou Drimaracci")
@@ -45,7 +49,6 @@ def make_syllable_arcs(text):
 def render_dys_text(text, mode, size, spacing):
     if not text:
         return
-    style = f"font-size: {size}px; line-height: {spacing};"
     
     if mode == "Coloration des sons complexes":
         content = colorize_complex_sounds(text).replace('\n', '<br>')
@@ -71,5 +74,63 @@ def render_dys_text(text, mode, size, spacing):
         content = f"<div style='background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2;'>{text}</div>"
     else:
         content = text.replace('\n', '<br>')
-        
-    st.markdown(f"<div style='{style}'>{content}</div>
+            
+    html_output = f"<div style='font-size: {size}px; line-height: {spacing};'>{content}</div>"
+    st.markdown(html_output, unsafe_allow_html=True)
+
+opts = [
+    "Aucun",
+    "Coloration des sons complexes",
+    "Coloration des lettres / voyelles",
+    "Ponts et découpage syllabique",
+    "Alternance des mots (Bleu / Rouge)",
+    "Alternance des lignes",
+    "Surlignage doux"
+]
+
+with tab1:
+    st.write("### Saisir ou coller un texte")
+    txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte pédagogique...")
+    if txt:
+        st.write("---")
+        st.write("### ⚙️ Options de mise en page DYS & Phonétique")
+        c1, c2 = st.columns(2)
+        with c1:
+            m1 = st.selectbox("Option pédagogique :", opts, key="k_m1")
+        with c2:
+            s1 = st.slider("Taille de police (px) :", 14, 32, 22, key="k_s1")
+            sp1 = st.slider("Espacement des lignes :", 1.2, 3.0, 2.0, 0.1, key="k_sp1")
+        st.write("### 👁️ Aperçu adapté :")
+        render_dys_text(txt, m1, s1, sp1)
+
+with tab2:
+    st.write("### Importer une image pour extraction et adaptation")
+    file = st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"])
+    if file:
+        img = Image.open(file)
+        st.image(img, caption="Image importée", use_container_width=True)
+        try:
+            ext_txt = pytesseract.image_to_string(img, lang="fra")
+            if ext_txt.strip():
+                st.success("Texte extrait avec succès !")
+                
+                with st.expander("Voir / Modifier le texte brut extrait"):
+                    ext_txt = st.text_area("Texte détecté :", ext_txt, height=140, key="editable_ocr")
+                
+                st.write("---")
+                st.write("### ⚙️ Options de mise en page DYS & Phonétique")
+                c1, c2 = st.columns(2)
+                with c1:
+                    m2 = st.selectbox("Option pédagogique :", opts, key="k_m2")
+                with c2:
+                    s2 = st.slider("Taille de police (px) :", 14, 32, 22, key="k_s2")
+                    sp2 = st.slider("Espacement des lignes :", 1.2, 3.0, 2.0, 0.1, key="k_sp2")
+                st.write("### 👁️ Aperçu adapté :")
+                render_dys_text(ext_txt, m2, s2, sp2)
+            else:
+                st.warning("Aucun texte lisible n'a été trouvé dans cette image.")
+        except Exception as e:
+            st.error(f"Erreur lors de la lecture de l'image : {e}")
+
+st.write("---")
+st.caption("Ophélie Bascou Drimaracci - Application Pédagogique DYS")
