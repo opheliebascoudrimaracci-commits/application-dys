@@ -119,7 +119,6 @@ def count_syllables(word):
 
     return max(1, len(matches))
 
-
 def split_into_syllables_spans(word):
     """Découpe approximativement un mot en tranches."""
     w = word.strip().lower()
