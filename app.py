@@ -96,7 +96,7 @@ def is_muted_letter(word, index):
 
     # Consonnes finales muettes courantes
     if index == length - 1 and w_lower[index] in ['s', 't', 'd', 'x', 'z']:
-        if w_lower not in ['bus', 'gaz', 'riz', 'six', 'dix']:
+        if w_lower not in ['bus', 'gaz', 'riz', 'six', 'dix','ent']:
             return True
             
     return False
