@@ -101,23 +101,42 @@ def is_muted_letter(word, index):
             
     return False
 
+
 import re
 
 def count_syllables(word):
-    """Calcule approximativement le nombre de syllabes d'un mot."""
+    """Estime le nombre de syllabes d'un mot français."""
     w = word.strip().lower()
 
     if not w:
         return 0
 
+    # Retirer la ponctuation aux extrémités
+    w = re.sub(r"^[^a-zàâäéèêëïîôöùûüÿç]+|[^a-zàâäéèêëïîôöùûüÿç]+$", "", w)
+
+    if not w:
+        return 0
+
+    # Cas fréquents de mots courts
     if len(w) <= 3:
         return 1
 
-    pattern = r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?'
+    # Terminaisons souvent muettes
+    if w.endswith("ent") and len(w) > 4:
+        w = w[:-3]
+    elif w.endswith(("es", "e")) and len(w) > 3:
+        w = w[:-1]
 
-    matches = list(re.finditer(pattern, w))
+    # Groupes vocaliques qui représentent généralement un seul noyau
+    pattern = r"eau|au|ai|ei|oi|ou|où|eu|œu|ui|ie|é|è|ê|ë|à|â|ä|î|ï|ô|ö|ù|û|ü|ÿ|y|[aeiou]"
+    groups = re.findall(pattern, w)
 
-    return max(1, len(matches))
+    # Fusionner les voyelles consécutives reconnues par le motif
+    count = len(groups)
+
+    # Une estimation : chaque groupe vocalique correspond à une syllabe
+    return max(1, count)
+
 
 def split_into_syllables_spans(word):
     """Découpe approximativement un mot en tranches."""
