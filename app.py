@@ -121,34 +121,36 @@ def split_into_syllables_spans(word):
         spans[-1] = (spans[-1][0], len(w))
     return spans
 
-# Dictionnaire de couleurs unifié pour les sons et leurs lettres associées
+# Dictionnaire de couleurs unifié
 PHONEME_COLORS = {
-    'è': '#8a2be2',   # Violet
-    'é': '#8a2be2',   # Violet
-    'k': '#2563eb',   # Bleu (pour le c)
-    's': '#059669',   # Vert (pour le c)
-    'z': '#0d9488'    # Turquoise (pour le s)
+    'ou': '#ff6b6b',  # Rouge pastel (surlignage)
+    'on': '#f08c00',  # Orange pastel (surlignage)
+    'è': '#cc5de8',   # Violet pastel (surlignage)
+    'é': '#cc5de8',   # Violet pastel (surlignage)
+    'k': '#2563eb',   # Bleu (couleur de la lettre c)
+    's': '#059669',   # Vert (couleur de la lettre c)
+    'z': '#0d9488'    # Turquoise (couleur de la lettre s entre deux voyelles)
 }
 
 def parse_word_to_blocks(word):
     blocks = []
     w_lower = word.lower()
     
+    # 1. Mots entiers spécifiques
     if w_lower == "est":
-        ph = 'è'
         return [{
             'text': word,
             'is_muted': False,
             'render_type': 'highlight',
-            'color': PHONEME_COLORS.get(ph),
-            'phoneme': ph
+            'color': PHONEME_COLORS['è'],
+            'phoneme': 'è'
         }]
     
     if w_lower == "c'est":
         return [
-            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get('k'), 'phoneme': 'k'},
+            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['k'], 'phoneme': 'k'},
             {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS.get('è'), 'phoneme': 'è'}
+            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['è'], 'phoneme': 'è'}
         ]
 
     i = 0
@@ -157,27 +159,36 @@ def parse_word_to_blocks(word):
         char = word[i]
         c_lower = char.lower()
         
-        # 'h' muet (ex: Mathis, Théâtre)
+        # --- 'h' muet (Mathis, Théâtre) ---
         if c_lower == 'h':
             if i == 0 or word[i-1].lower() not in ['c', 'p']:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
                 i += 1
                 continue
 
-        # Consonnes doubles
+        # --- Sons complexes (ou, on) -> Surlignage de fond ---
+        if w_lower[i:i+2] == 'ou':
+            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['ou'], 'phoneme': 'ou'})
+            i += 2
+            continue
+        elif w_lower[i:i+2] == 'on':
+            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['on'], 'phoneme': 'on'})
+            i += 2
+            continue
+
+        # --- Consonnes doubles ---
         if i + 1 < n and c_lower in ['p', 't', 'm', 'n', 'l', 'b', 'd', 'f', 'r', 's'] and word[i+1].lower() == c_lower:
             blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
 
-        # Le 'e' avant double consonne (ex: appelle -> [è])
+        # --- Le 'e' avant double consonne (ex: appelle -> [è]) -> Surlignage de fond ---
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
             is_final_mute = (i == n - 1 and n > 2)
             
             if is_before_double:
-                ph = 'è'
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': PHONEME_COLORS['è'], 'phoneme': 'è'})
                 i += 1
                 continue
             elif is_final_mute:
@@ -185,28 +196,26 @@ def parse_word_to_blocks(word):
                 i += 1
                 continue
 
-        # Règles contextuelles (C, S) -> Couleur de la lettre
+        # --- Règles contextuelles (C) -> Changement de couleur de la LETTRE ---
         if c_lower == 'c':
             next_char = word[i+1].lower() if i + 1 < n else ''
             if next_char in ['e', 'i', 'y']:
-                ph = 's'
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['s'], 'phoneme': 's'})
             elif next_char not in ['h', '']:
-                ph = 'k'
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['k'], 'phoneme': 'k'})
             else:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
             
+        # --- Règles contextuelles (S) -> Changement de couleur de la LETTRE (ex: entre deux voyelles) ---
         if c_lower == 's':
             is_prev_vowel = (i > 0 and word[i-1].lower() in 'aeiouyàâéèêëîïôûù')
             is_next_vowel = (i + 1 < n and word[i+1].lower() in 'aeiouyàâéèêëîïôûù')
             is_final = (i == n - 1)
             
             if is_prev_vowel and is_next_vowel:
-                ph = 'z'
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS.get(ph), 'phoneme': ph})
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': PHONEME_COLORS['z'], 'phoneme': 'z'})
             elif is_final:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             else:
@@ -220,6 +229,7 @@ def parse_word_to_blocks(word):
             i += 1
             continue
 
+        # Par défaut : caractère standard
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
