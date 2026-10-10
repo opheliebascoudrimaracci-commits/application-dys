@@ -100,31 +100,49 @@ def is_muted_letter(word, index):
             return True
             
     return False
-def count_syllables_approx(word):
-   # Estimation robuste des syllabes en français basée sur les voyelles prononcées  
-w = word.lower()  
-vowels = "aeiouyàâéèêëîïôûù"  
-count = 0  
-prev_is_vowel = False
 
-# Liste de règles simples pour le e muet et les diagraphes courants  
-for i, ch in enumerate(w):  
-    is_vowel = ch in vowels
+import re
 
-    # Ne pas compter un e final muet  
-    if ch == 'e' and i == len(w) - 1:  
-        # Si le mot a plus d'une voyelle (ou une consonne après e), on peut considérer que le e est muet  
-        # On ne lève pas de syllabe ici; laisser la règle générale ci-dessous s’appliquer  
-        pass
+def count_syllables(word):
+    """Calcule approximativement le nombre de syllabes d'un mot."""
+    w = word.strip().lower()
 
-    # Comptage syllabique standard: une syllabe à chaque fois qu’on passe d’une consonne à une voyelle  
-    if is_vowel and not prev_is_vowel:  
-        count += 1
+    if not w:
+        return 0
 
-    prev_is_vowel = is_vowel
+    if len(w) <= 3:
+        return 1
 
-# Garantir au moins 1 syllabe  
-return max(1, count)
+    pattern = r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?'
+
+    matches = list(re.finditer(pattern, w))
+
+    return max(1, len(matches))
+
+
+def split_into_syllables_spans(word):
+    """Découpe approximativement un mot en tranches."""
+    w = word.strip().lower()
+
+    if not w:
+        return []
+
+    if len(w) <= 3:
+        return [(0, len(w))]
+
+    pattern = r'[^aeiouyàâéèêëîïôûùü]*[aeiouyàâéèêëîïôûùü]+(?:[^aeiouyàâéèêëîïôûùü](?![aeiouyàâéèêëîïôûùü]))?'
+
+    matches = list(re.finditer(pattern, w))
+
+    if not matches:
+        return [(0, len(w))]
+
+    spans = [(m.start(), m.end()) for m in matches]
+
+    if spans[-1][1] < len(w):
+        spans[-1] = (spans[-1][0], len(w))
+
+    return spans
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes):
     blocks = parse_word_to_blocks(word)
