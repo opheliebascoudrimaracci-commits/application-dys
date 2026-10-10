@@ -21,7 +21,7 @@ st.subheader("Ophélie Bascou Drimaracci")
 
 tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
 
-# Dictionnaire des sons complexes (couleurs plus vives et ajout de 'ge' pour [j])
+# Dictionnaire des sons complexes
 EXACT_COMPLEX_SOUNDS = {
     'eau': ('#FFD700', 'o'),
     'au': ('#FFD700', 'o'),
@@ -87,25 +87,14 @@ def parse_word_to_blocks(word):
     blocks = []
     w_lower = word.lower()
     
-    if w_lower in ["s'annonce", "annonce"]:
-        return [
-            {'text': "s", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': "ann", 'is_muted': False, 'render_type': 'highlight', 'color': '#E67E22', 'phoneme': 'an'},
-            {'text': "on", 'is_muted': False, 'render_type': 'highlight', 'color': '#6E2C00', 'phoneme': 'on'},
-            {'text': "c", 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'},
-            {'text': "e", 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None}
-        ]
-
     if w_lower == "est":
-        color, ph = EXACT_COMPLEX_SOUNDS.get('et', ('#800080', 'è'))
-        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': color, 'phoneme': ph}]
+        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
     
     if w_lower == "c'est":
         return [
             {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
             {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#800080', 'phoneme': 'è'}
+            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}
         ]
 
     i = 0
@@ -132,11 +121,20 @@ def parse_word_to_blocks(word):
 
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
                 
-                # Gestion intelligente des nasales suivies d'une consonne double (ex: ann -> an + n)
+                # Capture propre des nasales avec consonne double (ex: ann -> an + n)
                 actual_text = word[i:i+len(key)]
                 if key in ['an', 'en', 'in', 'on', 'un'] and i + len(key) < n and word[i+len(key)].lower() == key[-1]:
                     actual_text += word[i+len(key)]
-                    i += 1 # Consomme le double caractère
+                    blocks.append({
+                        'text': actual_text,
+                        'is_muted': False,
+                        'render_type': 'highlight',
+                        'color': color,
+                        'phoneme': phoneme
+                    })
+                    i += len(key) + 1
+                    matched_complex = True
+                    break
                 
                 blocks.append({
                     'text': actual_text,
@@ -161,7 +159,7 @@ def parse_word_to_blocks(word):
             is_final_mute = (i == n - 1 and n > 2)
             
             if is_before_double:
-                color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#800080', 'è'))
+                color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#8E44AD', 'è'))
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': color, 'phoneme': phoneme})
                 i += 1
                 continue
@@ -461,7 +459,7 @@ with tab2:
 # SECTION DÉDIÉE : Le Générateur d'histoires magiques
 st.write("---")
 st.markdown("## ✨ Générateur d'histoires magiques")
-st.write("Créez une histoire sur-mesure en choisissant son niveau de difficulté et le prénom du héros !")
+st.write("Créez une histoire sur-mesure en choisissant son niveau de difficulté (Niveau 1 : 5+ phrases, Niveau 2 : 10+ phrases, Niveau 3 : 20+ phrases) et le prénom du héros !")
 
 col_gen1, col_gen2 = st.columns(2)
 with col_gen1:
