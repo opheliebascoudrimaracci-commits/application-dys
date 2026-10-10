@@ -12,16 +12,34 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Injection CSS globale avec chargement des polices DYS
+# 2. Injection CSS renforcée pour forcer le fond blanc et le texte noir sur TOUS les champs (y compris sur mobile)
 st.markdown("""
     <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
     <style>
+    /* Forcer le fond blanc de l'application */
+    html, body, .stApp {
+        background-color: #FFFFFF !important;
+    }
+    
+    /* Textes généraux */
     html, body, p, span, h1, h2, h3, h4, h5, h6, label, div.stMarkdown, div.stText {
         color: #000000 !important;
     }
-    .stApp {
+
+    /* Forcer les zones de texte (st.text_area / inputs) en fond blanc et texte noir */
+    textarea, input, div[data-baseweb="textarea"], div[data-baseweb="input"] {
         background-color: #FFFFFF !important;
+        color: #000000 !important;
+        border: 2px solid #cccccc !important;
+        border-radius: 8px !important;
     }
+
+    /* Texte de saisie et placeholder (texte explicatif gris) */
+    textarea::placeholder, input::placeholder {
+        color: #666666 !important;
+    }
+
+    /* Empêcher la déformation des icônes Streamlit */
     [data-testid="stExpanderToggleIcon"] * {
         font-family: inherit !important;
     }
@@ -294,11 +312,9 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
-    # Affichage version adaptée
     st.markdown(f"### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
-    # Affichage version d'entraînement avec cadre VERT POMME
     st.markdown("---")
     st.markdown(f"### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
     st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
