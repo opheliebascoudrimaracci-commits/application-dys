@@ -426,7 +426,7 @@ elif menu_selection == "✨ Générateur d'histoires":
             histoire = interroger_ia(prompt, temperature=0.8)
             st.session_state["histoire_generee"] = histoire
 
-        if "histoire_generee" in st.session_state:
+    if "histoire_generee" in st.session_state:
         st.write("---")
         opts = build_controls("histoire_gen")
         render_full_dys_text(
@@ -440,6 +440,7 @@ elif menu_selection == "✨ Générateur d'histoires":
             size=opts["size"], 
             key_suffix="histoire_gen"
         )
+
 
 elif menu_selection == "🎤 Aide à la dictée":
     st.title("🎤 Préparation de la Dictée Personnalisée")
