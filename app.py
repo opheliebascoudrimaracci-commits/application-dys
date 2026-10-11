@@ -7,12 +7,12 @@ import unicodedata
 import random
 import hashlib
 import json
-import google.generativeai as genai
-from groq import Groq
-
 from groq import Groq
 import google.generativeai as genai
 
+# ==========================================
+# FONCTION IA CENTRALISÉE (Groq + Gemini)
+# ==========================================
 def interroger_ia(prompt_texte, temperature=0.7):
     """
     Fonction centralisée : essaie d'abord Groq (ultra-rapide, gratuit),
