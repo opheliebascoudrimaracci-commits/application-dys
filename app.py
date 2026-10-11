@@ -354,9 +354,12 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     
-    # Prise en compte prioritaire du comptage fourni par l'IA
+# Gestion précise du nombre d'arcs en fonction du texte découpé ou du nombre reçu
     if nb_syllables_override is not None:
-        num_syllables = max(1, nb_syllables_override)
+        if isinstance(nb_syllables_override, str):
+            num_syllables = max(1, len(nb_syllables_override.split('-')))
+        else:
+            num_syllables = max(1, nb_syllables_override)
     else:
         num_syllables = count_syllables_approx(word)
 
