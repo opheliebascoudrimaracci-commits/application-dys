@@ -5,6 +5,12 @@ from PIL import Image, ImageEnhance, ImageFilter
 import re
 import unicodedata
 import random
+import google.generativeai as genai
+
+# Configuration de la clé d'API Gemini depuis vos Secrets Streamlit
+if "GEMINI_API_KEY" in st.secrets:
+    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+    
 
 # 1. Configuration unique de la page
 st.set_page_config(
@@ -451,65 +457,34 @@ elif menu_selection == "✨ Générateur d'histoires":
             key="input_nom_personnage"
         )
 
-    if st.button("✨ Générer l'histoire magique", type="primary", key="btn_generer_histoire"):
-        h = nom_personnage if nom_personnage else "Le héros"
+        if st.button("✨ Générer l'histoire magique avec l'IA", type="primary", key="btn_generer_histoire"):
+        h = nom_personnage.strip() if nom_personnage.strip() else "Le héros"
         
+        # Prompt pour l'IA selon le niveau choisi
+        prompt_ia = f"Écris une histoire pour enfants douce, captivante et adaptée en français. Le héros s'appelle {h}. "
         if "Niveau 1" in niveau_histoire:
-            phrases_niv1 = [
-                f"{h} se réveille dans une petite maison colorée.",
-                "Il regarde par la fenêtre et voit un beau soleil.",
-                "Le chat de la maison vient lui dire bonjour en miaulant.",
-                "Il prend un bon bol de lait chaud avec du pain frais.",
-                "Ensuite, il sort dans le jardin pour jouer avec ses amis.",
-                "La journée s'annonce calme et très amusante pour tout le monde."
-            ]
-            st.session_state['histoire_generee'] = " ".join(phrases_niv1)
-
+            prompt_ia += "L'histoire doit faire exactement 5 à 6 phrases très simples avec du vocabulaire facile, parfaite pour un débutant en lecture."
         elif "Niveau 2" in niveau_histoire:
-            phrases_niv2 = [
-                f"Il était une fois, un courageux personnage nommé {h} qui adorait l'aventure.",
-                "Un beau matin de printemps, il décida de partir à la découverte de la grande forêt mystérieuse.",
-                "Sur son chemin, il rencontra un petit oiseau bleu qui chantait une douce mélodie.",
-                "L'oiseau décida de l'accompagner pour lui montrer le chemin le plus sûr.",
-                "Après une longue marche, ils arrivèrent près d'un ruisseau aux eaux scintillantes.",
-                "Ils burent un peu d'eau fraîche et se reposèrent sous un grand chêne centenaire.",
-                "Soudain, un écureuil malicieux leur indiqua un sentier caché derrière les buissons.",
-                "En suivant ce sentier, {h} découvrit un magnifique coffre en bois sculpté.",
-                "À l'intérieur, il y avait des livres magiques et des images pleines de couleurs.",
-                "Heureux de sa belle trouvade, il rentra chez lui à la tombée de la nuit pour tout raconter à sa famille."
-            ]
-            st.session_state['histoire_generee'] = " ".join(phrases_niv2)
-
-        else:  # Niveau 3
-            phrases_niv3 = [
-                f"Au cœur d'un royaume lointain et paisible, vivait un jeune explorateur nommé {h}.",
-                "Depuis son plus jeune âge, il passait des heures à lire des grimoires anciens dans la bibliothèque du village.",
-                "Un soir d'automne, en soufflant la poussière d'un vieux livre relié de cuir, il découvrit une carte secrète.",
-                "Cette carte indiquait l'emplacement exact de la vallée oubliée, un endroit légendaire où le temps semblait s'être arrêté.",
-                "Sans hésiter une seule seconde, {h} prépara son sac à dos avec un peu de nourriture, une gourde et sa boussole dorée.",
-                "Il quitta son village au lever du jour, alors que les premiers rayons de soleil doraient les sommets des montagnes.",
-                "La première étape de son voyage consistait à traverser la ténébreuse forêt des murmures.",
-                "Dans cette forêt, les arbres étaient si hauts qu'ils masquaient presque entièrement la lumière du ciel.",
-                "Heureusement, grâce à son grand sens de l'orientation et à son calme, il trouva rapidement la bonne direction.",
-                "Il croisa sur son passage des biches élégantes, des hiboux curieux et de jolies fleurs sauvages aux parfums enivrants.",
-                "Après avoir franchi la forêt, il se retrouva face au pont de pierre qui enjambait le torrent rugissant.",
-                "Le pont était gardé par une vieille statue de pierre représentant un dragon endormi depuis des siècles.",
-                "En posant la main sur la patte du dragon, un mécanisme secret s'activa et libéra le passage en douceur.",
-                "{h} traversa le pont d'un pas assuré, sentant l'excitation grandir au fond de son cœur.",
-                "Il pénétra enfin dans la fameuse vallée oubliée, baignée par une lumière douce et irréelle.",
-                "Au centre de la vallée se dressait un magnifique arbre de cristal dont les feuilles brillaient comme des diamants.",
-                "Au pied de cet arbre magique reposait un ancien parchemin contenant les secrets des grands sages d'autrefois.",
-                "Il prit le temps de lire le texte gravé sur le parchemin, apprenant de merveilleuses histoires sur l'origine du monde.",
-                "Le soleil commença lentement à descendre à l'horizon, peignant le ciel de teintes orangées et pourpres.",
-                "Le cœur rempli de souvenirs inoubliables et de sagesse, {h} prit le chemin du retour, fier de cette grande aventure.",
-                "De retour chez lui, il déposa le précieux parchemin dans la bibliothèque du village pour que tous puissent en profiter."
-            ]
-            st.session_state['histoire_generee'] = " ".join(phrases_niv3)
+            prompt_ia += "L'histoire doit faire environ 10 phrases avec un vocabulaire enrichi et une petite péripétie."
+        else:
+            prompt_ia += "L'histoire doit faire environ 20 phrases, très riche en détails, avec un véritable récit captivant et un beau dénouement."
+            
+        with st.spinner("🤖 L'IA invente votre histoire sur-mesure..."):
+            try:
+                model = genai.GenerativeModel("gemini-1.5-flash")
+                response = model.generate_content(prompt_ia)
+                st.session_state['histoire_generee'] = response.text.strip()
+            except Exception as e:
+                # Histoire de secours hors-ligne
+                st.warning("Mode secours (génération hors-ligne) :")
+                st.session_state['histoire_generee'] = f"{h} part à l'aventure dans une grande forêt magique. Il croise un petit oiseau bleu qui chante une belle mélodie. Ensemble, ils découvrent un trésor caché au pied d'un grand arbre. Content de sa journée, {h} rentre chez lui le cœur joyeux."
 
     if 'histoire_generee' in st.session_state:
         st.write("---")
         st.success("📖 Histoire générée :")
         st.write(st.session_state['histoire_generee'])
+        
+        # Options d'adaptation DYS sur l'histoire
         opts3 = build_controls("t3")
         render_full_dys_text(st.session_state['histoire_generee'], **opts3)
 
@@ -591,6 +566,83 @@ elif menu_selection == "🎤 Aide à la dictée":
             <!DOCTYPE html>
             <html lang="fr">
             <head><meta charset="UTF-8"><title>Page 2 - Mots à découper</title></head>
+
+# ==========================================
+# MODULE : AIDE À LA DICTÉE (AVEC IA)
+# ==========================================
+elif menu_selection == "🎤 Aide à la dictée":
+    st.title("🎤 Préparation de la Dictée Personnalisée")
+    st.subheader("Ophélie Bascou Drimaracci")
+    st.write("Saisissez jusqu'à 20 mots. L'IA générera automatiquement une vraie phrase logique les mettant en contexte !")
+    
+    st.write("---")
+    
+    input_text = st.text_area(
+        "Entrez vos mots (séparés par un espace, une virgule ou une ligne) :",
+        height=120,
+        placeholder="Exemple: bateau maison cheval oiseau fleur château garçon soleil chêne dragon..."
+    )
+    
+    raw_words = re.split(r'[\s,\n]+', input_text.strip())
+    words_list = [w.strip() for w in raw_words if w.strip()][:20]
+    
+    if words_list:
+        st.success(f"📋 **{len(words_list)} mot(s) enregistré(s)** : {', '.join(words_list)}")
+        st.write("---")
+        
+        dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
+            "Page 1 : 🎨 Mots codés DYS",
+            "Page 2 : ✂️ Mots découpés",
+            "Page 3 : ✏️ Mots à trous",
+            "Page 4 : 📝 Phrase de dictée (IA)"
+        ])
+        
+        # PAGE 1 : Mots avec codes DYS
+        with dic_tab1:
+            st.write("### Page 1 : Fiche de révision avec codes visuels DYS")
+            p1_html_parts = []
+            for w in words_list:
+                coded_w = render_word_multilevel(w, show_phonemes=True)
+                p1_html_parts.append(f"<div style='display: inline-block; margin: 15px; font-size: 26px;'>{coded_w}</div>")
+            
+            p1_content = "".join(p1_html_parts)
+            st.markdown(f"<div style='background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>{p1_content}</div>", unsafe_allow_html=True)
+            
+            p1_export = f"""
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head><meta charset="UTF-8"><title>Page 1 - Mots Codés DYS</title></head>
+            <body style="font-family: sans-serif; padding: 30px;">
+                <h1 style="text-align: center;">Fiche de Révision - Dictée</h1>
+                <hr><br>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 28px;">
+                    {p1_content}
+                </div>
+            </body>
+            </html>
+            """
+            st.download_button("📥 Télécharger / Imprimer la Page 1 (HTML)", data=p1_export, file_name="page1_mots_codes.html", mime="text/html")
+            
+        # PAGE 2 : Mots découpés (Carrés)
+        with dic_tab2:
+            st.write("### Page 2 : Mots avec lettres séparées par des carrés (à découper)")
+            p2_html_parts = []
+            for w in words_list:
+                letters_squares = []
+                for char in w:
+                    letters_squares.append(
+                        f"<span style='display: inline-block; width: 40px; height: 40px; border: 2px solid #333; margin: 2px; text-align: center; line-height: 40px; font-weight: bold; font-size: 22px;'>{char}</span>"
+                    )
+                word_box = f"<div style='margin-bottom: 20px;'><span style='display: inline-block; margin-right: 15px; font-weight: bold; font-size: 18px; min-width: 120px;'>{w} :</span> {''.join(letters_squares)}</div>"
+                p2_html_parts.append(word_box)
+                
+            p2_content = "".join(p2_html_parts)
+            st.markdown(f"<div style='background-color: #ffffff; padding: 20px; border: 1px dashed #ccc; border-radius: 10px;'>{p2_content}</div>", unsafe_allow_html=True)
+            
+            p2_export = f"""
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head><meta charset="UTF-8"><title>Page 2 - Mots à découper</title></head>
             <body style="font-family: sans-serif; padding: 30px;">
                 <h1 style="text-align: center;">Étiquettes à découper</h1>
                 <hr><br>
@@ -600,7 +652,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             """
             st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name="page2_mots_a_decouper.html", mime="text/html")
             
-        # PAGE 3 : Dictée à trous (mots ciblés)
+        # PAGE 3 : Dictée à trous (mots isolés)
         with dic_tab3:
             st.write("### Page 3 : Dictée à trous (Sons et lettres complexes masqués)")
             p3_html_parts = []
@@ -635,48 +687,47 @@ elif menu_selection == "🎤 Aide à la dictée":
             """
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name="page3_dictee_a_trous.html", mime="text/html")
 
-        # PAGE 4 : Dictée à trous de phrases complètes
+        # PAGE 4 : Phrase de dictée IA en contexte
         with dic_tab4:
-            st.write("### Page 4 : Dictée de phrases à trous")
-            st.write("Saisissez votre texte de dictée complet (ou vos phrases). Les mots de la liste à réviser seront automatiquement remplacés par des lignes à compléter.")
+            st.write("### Page 4 : Phrase de dictée créée par l'IA en contexte")
             
-            texte_dictee_defaut = f"Aujourd'hui, nous préparons la dictée. Les mots à réviser sont : {', '.join(words_list)}."
-            full_dictation_text = st.text_area(
-                "Saisissez le texte ou les phrases de la dictée :",
-                value=texte_dictee_defaut,
-                height=150,
-                key="text_phrase_dictee"
-            )
+            if st.button("🤖 Générer la phrase de dictée avec l'IA", type="primary", key="btn_gen_phrase_ia"):
+                prompt_phrase = f"Écris une ou deux phrases grammaticalement correctes et simples en français qui contiennent obligatoirement TOUS les mots suivants : {', '.join(words_list)}. Ne donne aucune explication, uniquement le texte de la phrase."
+                
+                with st.spinner("L'IA génère la phrase de dictée..."):
+                    try:
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        res = model.generate_content(prompt_phrase)
+                        st.session_state['phrase_ia_dictee'] = res.text.strip()
+                    except Exception:
+                        st.session_state['phrase_ia_dictee'] = f"Aujourd'hui nous révisons les mots : {', '.join(words_list)}."
             
-            if full_dictation_text:
-                # Remplacement automatique des mots de la liste par des lignes à trous
-                processed_phrases_html = full_dictation_text
-                for target_word in words_list:
-                    # Remplacement insensible à la casse avec bordure soulignée
-                    pattern = re.compile(re.escape(target_word), re.IGNORECASE)
-                    hole_line = f"<span style='display: inline-block; min-width: {max(80, len(target_word)*18)}px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
-                    processed_phrases_html = pattern.sub(hole_line, processed_phrases_html)
+            phrase_base = st.session_state.get('phrase_ia_dictee', f"Aujourd'hui nous révisons les mots : {', '.join(words_list)}.")
+            
+            # Application automatique des trous sur la phrase générée
+            phrase_trous = phrase_base
+            for w in words_list:
+                pattern = re.compile(re.escape(w), re.IGNORECASE)
+                hole = f"<span style='display: inline-block; min-width: {max(70, len(w)*16)}px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
+                phrase_trous = pattern.sub(hole, phrase_trous)
                 
-                # Formatage avec retours à la ligne
-                processed_phrases_html = processed_phrases_html.replace('\n', '<br><br>')
-                
-                st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2;'>{processed_phrases_html}</div>", unsafe_allow_html=True)
-                
-                p4_export = f"""
-                <!DOCTYPE html>
-                <html lang="fr">
-                <head><meta charset="UTF-8"><title>Page 4 - Dictée de phrases à trous</title></head>
-                <body style="font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;">
-                    <h1 style="text-align: center;">Dictée de phrases à trous</h1>
-                    <p style="text-align: center; font-size: 18px;">Écoute attentivement et complète les mots manquants :</p>
-                    <hr><br>
-                    <div>
-                        {processed_phrases_html}
-                    </div>
-                </body>
-                </html>
-                """
-                st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrases_a_trous.html", mime="text/html")
+            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
+            
+            p4_export = f"""
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head><meta charset="UTF-8"><title>Page 4 - Dictée en contexte</title></head>
+            <body style="font-family: sans-serif; padding: 40px; font-size: 26px; line-height: 2.5;">
+                <h1 style="text-align: center;">Dictée de phrases en contexte</h1>
+                <p style="text-align: center; font-size: 18px;">Écoute la dictée et complète les mots manquants :</p>
+                <hr><br>
+                <div>
+                    {phrase_trous}
+                </div>
+            </body>
+            </html>
+            """
+            st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrase_dictee_a_trous.html", mime="text/html")
     else:
         st.info("💡 Veuillez saisir au moins un mot ci-dessus pour générer les 4 pages de travail.")
-        
+            
