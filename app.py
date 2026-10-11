@@ -523,6 +523,8 @@ if menu_selection == "🏠 Présentation":
     * **📷 Importation OCR** : Prenez en photo un livre ou une feuille pour en extraire le texte et l'adapter.
     * **✨ Générateur d'histoires magiques** : Créez des histoires personnalisées selon différents niveaux de difficulté.
     * **🎤 Aide à la dictée (Propulsée par l'IA)** : Analyse phonétique intelligente, découpage syllabique et génération de dictées contextuelles.
+    * **📐 Grammaire Visuelle & Accords":afficher_page_grammaire(votre_fonction_ia)
+    
     """)
 
 elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
