@@ -282,6 +282,7 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False,
         i += 1
         
     return blocks
+
 def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word="", is_end_of_sentence=False, nb_syllables_override=None):
     clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
     prenoms_exclus = globals().get('PRENOMS_CONSONNE_FINALE_PRONONCEE', {"mathis"})
@@ -308,20 +309,40 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
         phoneme = block.get('phoneme', '')
         render_type = block.get('render_type', 'normal')
         
+        # Style du texte principal
         if show_colors:
             if render_type == 'highlight':
-                word_html_parts.append(f"<span style='color: {color}; font-weight: bold;'>{text}</span>")
+                txt_styled = f"<span style='color: {color}; font-weight: bold;'>{text}</span>"
             elif render_type == 'color_text':
-                word_html_parts.append(f"<span style='color: {color};'>{text}</span>")
+                txt_styled = f"<span style='color: {color};'>{text}</span>"
             elif render_type == 'muted':
-                word_html_parts.append(f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>")
+                txt_styled = f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>"
             else:
-                word_html_parts.append(f"<span>{text}</span>")
+                txt_styled = f"<span>{text}</span>"
         else:
             if render_type == 'muted':
-                word_html_parts.append(f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>")
+                txt_styled = f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>"
             else:
-                word_html_parts.append(f"<span>{text}</span>")
+                txt_styled = f"<span>{text}</span>"
+                
+        # Petit pont sous chaque bloc de syllabe si show_arcs est Vrai
+        if show_arcs:
+            arc_span = (
+                "<div style='line-height: 0; margin-top: 2px; text-align: center;'>"
+                "<span style='display: inline-block; width: 100%; min-width: 14px; height: 6px; "
+                "border: 2px solid #4a90e2; border-top: none; border-radius: 0 0 10px 10px;'></span>"
+                "</div>"
+            )
+        else:
+            arc_span = ""
+            
+        # On assemble le morceau (Texte + son arc en dessous)
+        word_html_parts.append(
+            f"<span style='display: inline-block; text-align: center; vertical-align: top; margin: 0 1px;'>"
+            f"<div>{txt_styled}</div>"
+            f"{arc_span}"
+            f"</span>"
+        )
             
         if show_phonemes and phoneme:
             ph_color = color if show_colors and color else '#555555'
@@ -331,40 +352,16 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
             
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
-
-    # ➔ Choix du nombre de syllabes (IA prioritaire, sinon fonction de secours)
-    if nb_syllables_override is not None:
-        num_syllables = max(1, nb_syllables_override)
-    else:
-        num_syllables = count_syllables_approx(word)
-
-    # Génération des arcs/ponts syllabiques en CSS
-    if show_arcs:
-        arcs_html = "".join([
-            "<span style='"
-            "display: inline-block; "
-            "width: 14px; "
-            "height: 7px; "
-            "border: 2px solid #4a90e2; "
-            "border-top: none; "
-            "border-radius: 0 0 12px 12px; "
-            "margin: 0 1px;"
-            "'></span>" 
-            for _ in range(num_syllables)
-        ])
-        w_arcs = f"<div style='line-height: 0; margin-top: 2px;'>{arcs_html}</div>"
-    else:
-        w_arcs = ""
-
-    html = f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'>"
+    
+    # Conteneur global du mot
+    html = f"<span style='display: inline-block; text-align: center; margin: 0 4px; vertical-align: top;'>"
     html += f"<div>{w_main}</div>"
-    if show_arcs:
-        html += w_arcs
     if show_phonemes:
-        html += f"<div style='font-size: 0.8em; margin-top: 2px;'>{w_ph}</div>"
+        html += f"<div style='font-size: 0.8em; margin-top: 4px;'>{w_ph}</div>"
     html += "</span>"
-
+    
     return html
+
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
     lines = text.split('\n')
     rendered_lines_adapted = []
