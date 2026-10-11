@@ -8,25 +8,23 @@ import random
 import hashlib
 import json
 import streamlit as st
-import streamlit as st
 from groq import Groq
 import google.generativeai as genai
 
 def interroger_ia(prompt_texte, temperature=0.8):
     """
-    Fonction centralisée : Essaie Groq (llama3-70b-8192), 
-    puis bascule sur Gemini (gemini-3.8-flash) en cas de besoin.
+    Fonction centralisée avec le modèle Groq actif (llama-3.3-70b-versatile).
     """
     erreurs = []
 
-    # 1. Tentative avec GROQ
+    # 1. Tentative avec GROQ (Modèle actif : llama-3.3-70b-versatile)
     groq_key = st.secrets.get("GROQ_API_KEY")
     if groq_key:
         try:
             client = Groq(api_key=groq_key.strip())
             chat_completion = client.chat.completions.create(
                 messages=[{"role": "user", "content": prompt_texte}],
-                model="llama3-70b-8192",
+                model="llama-3.3-70b-versatile",
                 temperature=temperature,
             )
             if chat_completion.choices and chat_completion.choices[0].message.content:
@@ -36,7 +34,7 @@ def interroger_ia(prompt_texte, temperature=0.8):
     else:
         erreurs.append("Groq: Clé absente des secrets")
 
-    # 2. Secours avec GEMINI
+    # 2. Secours avec GEMINI (gemini-3.8-flash)
     gemini_key = st.secrets.get("GEMINI_API_KEY")
     if gemini_key:
         try:
@@ -53,6 +51,7 @@ def interroger_ia(prompt_texte, temperature=0.8):
 
     return f"Erreur IA -> " + " | ".join(erreurs)
     
+
     # -------------------------------------------------------------
     # 2. SECOURS AVEC GOOGLE GEMINI
     # -------------------------------------------------------------
