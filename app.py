@@ -621,7 +621,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
-         # -----------------------------------------
+        # -----------------------------------------
         # PAGE 4 : Phrase de dictée en contexte (Courte + Code Couleur)
         # -----------------------------------------
         with dic_tab4:
