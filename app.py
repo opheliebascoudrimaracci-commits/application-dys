@@ -457,13 +457,13 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
     </html>
     """
     
-    button_key = f"download_btn_{hashlib.md5((text + str(key_suffix)).encode()).hexdigest()[:10]}"
-    
+    button_key = f"btn_download_{key_suffix}" if key_suffix else "btn_download_default"
+
     st.download_button(
         label="📥 Télécharger / Imprimer le texte adapté (avec couleurs et aides)",
-        data=html_export_adapte,
-        file_name="texte_adapte_dys.html",
-        mime="text/html",
+        data=text,
+        file_name=f"texte_adapte_{key_suffix}.txt",
+        mime="text/plain",
         key=button_key
     )
 
