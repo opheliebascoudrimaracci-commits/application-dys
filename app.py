@@ -681,7 +681,20 @@ elif menu_selection == "🎤 Aide à la dictée":
                 word_holes = []
                 for b in blocks:
                     if b.get('render_type') in ['highlight', 'muted']:
-
+                        word_holes.append("<span style='display: inline-block; min-width: 35px; border-bottom: 2px solid #000; margin: 0 2px;'>&nbsp;</span>")
+                    else:
+                        word_holes.append("<span>" + str(b.get('text')) + "</span>")
+                
+                hole_box = "<div style='font-size: 26px; margin: 15px; display: inline-block; min-width: 200px;'>" + "".join(word_holes) + "</div>"
+                p3_html_parts.append(hole_box)
+                
+            p3_content = "".join(p3_html_parts)
+            st.markdown("<div style='background-color: #f9f9f9; padding: 20px; border-radius: 10px;'>" + p3_content + "</div>", unsafe_allow_html=True)
+            
+            p3_export = "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 30px; font-size: 30px;'>" + p3_content + "</div></body></html>"
+            
+            st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name="page3_dictee_a_trous.html", mime="text/html")
+            
 # ==========================================
 # MODULE : AIDE À LA DICTÉE (AVEC IA)
 # ==========================================
