@@ -385,11 +385,11 @@ elif menu_selection == "🎤 Aide à la dictée":
     st.write("Saisissez vos mots. L'IA analyse instantanément la phonétique et génère les 4 pages de travail adaptées !")
     
     st.write("---")
-    
+
     input_text = st.text_area(
         "Entrez vos mots (séparés par un espace, une virgule ou une ligne) :",
         height=120,
-        placeholder="Exemple: Mathis, bateau, chant, magique",
+        placeholder="Exemple: bateau, chant, poule",
         key="input_mots_dictee_unique"
     )
     
@@ -401,16 +401,19 @@ elif menu_selection == "🎤 Aide à la dictée":
         st.write("---")
         
         file_signature = "_".join(words_list)
-        
-        dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
+    
+            dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
             "Page 1 : 🎨 Mots codés DYS",
             "Page 2 : ✂️ Mots découpés",
             "Page 3 : ✏️ Mots à trous",
             "Page 4 : 📝 Phrase contextuelle (IA)"
         ])
         
+        # -----------------------------------------
+        # PAGE 1 : Mots codés DYS
+        # -----------------------------------------
         with dic_tab1:
-            st.markdown("### Page 1 : Fiche de révision visuelle (IA)")
+            st.markdown("### Page 1 : Fiche de révision visuelle")
             p1_parts = []
             for w in words_list:
                 try:
@@ -425,6 +428,9 @@ elif menu_selection == "🎤 Aide à la dictée":
             p1_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 1</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Fiche de Révision - Mots</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p1_content}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 1 (HTML)", data=p1_export, file_name=f"page1_{file_signature}.html", mime="text/html", key="dl_p1_final")
             
+        # -----------------------------------------
+        # PAGE 2 : Mots découpés (Syllabes & Lettres)
+        # -----------------------------------------
         with dic_tab2:
             st.markdown("### Page 2 : Mots découpés en syllabes et lettres")
             p2_parts = []
@@ -452,8 +458,11 @@ elif menu_selection == "🎤 Aide à la dictée":
             p2_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 2 - Mots découpés</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Mots découpés en lettres</h1><hr><br>{p2_content}</body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name=f"page2_{file_signature}.html", mime="text/html", key=f"dl_p2_final_{file_signature}")
 
+        # -----------------------------------------
+        # PAGE 3 : Mots à trous (Trous systématiques)
+        # -----------------------------------------
         with dic_tab3:
-            st.markdown("### Page 3 : Dictée à trous intelligente (IA)")
+            st.markdown("### Page 3 : Dictée à trous sur les mots isolés")
             p3_parts = []
             for w in words_list:
                 w_clean = w.strip()
@@ -465,8 +474,9 @@ elif menu_selection == "🎤 Aide à la dictée":
                     for block in blocks:
                         text = block.get('text', '')
                         render_type = block.get('render_type', 'normal')
+                        is_muted = block.get('is_muted', False)
                         
-                        if render_type in ['highlight', 'muted']:
+                        if render_type == 'highlight' or is_muted:
                             hole_word_parts.append("_" * len(text))
                             has_hole = True
                         else:
@@ -491,7 +501,10 @@ elif menu_selection == "🎤 Aide à la dictée":
             p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
-          with dic_tab4:
+        # -----------------------------------------
+        # PAGE 4 : Phrase de dictée en contexte (IA dynamique)
+        # -----------------------------------------
+        with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
             default_sentence = "Aujourd'hui, pour notre dictée, nous découvrons ces mots : " + " ".join([f"Le {w} est joli." for w in words_list])
@@ -559,4 +572,4 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key=f"dl_p4_corr_{file_signature}")
-  
+            
