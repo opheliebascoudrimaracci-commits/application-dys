@@ -567,6 +567,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             <html lang="fr">
             <head><meta charset="UTF-8"><title>Page 2 - Mots à découper</title></head>
 
+f"""
 # ==========================================
 # MODULE : AIDE À LA DICTÉE (AVEC IA)
 # ==========================================
