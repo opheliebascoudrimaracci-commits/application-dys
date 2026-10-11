@@ -100,7 +100,6 @@ EXACT_COMPLEX_SOUNDS = {
     'ou': ('#FF0000', 'ou'),
     'an': ('#E67E22', 'an'),
     'en': ('#E67E22', 'an'),
-    'et': ('#8E44AD', 'é'),
     'ez': ('#8E44AD', 'é'),
     'er': ('#8E44AD', 'é'),
     'ai': ('#C0392B', 'è'),
@@ -130,37 +129,61 @@ def count_syllables_approx(word):
 PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "thomas"]
 
 # Fonction de découpage avec application garantie du dictionnaire de couleurs
-def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False):
+def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False, is_end_of_sentence=False):
     blocks = []
-    w_lower = word.lower()
+    clean_word = word.strip(".,;:?!'\"«» ")
+    w_lower = clean_word.lower()
     n = len(word)
     i = 0
     
-    # On lie directement le dictionnaire des sons complexes ici
+    # 1. CAS DU MOT-OUTIL ISOLÉ "et"
+    if w_lower == "et":
+        if is_end_of_sentence:
+            # En fin de phrase -> Exclusion (pas de couleur ni phonème)
+            for char in word:
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+            return blocks
+        else:
+            # En milieu de phrase -> Son é (#8E44AD)
+            blocks.append({'text': word, 'is_muted': False, 'render_type': 'color_text', 'color': '#8E44AD', 'phoneme': 'é'})
+            return blocks
+
     sounds_dict = EXACT_COMPLEX_SOUNDS
-    
+
     while i < n:
         char = word[i]
-        c_lower = w_lower[i]
-        
-        # 1. Gestion du "th" (le t se prononce, le h est grisé/muet)
+        c_lower = char.lower()
+
+        # 2. CAS DE LA FIN DE MOT EN "-et" (ex: poulet, complet, bonnet)
+        # On vérifie si "et" est exactement à la fin du mot
+        if i == n - 2 and w_lower[i:i+2] == 'et' and n > 2:
+            blocks.append({
+                'text': word[i:i+2], 
+                'is_muted': False, 
+                'render_type': 'color_text', 
+                'color': '#8E44AD', 
+                'phoneme': 'é'
+            })
+            i += 2
+            continue
+
+        # 3. Gestion du "th" (le t se prononce, le h est muet)
         if i < n - 1 and w_lower[i:i+2] == 'th':
             blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
             blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 2
             continue
 
-        # 2. Sons complexes (application du code couleur)
+        # 4. Sons complexes généraux du dictionnaire
         matched_complex = False
         if sounds_dict:
-            for length in [3, 2]:
+            for length in [4, 3, 2]:
                 if i + length <= n:
                     sub = w_lower[i:i+length]
                     if sub in sounds_dict:
                         rule = sounds_dict[sub]
-                        combined_text = word[i:i+length]
                         blocks.append({
-                            'text': combined_text, 
+                            'text': word[i:i+length], 
                             'is_muted': False, 
                             'render_type': 'color_text', 
                             'color': rule[0], 
@@ -172,13 +195,12 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
         if matched_complex:
             continue
 
-        # 3. Gestion du 'ent' muet des verbes au pluriel
+        # 5. Gestion des lettres muettes et terminaisons ordinaires
         if is_plural_verb and i >= n - 3:
             blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 1
             continue
 
-        # 4. Gestion du 's' final (prend en compte Mathis, Alexis, etc.)
         if c_lower == 's':
             is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
             is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
@@ -193,7 +215,6 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # 5. Autres consonnes finales (t, d, x)
         if i == n - 1 and c_lower in ['t', 'd', 'x'] and n > 2:
             if keep_final_consonant:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
@@ -202,13 +223,10 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # 6. Caractère par défaut
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
     return blocks
-
-# Fonction d'affichage multi-niveaux
 def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word=""):
     clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
     is_consonne_prononcee = clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE
