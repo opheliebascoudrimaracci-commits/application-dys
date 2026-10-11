@@ -96,29 +96,30 @@ def get_syllables_count_ai(word):
         pass
     return max(1, len(word) // 3)
 
-# Sécurité pour créer la signature si elle n'existe pas encore
-if 'file_signature' not in locals() and 'file_signature' not in globals():
-    file_signature = "_".join([w.strip() for w in words_list])
+# Sécurité : on initialise le cache uniquement si words_list est disponible
+if 'words_list' in locals() and words_list:
+    if 'file_signature' not in locals():
+        file_signature = "_".join([w.strip() for w in words_list])
 
-# Cache global des syllabes pour toute l'application
-if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllables') != file_signature:
-    st.session_state['sig_syllables'] = file_signature
-    st.session_state['syllables_cache'] = {}
-    for w in words_list:
-        w_clean = w.strip().lower()
-        if w_clean:
-            st.session_state['syllables_cache'][w_clean] = get_syllables_count_ai(w_clean)
+    if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllables') != file_signature:
+        st.session_state['sig_syllables'] = file_signature
+        st.session_state['syllables_cache'] = {}
+        for w in words_list:
+            w_clean = w.strip().lower()
+            if w_clean:
+                st.session_state['syllables_cache'][w_clean] = get_syllables_count_ai(w_clean)
 
 def count_syllables_approx(word):
     """Fonction globale alimentée par l'IA pour toute l'application."""
     w_clean = word.strip().lower()
-    return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
+    if 'syllables_cache' in st.session_state:
+        return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
+    return max(1, len(w_clean) // 3)
 
 def get_word_syllables(word):
     """Fonction globale alternative."""
-    w_clean = word.strip().lower()
-    return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
-
+    return count_syllables_approx(word)
+                
 def parse_word_to_blocks(word, is_plural_verb=False):
     blocks = []
     w_lower = word.lower()
