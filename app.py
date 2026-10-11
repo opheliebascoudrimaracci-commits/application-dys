@@ -13,11 +13,12 @@ import google.generativeai as genai
 # ==========================================
 # FONCTION IA CENTRALISÉE (Groq + Gemini)
 # ==========================================
-def interroger_ia(prompt_texte, temperature=0.7):
+def interroger_ia(prompt_texte, temperature=0.8):
     """
-    Fonction centralisée : essaie d'abord Groq (ultra-rapide, gratuit),
-    puis bascule sur Gemini si besoin, et renvoie une chaîne de caractères.
+    Fonction centralisée avec retour d'erreur explicite pour le diagnostic.
     """
+    erreurs = []
+
     # 1. Tentative avec Groq
     groq_key = st.secrets.get("GROQ_API_KEY")
     if groq_key:
@@ -30,23 +31,29 @@ def interroger_ia(prompt_texte, temperature=0.7):
             )
             if chat_completion.choices and chat_completion.choices[0].message.content:
                 return chat_completion.choices[0].message.content.strip()
-        except Exception:
-            pass  # Si Groq échoue, on passe à la suite
+        except Exception as e:
+            erreurs.append(f"Groq: {e}")
+    else:
+        erreurs.append("Groq: Clé 'GROQ_API_KEY' non trouvée dans st.secrets")
 
-    # 2. Secours avec Gemini
+    # 2. Tentative de secours avec Gemini
     gemini_key = st.secrets.get("GEMINI_API_KEY")
     if gemini_key:
         try:
             genai.configure(api_key=gemini_key)
-            model = genai.GenerativeModel("gemini-3.8-flash")
-            res = model.generate_content(prompt_texte)
+            generation_config = {"temperature": temperature}
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            res = model.generate_content(prompt_texte, generation_config=generation_config)
             if res and res.text:
                 return res.text.strip()
-        except Exception:
-            pass
+        except Exception as e:
+            erreurs.append(f"Gemini: {e}")
+    else:
+        erreurs.append("Gemini: Clé 'GEMINI_API_KEY' non trouvée dans st.secrets")
 
-    return "Erreur : Impossible de joindre les services d'IA pour le moment."
-    
+    # Si les deux échouent, on retourne le détail des erreurs
+    return f"Erreur IA -> " + " | ".join(erreurs)
+
 
 # 1. Configuration unique de la page
 st.set_page_config(
