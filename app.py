@@ -252,7 +252,7 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_fam
     
     return html
 
-def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True):
+def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
     lines = text.split('\n')
     rendered_lines_adapted = []
     rendered_lines_training = []
