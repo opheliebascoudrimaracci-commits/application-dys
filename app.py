@@ -208,8 +208,8 @@ def parse_word_to_blocks(word, is_plural_verb=False):
         i += 1
         
     return blocks
-
-def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family):
+    
+def render_word_multilevel(word, show_phonemes=True, prev_word=""):
     blocks = parse_word_to_blocks(word)
     word_html_parts = []
     phoneme_html_parts = []
