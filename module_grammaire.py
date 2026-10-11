@@ -183,7 +183,26 @@ def generer_fiche_html_imprimable(phrase_data):
     </body>
     </html>
     """
-
+# Légende des symboles de grammaire pour les enfants DYS
+def afficher_legende_couleurs():
+    st.markdown("### 🎨 Légende des symboles grammaticaux")
+    
+    cols = st.columns(3)
+    # Dédoublonnage des symboles pour la légende
+    uniques = {}
+    for k, v in SYMBOLES_GRAMMAIRE.items():
+        emoji = v["emoji"]
+        if emoji not in uniques:
+            uniques[emoji] = v["nom"]
+            
+    unique_items = list(uniques.items())
+    
+    for idx, (emoji, nom) in enumerate(unique_items):
+        col_idx = idx % 3
+        with cols[col_idx]:
+            st.markdown(f"**{emoji}** : {nom}")
+    st.markdown("---")
+    
 def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
     
