@@ -647,36 +647,38 @@ elif menu_selection == "🎤 Aide à la dictée":
             # Signature combinée pour forcer la régénération si on change les mots OU le niveau
             combined_sig = f"{file_signature}_{niveau_scolaire}"
             
-            # Initialisation par défaut garantie
-            default_phrase = f"Aujourd'hui, nous étudions {', '.join(words_list)} avec beaucoup d'attention."
-            if 'phrase_ia_dictee' not in st.session_state:
-                st.session_state['phrase_ia_dictee'] = default_phrase
+            # Clé unique en session pour ce niveau et ces mots
+            session_key_ia = f"phrase_ia_{combined_sig}"
             
-            # Génération automatique dès que les mots ou le niveau changent
-            if st.session_state.get('current_combined_sig') != combined_sig:
-                st.session_state['current_combined_sig'] = combined_sig
-                with st.spinner(f"🤖 L'IA compose une dictée adaptée au niveau {niveau_scolaire}..."):
+            # Génération automatique ou récupération de la variante spécifique à ce niveau
+            if session_key_ia not in st.session_state:
+                with st.spinner(f"🤖 L'IA compose une dictée unique adaptée au niveau {niveau_scolaire}..."):
                     try:
                         if "GEMINI_API_KEY" in st.secrets:
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         
                         prompt_phrase = (
                             f"Tu es un professeur expert en pédagogie et élèves DYS. "
-                            f"Écris une courte dictée parfaitement adaptée au niveau scolaire : **{niveau_scolaire}**. "
+                            f"Écris une *nouvelle* courte dictée originale et différente, parfaitement adaptée au niveau scolaire : **{niveau_scolaire}**. "
                             f"Adapte la complexité grammaticale, la longueur des phrases et le vocabulaire précisément à ce niveau. "
                             f"Le texte doit intégrer impérativement et naturellement TOUS ces mots : {', '.join(words_list)}. "
                             f"Renvoie uniquement le texte de la dictée, sans aucune introduction, sans guillemets et sans commentaires."
                         )
                         
+                        # Utilisation d'une configuration avec température pour forcer la diversité des textes
+                        generation_config = {"temperature": 0.8}
                         model = genai.GenerativeModel("gemini-3.8-flash")
-                        res = model.generate_content(prompt_phrase)
+                        res = model.generate_content(prompt_phrase, generation_config=generation_config)
 
                         if res and res.text:
-                            st.session_state['phrase_ia_dictee'] = res.text.strip()
+                            st.session_state[session_key_ia] = res.text.strip()
+                        else:
+                            st.session_state[session_key_ia] = f"Aujourd'hui, nous étudions {', '.join(words_list)} avec beaucoup d'attention au niveau {niveau_scolaire}."
                     except Exception as err:
+                        st.session_state[session_key_ia] = f"Aujourd'hui, nous étudions {', '.join(words_list)} en classe."
                         st.error(f"Erreur de l'IA : {err}")
 
-            # Bouton pour relancer une autre variante
+            # Bouton pour relancer une autre variante spécifique à ce niveau
             if st.button("🔄 Générer une autre variante pour ce niveau", key=f"btn_regen_variant_{combined_sig}"):
                 with st.spinner("Création d'une nouvelle variante..."):
                     try:
@@ -684,21 +686,20 @@ elif menu_selection == "🎤 Aide à la dictée":
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         
                         prompt_phrase = (
-                            f"Tu es un professeur expert. Écris une *autre* dictée différente, parfaitement adaptée au niveau **{niveau_scolaire}**, "
+                            f"Tu es un professeur expert. Écris une *autre* dictée complètement différente et originale, parfaitement adaptée au niveau **{niveau_scolaire}**, "
                             f"qui intègre impérativement TOUS ces mots : {', '.join(words_list)}. "
                             f"Renvoie uniquement le texte."
                         )
+                        generation_config = {"temperature": 0.9}
                         model = genai.GenerativeModel("gemini-3.8-flash")
-                        res = model.generate_content(prompt_phrase)
+                        res = model.generate_content(prompt_phrase, generation_config=generation_config)
                         if res and res.text:
-                            st.session_state['phrase_ia_dictee'] = res.text.strip()
+                            st.session_state[session_key_ia] = res.text.strip()
                     except Exception:
                         pass
                     st.rerun()
 
-            phrase_base = st.session_state.get('phrase_ia_dictee')
-            if not phrase_base:
-                phrase_base = default_phrase
+            phrase_base = st.session_state.get(session_key_ia, f"Aujourd'hui, nous étudions {', '.join(words_list)}.")
             
             # Application DYS sécurisée sur la phrase générée
             words_in_phrase = phrase_base.split() if phrase_base else ["Erreur", "de", "génération"]
