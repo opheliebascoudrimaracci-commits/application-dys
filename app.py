@@ -558,8 +558,8 @@ elif menu_selection == "🎤 Aide à la dictée":
                     coded_w = render_word_multilevel(w, show_phonemes=True)
                 except Exception:
                     coded_w = w
-                # On retire color: #1e1b4b et font-weight: bold pour laisser les couleurs des phonèmes s'exprimer
-                p1_parts.append(f"<div style='display: inline-block; margin: 10px; padding: 10px 15px; background: #fff; border: 2px solid #4f46e5; border-radius: 8px; font-size: 24px;'>{coded_w}</div>")
+                # On force explicitement une couleur noire de base (color: #000000;) pour que le texte soit bien visible
+                p1_parts.append(f"<div style='display: inline-block; margin: 10px; padding: 10px 15px; background: #ffffff; border: 2px solid #4f46e5; border-radius: 8px; font-size: 24px; color: #000000;'>{coded_w}</div>")
             
             p1_content = "".join(p1_parts)
             st.markdown(f"<div style='background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>{p1_content}</div>", unsafe_allow_html=True)
