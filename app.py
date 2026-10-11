@@ -622,13 +622,13 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (Correction Trous & Couleurs)
+        # PAGE 4 : Phrase de dictée en contexte (Intégration garantie des mots)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            # Phrase par défaut basée sur VOS mots réels
-            default_sentence = "Aujourd'hui, nous étudions les mots suivants : " + ", ".join(words_list) + "."
+            # Phrase par défaut qui intègre obligatoirement VOS mots de la liste
+            default_sentence = "Aujourd'hui, pour notre dictée, nous découvrons ces mots : " + " ".join([f"Le {w} est joli." for w in words_list])
             
             if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
                 st.session_state['current_words_sig'] = file_signature
@@ -658,12 +658,12 @@ elif menu_selection == "🎤 Aide à la dictée":
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
-            # 1. Version Élève (Génération fiable des trous)
+            # 1. Version Élève (Génération des trous sur les mots de la liste)
             phrase_trous = phrase_base
             for w in words_list:
                 w_clean = w.strip()
                 if w_clean:
-                    pattern = re.compile(re.escape(w_clean), re.IGNORECASE)
+                    pattern = re.compile(r'\b' + re.escape(w_clean) + r'\b', re.IGNORECASE)
                     hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
                     phrase_trous = pattern.sub(hole, phrase_trous)
                 
@@ -675,7 +675,7 @@ elif menu_selection == "🎤 Aide à la dictée":
 
             st.markdown("---")
             
-            # 2. Version Correcteur (Application du Code Couleur DYS)
+            # 2. Version Correcteur (Application du Code Couleur DYS sur les mots)
             st.markdown("#### ✅ Version Correcteur (Avec Code Couleur DYS)")
             
             phrase_corrige = phrase_base
@@ -683,7 +683,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                 w_clean = w.strip()
                 if w_clean:
                     coded_target = render_word_multilevel(w_clean, show_phonemes=False)
-                    pattern = re.compile(re.escape(w_clean), re.IGNORECASE)
+                    pattern = re.compile(r'\b' + re.escape(w_clean) + r'\b', re.IGNORECASE)
                     phrase_corrige = pattern.sub(coded_target, phrase_corrige)
 
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_corrige}</div>", unsafe_allow_html=True)
