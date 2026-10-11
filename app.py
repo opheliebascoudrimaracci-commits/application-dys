@@ -601,14 +601,14 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (IA ultra-robuste)
+        # PAGE 4 : Phrase de dictée en contexte (IA à jour et syntaxe corrigée)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            if 'current_words_sig' not in st.session_state || st.session_state['current_words_sig'] != file_signature:
+            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
                 st.session_state['current_words_sig'] = file_signature
-                st.session_state['phrase_ia_dictee'] = f"Mathis joue dans le champ de blé avec ses amis."
+                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une histoire rigolote avec nos mots : " + ", ".join(words_list) + "."
 
             if st.button("🤖 Générer une histoire adaptée avec l'IA", type="primary", key="btn_gen_ia_final"):
                 try:
@@ -622,14 +622,18 @@ elif menu_selection == "🎤 Aide à la dictée":
                         "Donne uniquement le texte de l'histoire, sans aucun titre ni mise en forme."
                     )
                     
-                    # Tentative de génération via le client standard
-                    model = genai.GenerativeModel("gemini-1.5-flash")
-                    res = model.generate_content(prompt_phrase)
+                    try:
+                        model = genai.GenerativeModel("gemini-2.0-flash")
+                        res = model.generate_content(prompt_phrase)
+                    except Exception:
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        res = model.generate_content(prompt_phrase)
+
                     if res and res.text:
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
-                except Exception:
-                    # Solution de secours intelligente si l'API est restreinte
-                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, Mathis découvre un magnifique paysage avec les mots : " + ", ".join(words_list) + "."
+                except Exception as err:
+                    st.warning(f"Mode secours activé. Erreur: {err}")
+                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions avec application les mots : " + ", ".join(words_list) + "."
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
@@ -643,3 +647,4 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name=f"page4_{file_signature}.html", mime="text/html", key="dl_p4_final")
+            
