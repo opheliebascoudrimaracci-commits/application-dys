@@ -116,7 +116,8 @@ EXACT_COMPLEX_SOUNDS = {
     'é': ('#8E44AD', 'é'),
     'el': ('#333333', 'l'),     # Son "el" en fin de mot (ex: sel, bel)
 }
-
+# Liste des prénoms/mots dont la consonne finale se prononce (ex: Mathis, Thomas, etc.)
+PRENOMS_CONSONNE_FINALE_PRONONCEE = {"mathis", "iris", "lucas", "yanis", "alix", "félix", "david"}
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 def count_syllables_approx(word):
