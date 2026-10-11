@@ -217,44 +217,68 @@ def count_syllables_approx(word):
     vowels = re.findall(r'[aeiouyàâäéèêëîïôöùûüÿœæ]+', word)
     return max(1, len(vowels))
 
-
-def render_word_multilevel(word, show_phonemes=True, show_arcs=False, prev_word=""):
-    blocks = parse_word_to_blocks(word, prev_word=prev_word)
+def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
+    lines = text.split('\n')
+    rendered_lines_adapted = []
+    rendered_lines_training = []
     
-    word_html_parts = []
-    phoneme_html_parts = []
-    
-    for block in blocks:
-        letters = block.get('letters', '')
-        color = block.get('color', '#000000')
-        ph_text = block.get('ph_text', '')
+    for line_idx, line in enumerate(lines):
+        words = line.split()
+        rendered_words_adapted = []
+        rendered_words_training = []
         
-        # Partie mot
-        word_html_parts.append(f"<span style='color: {color};'>{letters}</span>")
-        
-        # Partie phonème (sous le mot)
-        if show_phonemes and ph_text:
-            ph_color = block.get('color', '#555555')
-            phoneme_html_parts.append(f"<span style='color: {ph_color}; font-size: 0.75em;'>{ph_text}</span>")
-        else:
-            phoneme_html_parts.append(f"<span style='font-size: 0.75em;'>&nbsp;</span>")
+        for idx, word in enumerate(words):
+            # Récupération du mot précédent pour la grammaire (sujets pluriels)
+            prev_word = words[idx - 1] if idx > 0 else ""
             
-    w_main = "".join(word_html_parts)
-    w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
+            # Rendu du mot avec son contexte
+            word_html = render_word_multilevel(word, show_phonemes=show_phonemes, prev_word=prev_word)
+            
+            if word_alt and not show_colors:
+                color = "#0055ff" if idx % 2 == 0 else "#cc0000"
+                word_html = f"<span style='color: {color}; font-weight: bold;'>{word_html}</span>"
+                
+            rendered_words_adapted.append(word_html)
+            
+            training_word_html = f"<span style='display: inline-block; margin-right: 18px;'>{word}</span>"
+            rendered_words_training.append(training_word_html)
+            
+        line_content_adapted = " ".join(rendered_words_adapted)
+        if line_alt and not show_colors:
+            line_color = "#0055ff" if line_idx % 2 == 0 else "#cc0000"
+            line_content_adapted = f"<div style='color: {line_color};'>{line_content_adapted}</div>"
+            
+        rendered_lines_adapted.append(line_content_adapted)
+        rendered_lines_training.append(" ".join(rendered_words_training))
+        
+    full_content_adapted = "<br><br>".join(rendered_lines_adapted)
+    full_content_training = "<br><br><br>".join(rendered_lines_training)
     
-    num_syllables = count_syllables_approx(word)
-    w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
+    style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
-    html = f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'>"
-    html += f"<div>{w_main}</div>"
-    if show_arcs:
-        html += f"<div style='font-size: 0.7em; color: #888888; margin-top: -4px;'>{w_arcs}</div>"
-    if show_phonemes:
-        html += f"<div style='font-size: 0.8em; margin-top: 1px;'>{w_ph}</div>"
-    html += "</span>"
+    st.markdown("### 👁️ Aperçu adapté :")
+    st.markdown(f"<div style='font-size: {size}px; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
-    return html
-
+    html_export_adapte = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Texte Adapté</title>
+    </head>
+    <body style="font-size: {size}px; {style_bg}">
+        {full_content_adapted}
+    </body>
+    </html>
+    """
+    
+    st.download_button(
+        label="📥 Télécharger / Imprimer le texte adapté (avec couleurs et aides)",
+        data=html_export_adapte,
+        file_name="texte_adapte_dys.html",
+        mime="text/html"
+    )
+    
 
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
     lines = text.split('\n')
