@@ -241,6 +241,7 @@ def afficher_page_grammaire(fonction_appel_ia):
             st.session_state.phrase_grammaire = nouvelle
             st.success("Phrase analysée et sauvegardée !")
 
+
     elif mode_choix == "Générer une phrase inédite avec l'IA":
         niveau_gen = st.selectbox("Niveau à générer :", [1, 2, 3], key="niv_gen_gram")
         if st.button("Générer une nouvelle phrase", key="btn_gen_gram"):
