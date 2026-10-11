@@ -2,7 +2,6 @@ import streamlit as st
 import json
 import os
 import random
-from app import interroger_ia
 
 # ==========================================
 # 1. SYMBOLES ET COULEURS GRAMMATICAUX
