@@ -16,7 +16,7 @@ st.set_page_config(
 # 2. Injection minimale des polices
 st.markdown("<link href='https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap' rel='stylesheet'>", unsafe_allow_html=True)
 
-# 3. MENU LATÉRAL DE NAVIGATION
+# --- MENU LATÉRAL PRINCIPAL ---
 st.sidebar.title("📌 Navigation")
 menu_selection = st.sidebar.radio(
     "Choisissez un module :",
@@ -24,7 +24,7 @@ menu_selection = st.sidebar.radio(
         "🏠 Présentation",
         "📄 Aide à la lecture (Texte & OCR)",
         "✨ Générateur d'histoires",
-        "🎤 Aide à la dictée"
+        "🎤 Aide à la dictée"  # <-- S'assurer que cette ligne est présente
     ]
 )
 
@@ -513,8 +513,126 @@ elif menu_selection == "✨ Générateur d'histoires":
         opts3 = build_controls("t3")
         render_full_dys_text(st.session_state['histoire_generee'], **opts3)
 
+# ==========================================
+# MODULE : AIDE À LA DICTÉE
+# ==========================================
 elif menu_selection == "🎤 Aide à la dictée":
-    st.title("🎤 Aide à la dictée")
+    st.title("🎤 Préparation de la Dictée Personnalisée")
     st.subheader("Ophélie Bascou Drimaracci")
+    st.write("Saisissez jusqu'à 20 mots à réviser. L'application générera 3 fiches de travail prêtes à être imprimées !")
+    
     st.write("---")
-    st.info("🚧 Ce module est en cours de conception. Il permettra bientôt de travailler l'orthographe, les sons muets et l'écoute pour préparer les dictées en toute sérénité !")
+    
+    # 1. Zone de saisie des mots
+    input_text = st.text_area(
+        "Entrez vos mots (séparés par un espace, une virgule ou une ligne) :",
+        height=120,
+        placeholder="Exemple: bateau maison cheval oiseau fleur château garçon soleil chêne dragon..."
+    )
+    
+    # Extraction et nettoyage des mots (max 20 mots)
+    raw_words = re.split(r'[\s,\n]+', input_text.strip())
+    words_list = [w.strip() for w in raw_words if w.strip()][:20]
+    
+    if words_list:
+        st.success(f"📋 **{len(words_list)} mot(s) enregistré(s)** : {', '.join(words_list)}")
+        st.write("---")
+        
+        dic_tab1, dic_tab2, dic_tab3 = st.tabs([
+            "Page 1 : 🎨 Mots avec les codes DYS",
+            "Page 2 : ✂️ Mots découpés (Carrés)",
+            "Page 3 : ✏️ Dictée à trous"
+        ])
+        
+        # PAGE 1 : Mots avec codes DYS
+        with dic_tab1:
+            st.write("### Page 1 : Fiche de révision avec codes visuels DYS")
+            p1_html_parts = []
+            for w in words_list:
+                coded_w = render_word_multilevel(w, show_phonemes=True)
+                p1_html_parts.append(f"<div style='display: inline-block; margin: 15px; font-size: 26px;'>{coded_w}</div>")
+            
+            p1_content = "".join(p1_html_parts)
+            st.markdown(f"<div style='background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>{p1_content}</div>", unsafe_allow_html=True)
+            
+            p1_export = f"""
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head><meta charset="UTF-8"><title>Page 1 - Mots Codés DYS</title></head>
+            <body style="font-family: sans-serif; padding: 30px;">
+                <h1 style="text-align: center;">Fiche de Révision - Dictée</h1>
+                <hr><br>
+                <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 28px;">
+                    {p1_content}
+                </div>
+            </body>
+            </html>
+            """
+            st.download_button("📥 Télécharger / Imprimer la Page 1 (HTML)", data=p1_export, file_name="page1_mots_codes.html", mime="text/html")
+            
+        # PAGE 2 : Mots découpés (Carrés)
+        with dic_tab2:
+            st.write("### Page 2 : Mots avec lettres séparées par des carrés (à découper)")
+            p2_html_parts = []
+            for w in words_list:
+                letters_squares = []
+                for char in w:
+                    letters_squares.append(
+                        f"<span style='display: inline-block; width: 40px; height: 40px; border: 2px solid #333; margin: 2px; text-align: center; line-height: 40px; font-weight: bold; font-size: 22px;'>{char}</span>"
+                    )
+                word_box = f"<div style='margin-bottom: 20px;'><span style='display: inline-block; margin-right: 15px; font-weight: bold; font-size: 18px; min-width: 120px;'>{w} :</span> {''.join(letters_squares)}</div>"
+                p2_html_parts.append(word_box)
+                
+            p2_content = "".join(p2_html_parts)
+            st.markdown(f"<div style='background-color: #ffffff; padding: 20px; border: 1px dashed #ccc; border-radius: 10px;'>{p2_content}</div>", unsafe_allow_html=True)
+            
+            p2_export = f"""
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head><meta charset="UTF-8"><title>Page 2 - Mots à découper</title></head>
+            <body style="font-family: sans-serif; padding: 30px;">
+                <h1 style="text-align: center;">Étiquettes à découper</h1>
+                <hr><br>
+                {p2_content}
+            </body>
+            </html>
+            """
+            st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name="page2_mots_a_decouper.html", mime="text/html")
+            
+        # PAGE 3 : Dictée à trous
+        with dic_tab3:
+            st.write("### Page 3 : Dictée à trous (Sons et lettres complexes masqués)")
+            p3_html_parts = []
+            for w in words_list:
+                blocks = parse_word_to_blocks(w)
+                word_holes = []
+                for b in blocks:
+                    # Masquer les sons complexes et lettres muettes
+                    if b.get('render_type') in ['highlight', 'muted']:
+                        word_holes.append("<span style='display: inline-block; min-width: 35px; border-bottom: 2px solid #000; margin: 0 2px;'>&nbsp;</span>")
+                    else:
+                        word_holes.append(f"<span>{b.get('text')}</span>")
+                
+                hole_box = f"<div style='font-size: 26px; margin: 15px; display: inline-block; min-width: 200px;'>{''.join(word_holes)}</div>"
+                p3_html_parts.append(hole_box)
+                
+            p3_content = "".join(p3_html_parts)
+            st.markdown(f"<div style='background-color: #f9f9f9; padding: 20px; border-radius: 10px;'>{p3_content}</div>", unsafe_allow_html=True)
+            
+            p3_export = f"""
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head><meta charset="UTF-8"><title>Page 3 - Dictée à trous</title></head>
+            <body style="font-family: sans-serif; padding: 30px;">
+                <h1 style="text-align: center;">Dictée à trous</h1>
+                <p style="text-align: center;">Complète les sons et les lettres manquantes :</p>
+                <hr><br>
+                <div style="display: flex; flex-wrap: wrap; gap: 30px; font-size: 30px;">
+                    {p3_content}
+                </div>
+            </body>
+            </html>
+            """
+            st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name="page3_dictee_a_trous.html", mime="text/html")
+    else:
+        st.info("💡 Veuillez saisir au moins un mot ci-dessus pour générer les 3 pages de travail.")
