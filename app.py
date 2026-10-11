@@ -120,13 +120,29 @@ EXACT_COMPLEX_SOUNDS = {
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 def count_syllables_approx(word):
-    w_clean = word.strip().lower()
-    if 'syllables_cache' in st.session_state:
-        return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
-    return max(1, len(w_clean) // 3)
-
-# Liste des prénoms dont la consonne finale se prononce
-PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "thomas"]
+    clean_w = word.lower().strip(".,;:?!'\"«» ")
+    if not clean_w:
+        return 1
+    
+    # Liste des voyelles et diphtongues
+    vowels = "aeiouyàâäéèêëïîôöùûüÿ"
+    
+    # Supprimer les voyelles muettes finales ordinaires pour le comptage (ex: le 'e' de 'garçon' ou 'licorne')
+    if clean_w.endswith('e') and len(clean_w) > 2 and not clean_w.endswith(('ée', 'ie', 'ue')):
+        clean_w = clean_w[:-1]
+        
+    count = 0
+    in_vowel_group = False
+    
+    for char in clean_w:
+        if char in vowels:
+            if not in_vowel_group:
+                count += 1
+                in_vowel_group = True
+        else:
+            in_vowel_group = False
+            
+    return max(1, count)
 
 # Fonction de découpage avec application garantie du dictionnaire de couleurs
 def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False, is_end_of_sentence=False):
