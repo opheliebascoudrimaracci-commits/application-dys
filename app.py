@@ -173,134 +173,53 @@ def count_syllables_approx(word):
         return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
     return max(1, len(w_clean) // 3)
 
-def parse_word_to_blocks(word, is_plural_verb=False):
+def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False):
     blocks = []
     w_lower = word.lower()
     n = len(word)
-    
-    if w_lower == "est":
-        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
-    
-    if w_lower == "c'est":
-        return [
-            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
-            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
-            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}
-        ]
-
     i = 0
-    sorted_keys = sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True)
     
     while i < n:
+        char = word[i]
+        c_lower = w_lower[i]
+        
+        # Gestion du "th" (le t se prononce, le h est grisé)
         if i < n - 1 and w_lower[i:i+2] == 'th':
-            blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+            blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
             blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 2
             continue
 
-        if i < n - 1 and w_lower[i] == 'g' and w_lower[i+1] in 'eéêëiîïy':
-            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': '#C2185B', 'phoneme': 'j'})
-            i += 2
-            continue
-
-        char = word[i]
-        c_lower = char.lower()
-        
-        if c_lower == 'h':
-            if i == 0 or word[i-1].lower() not in ['c', 'p', 't']:
-                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
-                i += 1
-                continue
-
-        matched_complex = False
-        for key in sorted_keys:
-            if w_lower[i:i+len(key)] == key:
-                if key == 'et':
-                    is_word_et = (w_lower == 'et')
-                    is_end_of_word = (i + 2 == n)
-                    if not (is_word_et or is_end_of_word):
-                        continue 
-                
-                if key in ['in', 'an', 'on', 'en', 'un']:
-                    next_idx = i + len(key)
-                    if key == 'en' and w_lower.endswith('ent') and i == n - 3:
-                        if is_plural_verb:
-                            continue
-                    if next_idx < n and w_lower[next_idx] in VOWELS:
-                        continue 
-                    if next_idx < n and key[-1] == w_lower[next_idx]:
-                        continue
-
-                color, phoneme = EXACT_COMPLEX_SOUNDS[key]
-                actual_text = word[i:i+len(key)]
-                blocks.append({
-                    'text': actual_text,
-                    'is_muted': False,
-                    'render_type': 'highlight',
-                    'color': color,
-                    'phoneme': phoneme
-                })
-                i += len(key)
-                matched_complex = True
-                break
-        if matched_complex:
-            continue
-
-        if i + 1 < n and c_lower in ['p', 't', 'm', 'n', 'l', 'b', 'd', 'f', 'r', 's'] and word[i+1].lower() == c_lower:
-            blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
-            i += 1
-            continue
-
-        if c_lower == 'e':
-            is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
-            is_final_mute = (i == n - 1 and n > 2 and word[i-1].lower() in VOWELS)
-            
-            if is_before_double:
-                color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#8E44AD', 'è'))
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': color, 'phoneme': phoneme})
-                i += 1
-                continue
-            elif is_final_mute:
-                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
-                i += 1
-                continue
-
-        if c_lower == 'c':
-            next_char = word[i+1].lower() if i + 1 < n else ''
-            if next_char in ['e', 'i', 'y']:
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'})
-            elif next_char not in ['h', '']:
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'})
-            else:
-                blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
-            i += 1
-            continue
-            
+        # Gestion du 's' final (prenant en compte keep_final_consonant pour Mathis, etc.)
         if c_lower == 's':
-            is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
-            is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
+            is_prev_vowel = (i > 0 and word[i-1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
+            is_next_vowel = (i + 1 < n and word[i+1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
             is_final = (i == n - 1)
             
             if is_prev_vowel and is_next_vowel:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#0d9488', 'phoneme': 'z'})
-            elif is_final:
+            elif is_final and not keep_final_consonant:
                 blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             else:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             i += 1
             continue
 
+        # Autres consonnes finales (t, d, x)
         if i == n - 1 and c_lower in ['t', 'd', 'x'] and n > 2:
-            blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+            if keep_final_consonant:
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+            else:
+                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 1
             continue
 
+        # Caractère par défaut
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
     return blocks
 
-PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "jervis"]
 # Liste des prénoms dont la consonne finale (s, x, etc.) se prononce en français
 PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "jervis"]
 
