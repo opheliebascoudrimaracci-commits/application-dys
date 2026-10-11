@@ -458,10 +458,10 @@ elif menu_selection == "✨ Générateur d'histoires":
         )
 
         if st.button("✨ Générer l'histoire magique avec l'IA", type="primary", key="btn_generer_histoire"):
+            if st.button("✨ Générer l'histoire magique avec l'IA", type="primary", key="btn_generer_histoire"):
         h = nom_personnage.strip() if nom_personnage.strip() else "Le héros"
         
-        # Prompt pour l'IA selon le niveau choisi
-        prompt_ia = f"Écris une histoire pour enfants douce, captivante et adaptée en français. Le héros s'appelle {h}. "
+        prompt_ia = "Écris une histoire pour enfants douce, captivante et adaptée en français. Le héros s'appelle " + h + ". "
         if "Niveau 1" in niveau_histoire:
             prompt_ia += "L'histoire doit faire exactement 5 à 6 phrases très simples avec du vocabulaire facile, parfaite pour un débutant en lecture."
         elif "Niveau 2" in niveau_histoire:
@@ -475,15 +475,9 @@ elif menu_selection == "✨ Générateur d'histoires":
                 response = model.generate_content(prompt_ia)
                 st.session_state['histoire_generee'] = response.text.strip()
             except Exception as e:
-                # Histoire de secours hors-ligne
                 st.warning("Mode secours (génération hors-ligne) :")
-                st.session_state['histoire_generee'] = f"{h} part à l'aventure dans une grande forêt magique. Il croise un petit oiseau bleu qui chante une belle mélodie. Ensemble, ils découvrent un trésor caché au pied d'un grand arbre. Content de sa journée, {h} rentre chez lui le cœur joyeux."
+                st.session_state['histoire_generee'] = h + " part à l'aventure dans une grande forêt magique. Il croise un petit oiseau bleu qui chante une belle mélodie. Ensemble, ils découvrent un trésor caché au pied d'un grand arbre. Content de sa journée, " + h + " rentre chez lui le cœur joyeux."
 
-    if 'histoire_generee' in st.session_state:
-        st.write("---")
-        st.success("📖 Histoire générée :")
-        st.write(st.session_state['histoire_generee'])
-        
         # Options d'adaptation DYS sur l'histoire
         opts3 = build_controls("t3")
         render_full_dys_text(st.session_state['histoire_generee'], **opts3)
