@@ -28,7 +28,6 @@ def interroger_ia(prompt_texte, temperature=0.8):
                 api_key=groq_key.strip(),
                 base_url="https://api.groq.com/openai/v1",
             )
-            # Liste complète des identifiants (formats récents et classiques)
             groq_models = [
                 "llama-3.1-8b-instant",
                 "openai/gpt-oss-20b",
@@ -70,53 +69,6 @@ def interroger_ia(prompt_texte, temperature=0.8):
 
     return f"Erreur IA -> " + " | ".join(erreurs)
 
-    # 1. TENTATIVE AVEC GROQ
-    groq_key = st.secrets.get("GROQ_API_KEY")
-    if groq_key:
-        try:
-            client = OpenAI(
-                api_key=groq_key.strip(),
-                base_url="https://api.groq.com/openai/v1",
-            )
-            # Modèles actifs sur Groq
-            groq_models = [
-                "gpt-oss-20b",
-                "llama-3.3-70b-versatile",
-                "gpt-oss-120b"
-            ]
-            
-            for g_model in groq_models:
-                try:
-                    response = client.chat.completions.create(
-                        model=g_model,
-                        messages=[{"role": "user", "content": prompt_texte}],
-                        temperature=temperature,
-                    )
-                    if response.choices and response.choices[0].message.content:
-                        return response.choices[0].message.content.strip()
-                except Exception as e_inner:
-                    erreurs.append(f"Groq ({g_model}): {e_inner}")
-
-        except Exception as e:
-            erreurs.append(f"Groq Init: {e}")
-    else:
-        erreurs.append("Groq: Clé 'GROQ_API_KEY' absente des secrets")
-
-    # 2. SECOURS AUTOMATIQUE AVEC GOOGLE GEMINI
-    gemini_key = st.secrets.get("GEMINI_API_KEY")
-    if gemini_key:
-        try:
-            genai.configure(api_key=gemini_key.strip())
-            model = genai.GenerativeModel("gemini-3.8-flash")
-            res = model.generate_content(prompt_texte, generation_config={"temperature": temperature})
-            if res and res.text:
-                return res.text.strip()
-        except Exception as e:
-            erreurs.append(f"Gemini: {e}")
-    else:
-        erreurs.append("Gemini: Clé 'GEMINI_API_KEY' absente des secrets")
-
-    return f"Erreur IA -> " + " | ".join(erreurs)
 # --- MENU LATÉRAL PRINCIPAL ---
 st.sidebar.title("📌 Navigation")
 menu_selection = st.sidebar.radio(
@@ -134,7 +86,7 @@ PLURAL_SUBJECTS = {
     "deux", "trois", "quatre", "cinq", "plusieurs", "certains", "certaines"
 }
 
-# Dictionnaire des sons complexes
+# Dictionnaire des sons complexes (Code couleur de référence)
 EXACT_COMPLEX_SOUNDS = {
     'eau': ('#FFD700', 'o'),
     'au': ('#FFD700', 'o'),
@@ -173,31 +125,31 @@ def count_syllables_approx(word):
         return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
     return max(1, len(w_clean) // 3)
 
-# 1. La liste des prénoms dont la consonne finale se prononce
+# Liste des prénoms dont la consonne finale se prononce
 PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "thomas"]
 
-# 2. La fonction complète de découpage (avec tes couleurs et la gestion du "th")
+# Fonction de découpage avec application garantie du dictionnaire de couleurs
 def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False):
     blocks = []
     w_lower = word.lower()
     n = len(word)
     i = 0
     
-    # Récupération sécurisée de ton dictionnaire de sons d'origine
-    sounds_dict = globals().get('SOUND_RULES', globals().get('REGLES_SONS', {}))
+    # On lie directement le dictionnaire des sons complexes ici
+    sounds_dict = EXACT_COMPLEX_SOUNDS
     
     while i < n:
         char = word[i]
         c_lower = w_lower[i]
         
-        # Gestion du "th" (le t se prononce, le h est grisé/muet)
+        # 1. Gestion du "th" (le t se prononce, le h est grisé/muet)
         if i < n - 1 and w_lower[i:i+2] == 'th':
             blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
             blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 2
             continue
 
-        # Sons complexes (tes couleurs d'origine)
+        # 2. Sons complexes (application du code couleur)
         matched_complex = False
         if sounds_dict:
             for length in [3, 2]:
@@ -210,8 +162,8 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
                             'text': combined_text, 
                             'is_muted': False, 
                             'render_type': 'color_text', 
-                            'color': rule.get('color', '#000000'), 
-                            'phoneme': rule.get('phoneme', '')
+                            'color': rule[0], 
+                            'phoneme': rule[1]
                         })
                         i += length
                         matched_complex = True
@@ -219,16 +171,16 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
         if matched_complex:
             continue
 
-        # Gestion du 'ent' muet des verbes au pluriel
+        # 3. Gestion du 'ent' muet des verbes au pluriel
         if is_plural_verb and i >= n - 3:
             blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 1
             continue
 
-        # Gestion du 's' final (prend en compte Mathis, Alexis, etc.)
+        # 4. Gestion du 's' final (prend en compte Mathis, Alexis, etc.)
         if c_lower == 's':
-            is_prev_vowel = (i > 0 and word[i-1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
-            is_next_vowel = (i + 1 < n and word[i+1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
+            is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
+            is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
             is_final = (i == n - 1)
             
             if is_prev_vowel and is_next_vowel:
@@ -240,7 +192,7 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # Autres consonnes finales (t, d, x)
+        # 5. Autres consonnes finales (t, d, x)
         if i == n - 1 and c_lower in ['t', 'd', 'x'] and n > 2:
             if keep_final_consonant:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
@@ -249,18 +201,16 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # Caractère par défaut
+        # 6. Caractère par défaut
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
     return blocks
 
-
-# 3. La fonction d'affichage mise à jour
+# Fonction d'affichage multi-niveaux
 def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=True):
-    clean_word_lower = word.lower().strip()
+    clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
     
-    # Vérifie si c'est un prénom dont la consonne finale se prononce
     is_consonne_prononcee = clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE
         
     clean_prev = prev_word.strip().lower() if prev_word else ""
@@ -268,7 +218,6 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
     
     is_plural_verb = (clean_prev in PLURAL_SUBJECTS) and clean_word.endswith("ent") and len(clean_word) > 4
     
-    # Transmission de l'info au parseur
     blocks = parse_word_to_blocks(word, is_plural_verb=is_plural_verb, keep_final_consonant=is_consonne_prononcee)
     
     word_html_parts = []
@@ -407,6 +356,7 @@ def build_controls(key_prefix):
         "spacing": spacing,
         "font_choice": font_choice
     }
+
 # ==========================================
 # GESTION DES PAGES DU MENU LATÉRAL
 # ==========================================
@@ -480,137 +430,22 @@ elif menu_selection == "✨ Générateur d'histoires":
 elif menu_selection == "🎤 Aide à la dictée":
     st.title("🎤 Préparation de la Dictée Personnalisée")
     st.caption("Ophélie Bascou Drimaracci")
-    st.write("Saisissez vos mots. L'IA analyse instantanément la phonétique et génère les 4 pages de travail adaptées !")
+    st.write("Saisissez vos mots. L'IA analyse instantanément la phonétique et génère les pages de travail adaptées !")
 
-    mots_input = st.text_area("Entrez vos mots (séparés par un espace, une virgule ou une ligne) :", "Poulet, lampe, chat", height=100)
+    mots_input = st.text_area("Entrez vos mots (séparés par un espace, une virgule ou un retour à la ligne) :", height=100, placeholder="ex: chat, chien, Mathis, école...")
     
-    words_list = [w.strip() for w in re.split(r'[\n,\s]+', mots_input) if w.strip()]
-    file_signature = hashlib.md5(",".join(words_list).encode('utf-8')).hexdigest()[:8]
-
-    if words_list:
-        st.success(f"📋 {len(words_list)} mot(s) actif(s) : {', '.join(words_list)}")
-
-        dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
-            "Page 1 : 🎨 Mots codés DYS",
-            "Page 2 : ✂️ Mots découpés",
-            "Page 3 : ✏️ Mots à trous",
-            "Page 4 : 📝 Phrase contextuelle (IA)"
-        ])
-
-        with dic_tab1:
-            st.markdown("### Page 1 : Mots de la dictée avec codage couleur DYS")
-            for w in words_list:
-                st.markdown(render_word_multilevel(w), unsafe_allow_html=True)
-
-        with dic_tab2:
-            st.markdown("### Page 2 : Mots découpés par syllabes")
-            for w in words_list:
-                num_syll = count_syllables_approx(w)
-                st.write(f"**{w}** ({num_syll} syllabes)")
-
-        with dic_tab3:
-            st.markdown("### Page 3 : Mots à trous pour entraînement")
-            for w in words_list:
-                st.write(f"{w[0]} _ _ _ {w[-1] if len(w) > 1 else ''}")
-
-        # -------------------------------------------------------------
-        # PAGE 4 : Dictée en contexte (IA : Groq en priorité + Gemini en secours)
-        # -------------------------------------------------------------
-        with dic_tab4:
-            st.markdown("### Page 4 : Phrase de dictée en contexte (Générée par l'IA)")
-            
-            niveau_scolaire = st.selectbox(
-                "🎯 Choisissez le niveau scolaire de l'enfant :",
-                [
-                    "Grande Section",
-                    "CP",
-                    "CE1",
-                    "CE2",
-                    "CM1",
-                    "CM2",
-                    "6ème",
-                    "5ème",
-                    "4ème",
-                    "3ème"
-                ],
-                index=2,
-                key=f"select_niveau_{file_signature}"
-            )
-            
-            combined_sig = f"{file_signature}_{niveau_scolaire}"
-            session_key_ia = f"phrase_ia_{combined_sig}"
-            fallback_phrase = f"Aujourd'hui, nous étudions avec attention les mots suivants : {', '.join(words_list)}."
-
-            prompt_phrase = (
-                f"Tu es un professeur expert en pédagogie et élèves DYS. "
-                f"Écris une courte dictée originale, claire et parfaitement adaptée au niveau scolaire : **{niveau_scolaire}**. "
-                f"Le texte doit intégrer impérativement et naturellement TOUS ces mots : {', '.join(words_list)}. "
-                f"Renvoie uniquement le texte de la dictée, sans aucune introduction, sans guillemets et sans commentaires."
-            )
-
-            if session_key_ia not in st.session_state:
-                with st.spinner(f"🤖 L'IA compose une dictée unique pour le niveau {niveau_scolaire}..."):
-                    res_ia = interroger_ia(prompt_phrase, temperature=0.8)
-                    st.session_state[session_key_ia] = res_ia if res_ia else fallback_phrase
-
-            if st.button("🔄 Générer une autre variante pour ce niveau", key=f"btn_regen_variant_{combined_sig}"):
-                with st.spinner("Création d'une nouvelle variante créative..."):
-                    prompt_variant = (
-                        f"Écris une *autre* courte dictée différente, parfaitement adaptée au niveau **{niveau_scolaire}**, "
-                        f"qui intègre impérativement TOUS ces mots : {', '.join(words_list)}. "
-                        f"Renvoie uniquement le texte brut."
-                    )
-                    res_var = interroger_ia(prompt_variant, temperature=0.8)
-                    st.session_state[session_key_ia] = res_var if res_var else fallback_phrase
-                    st.rerun()
-
-            phrase_base = st.session_state.get(session_key_ia, fallback_phrase)
-            
-            # --- Application DYS sécurisée sur la phrase générée ---
-            words_in_phrase = phrase_base.split() if phrase_base else ["Erreur", "de", "génération"]
-            dys_phrase_parts = []
-            
-            for token in words_in_phrase:
-                try:
-                    match = re.match(r"^(\W*)([\wàâäéèêëîïôöùûüçÑñæœ-]+)(\W*)$", token, re.IGNORECASE)
-                    if match:
-                        prefix, word_core, suffix = match.groups()
-                        coded_word = render_word_multilevel(word_core, show_phonemes=False)
-                        dys_phrase_parts.append(f"{prefix}{coded_word}{suffix}")
-                    else:
-                        dys_phrase_parts.append(token)
-                except Exception:
-                    dys_phrase_parts.append(token)
-                    
-            if not dys_phrase_parts:
-                dys_phrase_parts = [phrase_base]
+    if mots_input:
+        st.write("---")
+        opts = build_controls("dictee_ctrl")
+        render_full_dys_text(mots_input, **opts)
+        
+        if st.button("✨ Générer une phrase de dictée avec ces mots"):
+            with st.spinner("Génération de la dictée en cours..."):
+                prompt = f"Rédige une courte dictée simple et cohérente (3 ou 4 phrases maximum) destinée à un enfant, en utilisant ces mots : {mots_input}."
+                dictee_texte = interroger_ia(prompt, temperature=0.7)
+                st.session_state["dictee_texte_genere"] = dictee_texte
                 
-            phrase_base_dys = " ".join(dys_phrase_parts)
-            
-            # --- Version Élève : Création des trous sur les mots de la liste ---
-            phrase_trous_dys = phrase_base_dys
-            for w in words_list:
-                w_clean = w.strip()
-                if w_clean:
-                    try:
-                        coded_w = render_word_multilevel(w_clean, show_phonemes=False)
-                        hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
-                        phrase_trous_dys = re.sub(re.escape(coded_w), hole, phrase_trous_dys, flags=re.IGNORECASE)
-                        phrase_trous_dys = re.sub(r'\b' + re.escape(w_clean) + r'\b', hole, phrase_trous_dys, flags=re.IGNORECASE)
-                    except Exception:
-                        pass
-                
-            st.markdown("#### 📝 Version Élève (À trous avec Code Couleur DYS)")
-            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous_dys}</div>", unsafe_allow_html=True)
-            
-            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte ({niveau_scolaire}) - Exercice</h1><hr><br><div style='padding: 20px;'>{phrase_trous_dys}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{niveau_scolaire}_{file_signature}.html", mime="text/html", key=f"dl_p4_eleve_{file_signature}")
-
-            st.markdown("---")
-            
-            # --- Version Correcteur ---
-            st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
-            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
-            
-            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Corrigé Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte ({niveau_scolaire})</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{niveau_scolaire}_{file_signature}.html", mime="text/html", key=f"dl_p4_corr_{file_signature}")
+        if "dictee_texte_genere" in st.session_state:
+            st.write("---")
+            st.write("### 📝 Texte de la dictée généré :")
+            render_full_dys_text(st.session_state["dictee_texte_genere"], **opts)
