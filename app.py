@@ -519,7 +519,7 @@ elif menu_selection == "✨ Générateur d'histoires":
 elif menu_selection == "🎤 Aide à la dictée":
     st.title("🎤 Préparation de la Dictée Personnalisée")
     st.subheader("Ophélie Bascou Drimaracci")
-    st.write("Saisissez jusqu'à 20 mots à réviser. L'application générera 3 fiches de travail prêtes à être imprimées !")
+    st.write("Saisissez jusqu'à 20 mots à réviser. L'application générera vos fiches de travail prêtes à être imprimées !")
     
     st.write("---")
     
@@ -538,10 +538,11 @@ elif menu_selection == "🎤 Aide à la dictée":
         st.success(f"📋 **{len(words_list)} mot(s) enregistré(s)** : {', '.join(words_list)}")
         st.write("---")
         
-        dic_tab1, dic_tab2, dic_tab3 = st.tabs([
-            "Page 1 : 🎨 Mots avec les codes DYS",
-            "Page 2 : ✂️ Mots découpés (Carrés)",
-            "Page 3 : ✏️ Dictée à trous"
+        dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
+            "Page 1 : 🎨 Mots codés DYS",
+            "Page 2 : ✂️ Mots découpés",
+            "Page 3 : ✏️ Mots à trous",
+            "Page 4 : 📝 Phrases à trous"
         ])
         
         # PAGE 1 : Mots avec codes DYS
@@ -599,7 +600,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             """
             st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name="page2_mots_a_decouper.html", mime="text/html")
             
-        # PAGE 3 : Dictée à trous
+        # PAGE 3 : Dictée à trous (mots ciblés)
         with dic_tab3:
             st.write("### Page 3 : Dictée à trous (Sons et lettres complexes masqués)")
             p3_html_parts = []
@@ -607,7 +608,6 @@ elif menu_selection == "🎤 Aide à la dictée":
                 blocks = parse_word_to_blocks(w)
                 word_holes = []
                 for b in blocks:
-                    # Masquer les sons complexes et lettres muettes
                     if b.get('render_type') in ['highlight', 'muted']:
                         word_holes.append("<span style='display: inline-block; min-width: 35px; border-bottom: 2px solid #000; margin: 0 2px;'>&nbsp;</span>")
                     else:
@@ -624,7 +624,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             <html lang="fr">
             <head><meta charset="UTF-8"><title>Page 3 - Dictée à trous</title></head>
             <body style="font-family: sans-serif; padding: 30px;">
-                <h1 style="text-align: center;">Dictée à trous</h1>
+                <h1 style="text-align: center;">Dictée à trous - Mots isolés</h1>
                 <p style="text-align: center;">Complète les sons et les lettres manquantes :</p>
                 <hr><br>
                 <div style="display: flex; flex-wrap: wrap; gap: 30px; font-size: 30px;">
@@ -634,5 +634,49 @@ elif menu_selection == "🎤 Aide à la dictée":
             </html>
             """
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name="page3_dictee_a_trous.html", mime="text/html")
+
+        # PAGE 4 : Dictée à trous de phrases complètes
+        with dic_tab4:
+            st.write("### Page 4 : Dictée de phrases à trous")
+            st.write("Saisissez votre texte de dictée complet (ou vos phrases). Les mots de la liste à réviser seront automatiquement remplacés par des lignes à compléter.")
+            
+            texte_dictee_defaut = f"Aujourd'hui, nous préparons la dictée. Les mots à réviser sont : {', '.join(words_list)}."
+            full_dictation_text = st.text_area(
+                "Saisissez le texte ou les phrases de la dictée :",
+                value=texte_dictee_defaut,
+                height=150,
+                key="text_phrase_dictee"
+            )
+            
+            if full_dictation_text:
+                # Remplacement automatique des mots de la liste par des lignes à trous
+                processed_phrases_html = full_dictation_text
+                for target_word in words_list:
+                    # Remplacement insensible à la casse avec bordure soulignée
+                    pattern = re.compile(re.escape(target_word), re.IGNORECASE)
+                    hole_line = f"<span style='display: inline-block; min-width: {max(80, len(target_word)*18)}px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
+                    processed_phrases_html = pattern.sub(hole_line, processed_phrases_html)
+                
+                # Formatage avec retours à la ligne
+                processed_phrases_html = processed_phrases_html.replace('\n', '<br><br>')
+                
+                st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2;'>{processed_phrases_html}</div>", unsafe_allow_html=True)
+                
+                p4_export = f"""
+                <!DOCTYPE html>
+                <html lang="fr">
+                <head><meta charset="UTF-8"><title>Page 4 - Dictée de phrases à trous</title></head>
+                <body style="font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;">
+                    <h1 style="text-align: center;">Dictée de phrases à trous</h1>
+                    <p style="text-align: center; font-size: 18px;">Écoute attentivement et complète les mots manquants :</p>
+                    <hr><br>
+                    <div>
+                        {processed_phrases_html}
+                    </div>
+                </body>
+                </html>
+                """
+                st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrases_a_trous.html", mime="text/html")
     else:
-        st.info("💡 Veuillez saisir au moins un mot ci-dessus pour générer les 3 pages de travail.")
+        st.info("💡 Veuillez saisir au moins un mot ci-dessus pour générer les 4 pages de travail.")
+        
