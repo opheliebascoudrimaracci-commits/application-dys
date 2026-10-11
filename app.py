@@ -491,7 +491,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
-        with dic_tab4:
+          with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
             default_sentence = "Aujourd'hui, pour notre dictée, nous découvrons ces mots : " + " ".join([f"Le {w} est joli." for w in words_list])
@@ -558,4 +558,5 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
             
             p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html",
+            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key=f"dl_p4_corr_{file_signature}")
+  
