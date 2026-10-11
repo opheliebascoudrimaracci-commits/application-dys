@@ -118,13 +118,15 @@ def parse_word_to_blocks(word):
                     next_idx = i + len(key)
                     if next_idx < n and w_lower[next_idx] in VOWELS:
                         continue 
+                    
+                # RÈGLE D'EXCLUSION : Si le son est suivi de la même consonne (ex: ann, emm...)
+                next_idx = i + len(key)
+                if next_idx < n and key[-1] == w_lower[next_idx]:
+                    continue  # On ignore pour laisser la consonne se comporter normalement
 
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
                 
                 actual_text = word[i:i+len(key)]
-                if key in ['an', 'en', 'in', 'on', 'un'] and i > 0 and word[i-1].lower() == 'n' and word[i].lower() == 'n':
-                    pass
-
                 blocks.append({
                     'text': actual_text,
                     'is_muted': False,
@@ -191,6 +193,7 @@ def parse_word_to_blocks(word):
         i += 1
         
     return blocks
+   
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family):
     blocks = parse_word_to_blocks(word)
