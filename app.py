@@ -254,7 +254,8 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
     full_content_adapted = "<br><br>".join(rendered_lines_adapted)
     full_content_training = "<br><br><br>".join(rendered_lines_training)
     
-    style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
+    bg_css = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;"
+    style_bg = bg_css if soft_bg else ""
     
     st.markdown("### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
@@ -278,7 +279,7 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
         file_name="texte_adapte_dys.html",
         mime="text/html"
     )
-    
+
 
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
     lines = text.split('\n')
