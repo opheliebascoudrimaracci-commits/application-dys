@@ -10,9 +10,43 @@ import json
 import google.generativeai as genai
 from groq import Groq
 
-# Configuration de la clé (via les secrets Streamlit Cloud)
-if "GEMINI_API_KEY" in st.secrets:
-    genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+from groq import Groq
+import google.generativeai as genai
+
+def interroger_ia(prompt_texte, temperature=0.7):
+    """
+    Fonction centralisée : essaie d'abord Groq (ultra-rapide, gratuit),
+    puis bascule sur Gemini si besoin, et renvoie une chaîne de caractères.
+    """
+    # 1. Tentative avec Groq
+    groq_key = st.secrets.get("GROQ_API_KEY")
+    if groq_key:
+        try:
+            client = Groq(api_key=groq_key)
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt_texte}],
+                model="llama-3.3-70b-versatile",
+                temperature=temperature,
+            )
+            if chat_completion.choices and chat_completion.choices[0].message.content:
+                return chat_completion.choices[0].message.content.strip()
+        except Exception:
+            pass  # Si Groq échoue, on passe à la suite
+
+    # 2. Secours avec Gemini
+    gemini_key = st.secrets.get("GEMINI_API_KEY")
+    if gemini_key:
+        try:
+            genai.configure(api_key=gemini_key)
+            model = genai.GenerativeModel("gemini-3.8-flash")
+            res = model.generate_content(prompt_texte)
+            if res and res.text:
+                return res.text.strip()
+        except Exception:
+            pass
+
+    return "Erreur : Impossible de joindre les services d'IA pour le moment."
+    
 
 # 1. Configuration unique de la page
 st.set_page_config(
