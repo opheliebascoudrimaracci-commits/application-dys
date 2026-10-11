@@ -8,40 +8,51 @@ import random
 import hashlib
 import json
 import streamlit as st
+import streamlit as st
 from groq import Groq
 import google.generativeai as genai
 
 def interroger_ia(prompt_texte, temperature=0.8):
     """
-    Fonction centralisée robuste :
-    1. Essaie Groq (llama-3.3-70b-versatile puis llama-3.1-8b-instant)
-    2. Secours Gemini (gemini-2.0-flash puis gemini-1.5-flash)
+    Fonction centralisée : Essaie Groq (llama3-70b-8192), 
+    puis bascule sur Gemini (gemini-3.8-flash) en cas de besoin.
     """
     erreurs = []
 
-    # -------------------------------------------------------------
-    # 1. TENTATIVE AVEC GROQ
-    # -------------------------------------------------------------
+    # 1. Tentative avec GROQ
     groq_key = st.secrets.get("GROQ_API_KEY")
     if groq_key:
-        client = Groq(api_key=groq_key)
-        # Liste des modèles Groq à tester dans l'ordre
-        groq_models = ["llama-3.3-70b-versatile", "llama-3.1-8b-instant"]
-        
-        for g_model in groq_models:
-            try:
-                chat_completion = client.chat.completions.create(
-                    messages=[{"role": "user", "content": prompt_texte}],
-                    model=g_model,
-                    temperature=temperature,
-                )
-                if chat_completion.choices and chat_completion.choices[0].message.content:
-                    return chat_completion.choices[0].message.content.strip()
-            except Exception as e:
-                erreurs.append(f"Groq ({g_model}): {e}")
+        try:
+            client = Groq(api_key=groq_key.strip())
+            chat_completion = client.chat.completions.create(
+                messages=[{"role": "user", "content": prompt_texte}],
+                model="llama3-70b-8192",
+                temperature=temperature,
+            )
+            if chat_completion.choices and chat_completion.choices[0].message.content:
+                return chat_completion.choices[0].message.content.strip()
+        except Exception as e:
+            erreurs.append(f"Groq: {e}")
     else:
-        erreurs.append("Groq: Clé 'GROQ_API_KEY' non trouvée dans st.secrets")
+        erreurs.append("Groq: Clé absente des secrets")
 
+    # 2. Secours avec GEMINI
+    gemini_key = st.secrets.get("GEMINI_API_KEY")
+    if gemini_key:
+        try:
+            genai.configure(api_key=gemini_key.strip())
+            generation_config = {"temperature": temperature}
+            model = genai.GenerativeModel("gemini-3.8-flash")
+            res = model.generate_content(prompt_texte, generation_config=generation_config)
+            if res and res.text:
+                return res.text.strip()
+        except Exception as e:
+            erreurs.append(f"Gemini: {e}")
+    else:
+        erreurs.append("Gemini: Clé absente des secrets")
+
+    return f"Erreur IA -> " + " | ".join(erreurs)
+    
     # -------------------------------------------------------------
     # 2. SECOURS AVEC GOOGLE GEMINI
     # -------------------------------------------------------------
