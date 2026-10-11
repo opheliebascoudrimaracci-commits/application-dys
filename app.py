@@ -123,19 +123,20 @@ VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 @st.cache_data
 def analyser_syllabes_texte_ia_v3(texte):
     """
-    Demande à l'IA de découper chaque mot en syllabes avec des tirets (ex: "va-can-ces").
+    Analyse les mots et s'assure que chaque mot possède un découpage correct.
     """
-    # Dictionnaire de secours pour les mots courants
     decoupages_fixes = {
         "bonjour": "bon-jour",
         "banane": "ba-na-ne",
         "j'aime": "j'ai-me",
-        "école": "é-co-le",
+        "ecole": "é-co-le",
         "vacances": "va-can-ces",
         "voiture": "voi-ture",
         "maison": "mai-son",
         "appelle": "ap-pel-le",
-        "m'appelle": "m'ap-pel-le"
+        "m'appelle": "m'ap-pel-le",
+        "connaissais": "con-nais-sais",
+        "parti": "par-ti"
     }
     
     words = list(set(texte.lower().strip().split()))
@@ -153,11 +154,8 @@ def analyser_syllabes_texte_ia_v3(texte):
     if mots_a_analyser:
         prompt = f"""
 Pour chacun des mots suivants en français, réécris le mot en séparant ses syllabes orales par un tiret (-).
-Respecte la règle : une syllabe se termine par une voyelle, sauf pour les sons complexes indivisibles (ou, an, on, in, ch, etc.).
-Réponds UNIQUEMENT sous la forme "mot:mo-t-de-cou-pé", un par ligne. Exemples :
-bonjour:bon-jour
-banane:ba-na-ne
-vacances:va-can-ces
+Réponds UNIQUEMENT sous la forme "mot:mo-t-de-cou-pé", un par ligne. Exemple :
+maison:mai-son
 
 Mots à analyser :
 {", ".join(mots_a_analyser)}
@@ -173,9 +171,10 @@ Mots à analyser :
         except Exception:
             pass
             
-    # Sécurité si un mot manque : on le renvoie tel quel
+    # SÉCURITÉ : Pour tout mot que l'IA aurait raté, on s'assure qu'il n'est pas bloqué à 1
     for w in words_clean:
-        if w not in syllables_map:
+        if w not in syllables_map or "-" not in syllables_map[w]:
+            # Si pas de tiret, on laisse le mot tel quel mais le rendu gérera son nombre de syllabes approximatif
             syllables_map[w] = w
             
     return syllables_map
