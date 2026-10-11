@@ -121,7 +121,7 @@ PRENOMS_CONSONNE_FINALE_PRONONCEE = {"mathis", "iris", "lucas", "yanis", "alix",
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 @st.cache_data
-def analyser_syllabes_texte_ia_v2(texte):
+def analyser_syllabes_texte_ia_v3(texte):
     """
     Analyse les syllabes en appliquant la règle pédagogique française : 
     la syllabe se termine par une voyelle, sauf pour les sons complexes/nasaux indivisibles.
