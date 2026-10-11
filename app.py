@@ -102,40 +102,202 @@ if 'words_list' in locals() and words_list:
             if w_clean:
                 st.session_state['word_analysis_cache'][w_clean] = analyze_word_with_ai(w_clean)
 
-def get_word_syllables(word):
-    w_clean = word.strip().lower()
-    if 'word_analysis_cache' in st.session_state and w_clean in st.session_state['word_analysis_cache']:
-        return st.session_state['word_analysis_cache'][w_clean].get("syllables_count", 1)
+# ---------------------------------------------------------
+# MOTEUR DE RÈGLES ET COULEURS D'ORIGINE + COMPTAGE IA
+# ---------------------------------------------------------
+
+def get_syllables_count_ai(word):
+    """Interroge Gemini pour obtenir le nombre exact de syllabes d'un mot."""
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+        
+        prompt = (
+            f"Donne uniquement le nombre de syllabes orales du mot français suivant : '{word}'. "
+            "Réponds par un seul chiffre (par exemple : 2)."
+        )
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        res = model.generate_content(prompt)
+        
+        if res and res.text:
+            match = re.search(r'\d+', res.text.strip())
+            if match:
+                return int(match.group())
+    except Exception:
+        pass
     return max(1, len(word) // 3)
 
-def parse_word_to_blocks(word, is_plural_verb=False):
-    w_clean = word.strip().lower()
-    # Si le mot est en cache, on renvoie l'analyse IA
-    if 'word_analysis_cache' in st.session_state and w_clean in st.session_state['word_analysis_cache']:
-        return st.session_state['word_analysis_cache'][w_clean].get("blocks", [])
-    
-    # Analyse à la volée si le mot n'est pas dans le cache principal
-    analysis = analyze_word_with_ai(w_clean)
-    return analysis.get("blocks", [{"text": char, "render_type": "normal", "color": None, "phoneme": None} for char in word])
+# Initialisation du cache des syllabes
+if 'words_list' in locals() and words_list:
+    if 'file_signature' not in locals():
+        file_signature = "_".join([w.strip() for w in words_list])
 
+    if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllables') != file_signature:
+        st.session_state['sig_syllables'] = file_signature
+        st.session_state['syllables_cache'] = {}
+        for w in words_list:
+            w_clean = w.strip().lower()
+            if w_clean:
+                st.session_state['syllables_cache'][w_clean] = get_syllables_count_ai(w_clean)
+
+def count_syllables_approx(word):
+    w_clean = word.strip().lower()
+    if 'syllables_cache' in st.session_state:
+        return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
+    return max(1, len(w_clean) // 3)
+
+def get_word_syllables(word):
+    return count_syllables_approx(word)
+                
+def parse_word_to_blocks(word, is_plural_verb=False):
+    blocks = []
+    w_lower = word.lower()
+    n = len(word)
+    
+    if w_lower == "est":
+        return [{'text': word, 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}]
+    
+    if w_lower == "c'est":
+        return [
+            {'text': 'c', 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'},
+            {'text': "'", 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None},
+            {'text': 'est', 'is_muted': False, 'render_type': 'highlight', 'color': '#8E44AD', 'phoneme': 'è'}
+        ]
+
+    i = 0
+    sorted_keys = sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True)
+    
+    while i < n:
+        # Règle universelle du 'th' (le 't' se prononce, le 'h' est muet)
+        if i < n - 1 and w_lower[i:i+2] == 'th':
+            blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+            blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+            i += 2
+            continue
+
+        # Règle phonétique du 'g' suivi de 'e', 'i', 'y' (son [j])
+        if i < n - 1 and w_lower[i] == 'g' and w_lower[i+1] in 'eéêëiîïy':
+            blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': '#C2185B', 'phoneme': 'j'})
+            i += 2
+            continue
+
+        char = word[i]
+        c_lower = char.lower()
+        
+        if c_lower == 'h':
+            if i == 0 or word[i-1].lower() not in ['c', 'p', 't']:
+                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+                i += 1
+                continue
+
+        matched_complex = False
+        for key in sorted_keys:
+            if w_lower[i:i+len(key)] == key:
+                if key == 'et':
+                    is_word_et = (w_lower == 'et')
+                    is_end_of_word = (i + 2 == n)
+                    if not (is_word_et or is_end_of_word):
+                        continue 
+                
+                if key in ['in', 'an', 'on', 'en', 'un']:
+                    next_idx = i + len(key)
+                    if key == 'en' and w_lower.endswith('ent') and i == n - 3:
+                        if is_plural_verb:
+                            continue
+                    if next_idx < n and w_lower[next_idx] in VOWELS:
+                        continue 
+                    if next_idx < n and key[-1] == w_lower[next_idx]:
+                        continue
+
+                color, phoneme = EXACT_COMPLEX_SOUNDS[key]
+                actual_text = word[i:i+len(key)]
+                blocks.append({
+                    'text': actual_text,
+                    'is_muted': False,
+                    'render_type': 'highlight',
+                    'color': color,
+                    'phoneme': phoneme
+                })
+                i += len(key)
+                matched_complex = True
+                break
+        if matched_complex:
+            continue
+
+        if i + 1 < n and c_lower in ['p', 't', 'm', 'n', 'l', 'b', 'd', 'f', 'r', 's'] and word[i+1].lower() == c_lower:
+            blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+            i += 1
+            continue
+
+        if c_lower == 'e':
+            is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
+            is_final_mute = (i == n - 1 and n > 2 and word[i-1].lower() in VOWELS)
+            
+            if is_before_double:
+                color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#8E44AD', 'è'))
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'highlight', 'color': color, 'phoneme': phoneme})
+                i += 1
+                continue
+            elif is_final_mute:
+                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+                i += 1
+                continue
+
+        if c_lower == 'c':
+            next_char = word[i+1].lower() if i + 1 < n else ''
+            if next_char in ['e', 'i', 'y']:
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#059669', 'phoneme': 's'})
+            elif next_char not in ['h', '']:
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#2563eb', 'phoneme': 'k'})
+            else:
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+            i += 1
+            continue
+            
+        if c_lower == 's':
+            is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
+            is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
+            is_final = (i == n - 1)
+            
+            if is_prev_vowel and is_next_vowel:
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#0d9488', 'phoneme': 'z'})
+            elif is_final:
+                blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+            else:
+                blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+            i += 1
+            continue
+
+        if i == n - 1 and c_lower in ['t', 'd', 'x'] and n > 2:
+            blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+            i += 1
+            continue
+
+        blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
+        i += 1
+        
+    return blocks
+
+PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "jervis"]
 
 def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=True):
-    clean_word = word.strip()
-    if not clean_word:
-        return ""
+    clean_word_lower = word.lower().strip()
+    
+    if clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE:
+        return f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'><div><span style='color: #1e1b4b; font-weight: bold;'>{word}</span></div></span>"
         
     clean_prev = prev_word.strip().lower() if prev_word else ""
-    clean_word_lower = clean_word.lower()
+    clean_word = word.strip().lower()
     
-    is_plural_verb = (clean_prev in PLURAL_SUBJECTS) and clean_word_lower.endswith("ent") and len(clean_word_lower) > 4
-    blocks = parse_word_to_blocks(clean_word, is_plural_verb=is_plural_verb)
+    is_plural_verb = (clean_prev in PLURAL_SUBJECTS) and clean_word.endswith("ent") and len(clean_word) > 4
+    blocks = parse_word_to_blocks(word, is_plural_verb=is_plural_verb)
     
     word_html_parts = []
     phoneme_html_parts = []
     
     for block in blocks:
         text = block.get('text', '')
-        color = block.get('color', '#000000') or '#000000'
+        color = block.get('color', '#000000')
         phoneme = block.get('phoneme', '')
         render_type = block.get('render_type', 'normal')
         
@@ -149,7 +311,7 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
             word_html_parts.append(f"<span>{text}</span>")
             
         if show_phonemes and phoneme:
-            ph_color = color if color != '#000000' else '#555555'
+            ph_color = color if color else '#555555'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-size: 0.75em;'>{phoneme}</span>")
         else:
             phoneme_html_parts.append(f"<span style='font-size: 0.75em;'>&nbsp;</span>")
@@ -157,7 +319,7 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     
-    num_syllables = get_word_syllables(clean_word)
+    num_syllables = count_syllables_approx(word)
     w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
     
     html = f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'>"
