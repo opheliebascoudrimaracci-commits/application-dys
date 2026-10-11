@@ -571,21 +571,36 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 1 (HTML)", data=p1_export, file_name=f"page1_{file_signature}.html", mime="text/html", key="dl_p1_final")
             
         # -----------------------------------------
-        # PAGE 2 : Étiquettes de mots à découper (Sur une seule ligne)
+        # PAGE 2 : Mots découpés (Syllabes & Lettres)
         # -----------------------------------------
         with dic_tab2:
-            st.markdown("### Page 2 : Étiquettes de lettres en carrés (à découper)")
+            st.markdown("### Page 2 : Mots découpés en syllabes et lettres")
             p2_parts = []
+            
             for w in words_list:
-                squares = "".join([f"<span style='display: inline-block; width: 35px; height: 35px; border: 2px solid #333; margin: 2px; text-align: center; line-height: 35px; font-weight: bold; font-size: 20px; background: #fff;'>{char}</span>" for char in w])
-                p2_parts.append(f"<div style='display: flex; align-items: center; margin-bottom: 15px; flex-wrap: nowrap;'><b style='font-size: 18px; margin-right: 15px; min-width: 100px;'>{w} :</b><div style='display: flex; flex-wrap: nowrap;'>{squares}</div></div>")
-                
+                try:
+                    # Découpage du mot en lettres individuelles dans des cases
+                    letters_html = "".join([
+                        f"<div style='display: inline-block; width: 35px; height: 35px; line-height: 35px; margin: 2px; border: 2px solid #1e1b4b; border-radius: 4px; text-align: center; font-size: 20px; font-weight: bold; color: #000000; background: #ffffff;'>{char}</div>"
+                        for char in w.strip() if char != " "
+                    ])
+                    
+                    word_box = (
+                        f"<div style='margin: 15px 0; padding: 10px; background: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 6px;'>"
+                        f"<span style='font-size: 20px; font-weight: bold; margin-right: 15px; color: #1e1b4b;'>{w} :</span>"
+                        f"<div style='display: inline-block; vertical-align: middle;'>{letters_html}</div>"
+                        f"</div>"
+                    )
+                    p2_parts.append(word_box)
+                except Exception as err:
+                    p2_parts.append(f"<div>{w}</div>")
+            
             p2_content = "".join(p2_parts)
-            st.markdown(f"<div style='background-color: #ffffff; padding: 20px; border: 1px dashed #ccc; border-radius: 10px;'>{p2_content}</div>", unsafe_allow_html=True)
+            st.markdown(p2_content, unsafe_allow_html=True)
             
-            p2_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 2</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Étiquettes à découper</h1><hr><br>{p2_content}</body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name=f"page2_{file_signature}.html", mime="text/html", key="dl_p2_final")
-            
+            p2_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 2 - Mots découpés</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Mots découpés en lettres</h1><hr><br>{p2_content}</body></html>"
+            st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name=f"page2_{file_signature}.html", mime="text/html", key=f"dl_p2_final_{file_signature}")
+
         # -----------------------------------------
         # PAGE 3 : Mots à trous (Ciblant les sons complexes et lettres muettes)
         # -----------------------------------------
