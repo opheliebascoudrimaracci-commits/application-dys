@@ -73,34 +73,27 @@ EXACT_COMPLEX_SOUNDS = {
 
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
-def count_syllables(word):
-    w = word.strip().lower().strip(".,;:!?()[]{}\"'«»")
-    if not w:
-        return 0
-    exceptions = {
-        "bonjour": 2, "napoléon": 4, "comment": 2, "mathis": 2, "théâtre": 2,
-        "dans": 1, "une": 1, "tu": 1, "vas": 1, "je": 1, "m'appelle": 2,
-        "aujourd'hui": 3, "oiseau": 2, "beaucoup": 2, "famille": 2, "fille": 1,
-        "maison": 2, "cheval": 2, "bateau": 2, "ordinateur": 4, "magnifique": 3,
-        "maminounou": 4,
-    }
-    if w in exceptions:
-        return exceptions[w]
-    if "'" in w or "’" in w:
-        parts = re.split(r"['’]", w)
-        return sum(count_syllables(p) for p in parts if p)
-    w = w.replace("-", "")
-    noyaux = re.findall(r'[aeiouyàâäéèêëïîôöùûüÿ]+', w)
-    count = len(noyaux)
-    if w.endswith("e") and not w.endswith(("ée", "ie", "ue", "eau")) and len(w) > 2:
-        count -= 1
-    if w.endswith("es") and len(w) > 3:
-        count -= 1
-    elif w.endswith("ent") and len(w) > 4:
-        count -= 1
-    return max(1, count)
+import re
 
-count_syllables_approx = count_syllables
+def count_syllables_approx(word):
+    word_clean = word.lower().strip()
+    if not word_clean:
+        return 1
+    
+    # On retire le 'e' final muet s'il y en a un (ex: loupe -> loup, bouche -> bouch)
+    # Sauf si le mot est très court (ex: de, le)
+    if len(word_clean) > 3 and word_clean.endswith('e') and not word_clean.endswith(('é', 'è', 'ê')):
+        word_clean = word_clean[:-1]
+        
+    # On compte les groupes de voyelles consécutives comme des noyaux syllabiques
+    vowels = "aeiouyàâäéèêëîïôöùûüÿæœ"
+    groups = re.findall(f"[{vowels}]+", word_clean)
+    
+    count = len(groups)
+    
+    # S'il ne reste rien ou presque, on assure un minimum d'une syllabe
+    return max(1, count)
+    
 
 def parse_word_to_blocks(word, is_plural_verb=False):
     blocks = []
