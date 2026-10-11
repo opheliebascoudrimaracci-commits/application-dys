@@ -432,4 +432,130 @@ elif menu_selection == "🎤 Aide à la dictée":
             for w in words_list:
                 try:
                     letters_html = "".join([
-                        f"<div style='display: inline-block; width: 35px; height: 35px; line-height: 35px; margin: 2px; border: 2px solid #1e1b4b; border-radius: 4px; text-align:
+                        f"<div style='display: inline-block; width: 35px; height: 35px; line-height: 35px; margin: 2px; border: 2px solid #1e1b4b; border-radius: 4px; text-align: center; font-size: 20px; font-weight: bold; color: #000000; background: #ffffff;'>{char}</div>"
+                        for char in w.strip() if char != " "
+                    ])
+                    
+                    word_box = (
+                        f"<div style='margin: 15px 0; padding: 10px; background: #f8fafc; border-left: 4px solid #4f46e5; border-radius: 6px;'>"
+                        f"<span style='font-size: 20px; font-weight: bold; margin-right: 15px; color: #1e1b4b;'>{w} :</span>"
+                        f"<div style='display: inline-block; vertical-align: middle;'>{letters_html}</div>"
+                        f"</div>"
+                    )
+                    p2_parts.append(word_box)
+                except Exception as err:
+                    p2_parts.append(f"<div>{w}</div>")
+            
+            p2_content = "".join(p2_parts)
+            st.markdown(p2_content, unsafe_allow_html=True)
+            
+            p2_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 2 - Mots découpés</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Mots découpés en lettres</h1><hr><br>{p2_content}</body></html>"
+            st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name=f"page2_{file_signature}.html", mime="text/html", key=f"dl_p2_final_{file_signature}")
+
+        with dic_tab3:
+            st.markdown("### Page 3 : Dictée à trous intelligente (IA)")
+            p3_parts = []
+            for w in words_list:
+                w_clean = w.strip()
+                try:
+                    blocks = parse_word_to_blocks(w_clean)
+                    hole_word_parts = []
+                    has_hole = False
+                    
+                    for block in blocks:
+                        text = block.get('text', '')
+                        render_type = block.get('render_type', 'normal')
+                        
+                        if render_type in ['highlight', 'muted']:
+                            hole_word_parts.append("_" * len(text))
+                            has_hole = True
+                        else:
+                            hole_word_parts.append(text)
+                            
+                    if not has_hole:
+                        if len(w_clean) <= 3:
+                            coded_w = w_clean[0] + "_" * (len(w_clean) - 1)
+                        else:
+                            coded_w = w_clean[:1] + "_" * (len(w_clean) - 2) + w_clean[-1]
+                    else:
+                        coded_w = "".join(hole_word_parts)
+                        
+                except Exception:
+                    coded_w = w_clean[:1] + "_" * max(1, len(w_clean) - 1)
+                    
+                p3_parts.append(f"<div style='display: inline-block; margin: 10px; padding: 15px 20px; background: #fff; border: 2px solid #4f46e5; border-radius: 8px; font-size: 24px; font-weight: bold; color: #1e1b4b;'>{coded_w}</div>")
+            
+            p3_content = "".join(p3_parts)
+            st.markdown(f"<div style='background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>{p3_content}</div>", unsafe_allow_html=True)
+            
+            p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
+
+        with dic_tab4:
+            st.markdown("### Page 4 : Phrase de dictée en contexte")
+            
+            default_sentence = "Aujourd'hui, pour notre dictée, nous découvrons ces mots : " + " ".join([f"Le {w} est joli." for w in words_list])
+            
+            if 'phrase_ia_dictee' not in st.session_state or st.session_state.get('current_words_sig') != file_signature:
+                st.session_state['current_words_sig'] = file_signature
+                st.session_state['phrase_ia_dictee'] = default_sentence
+
+            if st.button("🤖 Générer une histoire courte avec l'IA", type="primary", key="btn_gen_ia_final"):
+                with st.spinner("L'IA invente une histoire rigolote avec vos mots..."):
+                    try:
+                        if "GEMINI_API_KEY" in st.secrets:
+                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                        
+                        prompt_phrase = (
+                            "Écris une mini-histoire amusante et cohérente (2 à 3 phrases grand maximum) "
+                            "pour des enfants du primaire, qui utilise TOUS ces mots : "
+                            f"{', '.join(words_list)}. "
+                            "Renvoie uniquement le texte de l'histoire."
+                        )
+                        
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        res = model.generate_content(prompt_phrase)
+
+                        if res and res.text:
+                            st.session_state['phrase_ia_dictee'] = res.text.strip()
+                            st.rerun()
+                    except Exception as err:
+                        st.warning(f"Impossible de joindre l'IA : {err}")
+
+            phrase_base = st.session_state['phrase_ia_dictee']
+            
+            words_in_phrase = phrase_base.split()
+            dys_phrase_parts = []
+            for token in words_in_phrase:
+                match = re.match(r"^(\W*)([\wàâäéèêëîïôöùûüçÑñæœ-]+)(\W*)$", token, re.IGNORECASE)
+                if match:
+                    prefix, word_core, suffix = match.groups()
+                    coded_word = render_word_multilevel(word_core, show_phonemes=False)
+                    dys_phrase_parts.append(f"{prefix}{coded_word}{suffix}")
+                else:
+                    dys_phrase_parts.append(token)
+                    
+            phrase_base_dys = " ".join(dys_phrase_parts)
+            
+            phrase_trous_dys = phrase_base_dys
+            for w in words_list:
+                w_clean = w.strip()
+                if w_clean:
+                    coded_w = render_word_multilevel(w_clean, show_phonemes=False)
+                    hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
+                    phrase_trous_dys = re.sub(re.escape(coded_w), hole, phrase_trous_dys, flags=re.IGNORECASE)
+                    phrase_trous_dys = re.sub(r'\b' + re.escape(w_clean) + r'\b', hole, phrase_trous_dys, flags=re.IGNORECASE)
+                
+            st.markdown("#### 📝 Version Élève (À trous avec Code Couleur DYS)")
+            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous_dys}</div>", unsafe_allow_html=True)
+            
+            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte (Exercice)</h1><hr><br><div style='padding: 20px;'>{phrase_trous_dys}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{file_signature}.html", mime="text/html", key=f"dl_p4_eleve_{file_signature}")
+
+            st.markdown("---")
+            
+            st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
+            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
+            
+            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html",
