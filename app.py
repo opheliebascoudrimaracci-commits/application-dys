@@ -314,7 +314,6 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
         phoneme = block.get('phoneme', '')
         render_type = block.get('render_type', 'normal')
         
-        # Style du texte principal
         if show_colors:
             if render_type == 'highlight':
                 txt_styled = f"<span style='color: {color}; font-weight: bold;'>{text}</span>"
@@ -330,24 +329,7 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
             else:
                 txt_styled = f"<span>{text}</span>"
                 
-        # Petit pont sous chaque bloc de syllabe si show_arcs est Vrai
-        if show_arcs:
-            arc_span = (
-                "<div style='line-height: 0; margin-top: 2px; text-align: center;'>"
-                "<span style='display: inline-block; width: 100%; min-width: 14px; height: 6px; "
-                "border: 2px solid #4a90e2; border-top: none; border-radius: 0 0 10px 10px;'></span>"
-                "</div>"
-            )
-        else:
-            arc_span = ""
-            
-        # On assemble le morceau (Texte + son arc en dessous)
-        word_html_parts.append(
-            f"<span style='display: inline-block; text-align: center; vertical-align: top; margin: 0 1px;'>"
-            f"<div>{txt_styled}</div>"
-            f"{arc_span}"
-            f"</span>"
-        )
+        word_html_parts.append(f"<span>{txt_styled}</span>")
             
         if show_phonemes and phoneme:
             ph_color = color if show_colors and color else '#555555'
@@ -358,16 +340,44 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     
-    # Conteneur global du mot
-    html = f"<span style='display: inline-block; text-align: center; margin: 0 4px; vertical-align: top;'>"
+    # Prise en compte prioritaire du comptage fourni par l'IA
+    if nb_syllables_override is not None:
+        num_syllables = max(1, nb_syllables_override)
+    else:
+        num_syllables = count_syllables_approx(word)
+
+    # Génération d'une ligne d'arcs séparée et centrée sous le mot
+    if show_arcs:
+        arcs_html = "".join([
+            "<span style='"
+            "display: inline-block; "
+            "width: 16px; "
+            "height: 7px; "
+            "border: 2px solid #4a90e2; "
+            "border-top: none; "
+            "border-radius: 0 0 12px 12px; "
+            "margin: 0 2px;"
+            "'></span>" 
+            for _ in range(num_syllables)
+        ])
+        w_arcs = f"<div style='line-height: 0; margin-top: 4px; text-align: center;'>{arcs_html}</div>"
+    else:
+        w_arcs = ""
+
+    html = f"<span style='display: inline-block; text-align: center; margin: 0 6px; vertical-align: top;'>"
     html += f"<div>{w_main}</div>"
+    if show_arcs:
+        html += w_arcs
     if show_phonemes:
-        html += f"<div style='font-size: 0.8em; margin-top: 4px;'>{w_ph}</div>"
+        html += f"<div style='font-size: 0.8em; margin-top: 4px; text-align: center;'>{w_ph}</div>"
     html += "</span>"
     
     return html
 
+
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
+    # Appel de l'IA pour analyser le texte entier
+    syllables_map = analyser_syllabes_texte_ia_v3(text) if show_arcs else {}
     lines = text.split('\n')
     rendered_lines_adapted = []
     
@@ -377,12 +387,17 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
         
         for idx, word in enumerate(words):
             prev_word = words[idx - 1] if idx > 0 else ""
+            clean_w = word.lower().strip(".,;:?!'\"«» ")
+            nb_syllables_ia = syllables_map.get(clean_w, None)
+            
+            # Transmission du résultat de l'IA à la fonction de rendu du mot
             word_html = render_word_multilevel(
                 word, 
                 show_phonemes=show_phonemes, 
                 show_colors=show_colors, 
                 show_arcs=show_arcs, 
-                prev_word=prev_word
+                prev_word=prev_word,
+                nb_syllables_override=nb_syllables_ia
             )
             
             if word_alt and not show_colors:
@@ -433,7 +448,7 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
         mime="text/html",
         key=button_key
     )
-    
+
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
