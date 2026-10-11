@@ -111,38 +111,25 @@ def parse_word_to_blocks(word):
                 i += 1
                 continue
 
-        # 1. RÈGLE "ET" : Si 'et' est suivi d'une voyelle, on sépare le e et le t
-        if w_lower[i:i+2] == 'et':
-            next_idx = i + 2
-            if next_idx < n and w_lower[next_idx] in VOWELS:
-                pass  # On laisse le code traiter le 'e' puis le 't' normalement
-            else:
-                color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#8E44AD', 'é'))
-                blocks.append({
-                    'text': word[i:i+2],
-                    'is_muted': False,
-                    'render_type': 'highlight',
-                    'color': color,
-                    'phoneme': phoneme
-                })
-                i += 2
-                continue
-
         matched_complex = False
         for key in sorted_keys:
             if w_lower[i:i+len(key)] == key:
+                # 1. RÈGLE POUR "ET" : ne forme le son [é] QUE si c'est le mot "et" ou en toute fin de mot (ex: filet)
+                if key == 'et':
+                    is_word_et = (w_lower == 'et')
+                    is_end_of_word = (i + 2 == n)
+                    if not (is_word_et or is_end_of_word):
+                        continue # On ignore 'et' au milieu de mots comme 'petite'
+                
+                # 2. Exclusions des nasales (in, an, on, en, un) si suivies d'une voyelle ou d'une consonne doublée
                 if key in ['in', 'an', 'on', 'en', 'un']:
                     next_idx = i + len(key)
                     if next_idx < n and w_lower[next_idx] in VOWELS:
                         continue 
-                    
-                # Exclusion si la nasale est suivie d'un doublement de consonne (ex: ann)
-                next_idx = i + len(key)
-                if next_idx < n and key[-1] == w_lower[next_idx]:
-                    continue
+                    if next_idx < n and key[-1] == w_lower[next_idx]:
+                        continue
 
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
-                
                 actual_text = word[i:i+len(key)]
                 blocks.append({
                     'text': actual_text,
@@ -165,8 +152,8 @@ def parse_word_to_blocks(word):
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
             
-            # 2. RÈGLE DU 'E' FINAL : Il n'est muet que s'il est précédé d'une voyelle (-ie, -ée).
-            # Après une consonne, il ne sera plus grisé (compte comme prononcé).
+            # 3. RÈGLE DU 'E' FINAL : Muet uniquement après une voyelle (-ie, -ée).
+            # Après une consonne (ex: petite, fenêtre), il reste actif.
             is_final_mute = (i == n - 1 and n > 2 and word[i-1].lower() in VOWELS)
             
             if is_before_double:
@@ -213,6 +200,7 @@ def parse_word_to_blocks(word):
         i += 1
         
     return blocks
+
 
    
 
