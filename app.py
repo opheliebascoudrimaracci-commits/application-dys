@@ -673,7 +673,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                         else:
                             st.session_state['phrase_ia_dictee'] = f"Le petit chat observe {words_list[0]} avec attention."
                     except Exception as err:
-                        st.error(fErreur de l'IA : {err}")
+                        st.error(f"Erreur de l'IA : {err}")
                         st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions {', '.join(words_list)} avec joie."
 
             # Bouton pour relancer une autre variante
@@ -737,4 +737,3 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key=f"dl_p4_corr_{file_signature}")
-            
