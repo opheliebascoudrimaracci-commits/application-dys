@@ -13,11 +13,10 @@ import google.generativeai as genai
 # ==========================================
 # UTILITAIRE IA CENTRALISÉ (Groq / Gemini)
 # ==========================================
-
 def interroger_ia(prompt_texte, temperature=0.8):
     """
     Fonction centralisée : 
-    1. Priorité à Groq (via SDK OpenAI, avec les modèles actuellement actifs).
+    1. Priorité à Groq avec les identifiants de modèles officiels et actifs.
     2. Secours automatique sur Gemini en cas de besoin.
     """
     erreurs = []
@@ -30,10 +29,10 @@ def interroger_ia(prompt_texte, temperature=0.8):
                 api_key=groq_key.strip(),
                 base_url="https://api.groq.com/openai/v1",
             )
+            # Identifiants officiels et actifs sur l'API Groq
             groq_models = [
-                "gpt-oss-20b",
                 "llama-3.3-70b-versatile",
-                "gpt-oss-120b"
+                "llama-3.1-8b-instant"
             ]
             
             for g_model in groq_models:
@@ -68,7 +67,7 @@ def interroger_ia(prompt_texte, temperature=0.8):
         erreurs.append("Gemini: Clé 'GEMINI_API_KEY' absente des secrets")
 
     return f"Erreur IA -> " + " | ".join(erreurs)
-
+    
     # 1. TENTATIVE AVEC GROQ
     groq_key = st.secrets.get("GROQ_API_KEY")
     if groq_key:
