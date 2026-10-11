@@ -431,22 +431,79 @@ elif menu_selection == "✨ Générateur d'histoires":
 elif menu_selection == "🎤 Aide à la dictée":
     st.title("🎤 Préparation de la Dictée Personnalisée")
     st.caption("Ophélie Bascou Drimaracci")
-    st.write("Saisissez vos mots. L'IA analyse instantanément la phonétique et génère les pages de travail adaptées !")
+    st.write("Saisissez vos mots de la semaine. L'IA va créer la séquence complète d'apprentissage sur 4 jours !")
 
-    mots_input = st.text_area("Entrez vos mots (séparés par un espace, une virgule ou un retour à la ligne) :", height=100, placeholder="ex: chat, chien, Mathis, école...")
+    mots_input = st.text_area(
+        "Entrez vos mots (séparés par une virgule, un espace ou un retour à la ligne) :", 
+        height=100, 
+        placeholder="ex: chat, chien, Mathis, école, vacances..."
+    )
     
     if mots_input:
-        st.write("---")
         opts = build_controls("dictee_ctrl")
-        render_full_dys_text(mots_input, **opts)
         
-        if st.button("✨ Générer une phrase de dictée avec ces mots"):
-            with st.spinner("Génération de la dictée en cours..."):
-                prompt = f"Rédige une courte dictée simple et cohérente (3 ou 4 phrases maximum) destinée à un enfant, en utilisant ces mots : {mots_input}."
-                dictee_texte = interroger_ia(prompt, temperature=0.7)
-                st.session_state["dictee_texte_genere"] = dictee_texte
-                
-        if "dictee_texte_genere" in st.session_state:
+        if st.button("🪄 Générer la séquence de dictée sur 4 pages"):
+            with st.spinner("L'IA prépare les 4 étapes d'apprentissage..."):
+                prompt = f"""
+                À partir de cette liste de mots : {mots_input}
+                Génère un contenu pédagogique structuré en JSON pour un enfant DYS.
+                Le JSON doit contenir exactement ces clefs :
+                - "mots_cles": la liste nettoyée des mots
+                - "jour1": une liste de courtes phrases à trous ou exercices d'observation des sons sur ces mots
+                - "jour2": une liste de phrases d'entraînement retravaillant les pièges (muettes, pluriels)
+                - "jour3": une auto-dictée de 2-3 phrases simples
+                - "dictee_finale": le texte complet de la dictée finale (3-4 phrases simples)
+                Réponds uniquement par le JSON valide.
+                """
+                res_ia = interroger_ia(prompt, temperature=0.7)
+                try:
+                    # Nettoyage au cas où l'IA entoure de ```json
+                    res_json_clean = re.sub(r'```json|```', '', res_ia).strip()
+                    st.session_state["data_dictee"] = json.loads(res_json_clean)
+                except Exception as e:
+                    # En cas de problème de formatage JSON, structure de secours
+                    st.session_state["data_dictee"] = {
+                        "mots_cles": [m.strip() for m in re.split(r'[, \n]+', mots_input) if m.strip()],
+                        "jour1": [f"Étude des sons dans le mot : {m}" for m in re.split(r'[, \n]+', mots_input) if m.strip()],
+                        "jour2": ["Entraînement : écris les mots de mémoire."],
+                        "jour3": ["Auto-dictée : révise les pièges et les lettres muettes."],
+                        "dictee_finale": res_ia
+                    }
+
+        if "data_dictee" in st.session_state:
+            data = st.session_state["data_dictee"]
             st.write("---")
-            st.write("### 📝 Texte de la dictée généré :")
-            render_full_dys_text(st.session_state["dictee_texte_genere"], **opts)
+            st.subheader("📚 Fiche de travail & Préparation en 4 Étapes")
+
+            tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs([
+                "📄 Page 1 : Jour 1 (Découverte & Sons)", 
+                "📄 Page 2 : Jour 2 (Mots & Pièges)", 
+                "📄 Page 3 : Jour 3 (Auto-dictée)", 
+                "📄 Page 4 : Jour 4 (Dictée Finale)"
+            ])
+
+            with tab_j1:
+                st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
+                mots_texte = " • ".join(data.get("mots_cles", []))
+                render_full_dys_text(mots_texte, **opts)
+                
+                st.write("---")
+                st.write("**Exercices d'observation :**")
+                j1_content = "\n".join(data.get("jour1", [])) if isinstance(data.get("jour1"), list) else str(data.get("jour1", ""))
+                render_full_dys_text(j1_content, **opts)
+
+            with tab_j2:
+                st.markdown("### ✏️ Jour 2 : Entraînement & Consolidation")
+                j2_content = "\n".join(data.get("jour2", [])) if isinstance(data.get("jour2"), list) else str(data.get("jour2", ""))
+                render_full_dys_text(j2_content, **opts)
+
+            with tab_j3:
+                st.markdown("### 🧠 Jour 3 : Auto-dictée & Mémorisation")
+                j3_content = "\n".join(data.get("jour3", [])) if isinstance(data.get("jour3"), list) else str(data.get("jour3", ""))
+                render_full_dys_text(j3_content, **opts)
+
+            with tab_j4:
+                st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
+                dictee_finale = data.get("dictee_finale", "")
+                render_full_dys_text(dictee_finale, **opts)
+                
