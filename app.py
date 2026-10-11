@@ -652,23 +652,53 @@ def format_to_str(content):
         return "\n".join([f"{k}: {format_to_str(v)}" for k, v in content.items()])
     return str(content)
 
-# Vérification correcte en Python
+# --- Sécurisation des fonctions et variables ---
 if "data" not in locals() or not data:
-    data = st.session_state.get("data", {
-        "mots_cles": [],
-        "jour1": "",
-        "jour2": "",
-        "jour3": "",
-        "dictee_finale": ""
-    })
+    data = st.session_state.get("data", {})
 
-# Création des onglets
+if "opts" not in locals():
+    opts = {}
+
+# Fonction de secours si render_full_dys_text n'est pas importée dans app.py
+def afficher_texte_dys(texte, key_suffix="", **kwargs):
+    if "render_full_dys_text" in globals():
+        render_full_dys_text(texte, key_suffix=key_suffix, **kwargs)
+    else:
+        st.write(texte)
+
+# --- Onglets de dictée ---
 tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs([
     "🧩 Jour 1", 
     "✏️ Jour 2", 
     "🧠 Jour 3", 
     "🏆 Jour 4"
 ])
+
+with tab_j1:
+    st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
+    mots_texte = " • ".join(data.get("mots_cles", []))
+    if mots_texte:
+        afficher_texte_dys(mots_texte, key_suffix="j1_mots", **opts)
+    
+    st.write("---")
+    st.write("**Phrases de découverte :**")
+    j1_content = format_to_str(data.get("jour1", ""))
+    afficher_texte_dys(j1_content, key_suffix="j1_exo", **opts)
+
+with tab_j2:
+    st.markdown("### ✏️ Jour 2 : Mots à trous (Lettres manquantes)")
+    j2_content = format_to_str(data.get("jour2", ""))
+    afficher_texte_dys(j2_content, key_suffix="j2_exo", **opts)
+
+with tab_j3:
+    st.markdown("### 🧠 Jour 3 : Auto-dictée & Mémorisation")
+    j3_content = format_to_str(data.get("jour3", ""))
+    afficher_texte_dys(j3_content, key_suffix="j3_exo", **opts)
+
+with tab_j4:
+    st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
+    dictee_finale = format_to_str(data.get("dictee_finale", ""))
+    afficher_texte_dys(dictee_finale, key_suffix="j4_exo", **opts)
 
 with tab_j1:
     st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
