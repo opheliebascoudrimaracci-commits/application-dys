@@ -74,26 +74,42 @@ EXACT_COMPLEX_SOUNDS = {
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 import re
+import re
 
-def count_syllables_approx(word):
-    word_clean = word.lower().strip()
-    if not word_clean:
-        return 1
-    
-    # On retire le 'e' final muet s'il y en a un (ex: loupe -> loup, bouche -> bouch)
-    # Sauf si le mot est très court (ex: de, le)
-    if len(word_clean) > 3 and word_clean.endswith('e') and not word_clean.endswith(('é', 'è', 'ê')):
-        word_clean = word_clean[:-1]
+def get_syllables_count_ai(word):
+    """Interroge Gemini pour obtenir le nombre exact de syllabes d'un mot."""
+    try:
+        if "GEMINI_API_KEY" in st.secrets:
+            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
         
-    # On compte les groupes de voyelles consécutives comme des noyaux syllabiques
-    vowels = "aeiouyàâäéèêëîïôöùûüÿæœ"
-    groups = re.findall(f"[{vowels}]+", word_clean)
-    
-    count = len(groups)
-    
-    # S'il ne reste rien ou presque, on assure un minimum d'une syllabe
-    return max(1, count)
-    
+        prompt = (
+            f"Donne uniquement le nombre de syllabes orales du mot français suivant : '{word}'. "
+            "Réponds par un seul chiffre (par exemple : 2)."
+        )
+        model = genai.GenerativeModel("gemini-2.5-flash")
+        res = model.generate_content(prompt)
+        
+        if res and res.text:
+            match = re.search(r'\d+', res.text.strip())
+            if match:
+                return int(match.group())
+    except Exception:
+        pass
+    return max(1, len(word) // 3)
+
+# Cache global des syllabes pour toute l'application
+if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllables') != file_signature:
+    st.session_state['sig_syllables'] = file_signature
+    st.session_state['syllables_cache'] = {}
+    for w in words_list:
+        w_clean = w.strip().lower()
+        if w_clean:
+            st.session_state['syllables_cache'][w_clean] = get_syllables_count_ai(w_clean)
+
+def get_word_syllables(word):
+    """Fonction globale à appeler partout où vous avez besoin du nombre de syllabes."""
+    w_clean = word.strip().lower()
+    return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
 
 def parse_word_to_blocks(word, is_plural_verb=False):
     blocks = []
