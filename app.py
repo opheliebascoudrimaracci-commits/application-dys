@@ -5,6 +5,7 @@ from PIL import Image, ImageEnhance, ImageFilter
 import re
 import unicodedata
 import random
+import hashlib
 import google.generativeai as genai
 
 # Configuration de la clé (via les secrets Streamlit Cloud)
