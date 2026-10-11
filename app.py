@@ -209,9 +209,8 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
     return blocks
 
 # Fonction d'affichage multi-niveaux
-def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=True):
+def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word=""):
     clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
-    
     is_consonne_prononcee = clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE
         
     clean_prev = prev_word.strip().lower() if prev_word else ""
@@ -230,17 +229,24 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
         phoneme = block.get('phoneme', '')
         render_type = block.get('render_type', 'normal')
         
-        if render_type == 'highlight':
-            word_html_parts.append(f"<span style='color: {color}; font-weight: bold;'>{text}</span>")
-        elif render_type == 'color_text':
-            word_html_parts.append(f"<span style='color: {color};'>{text}</span>")
-        elif render_type == 'muted':
-            word_html_parts.append(f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>")
+        # Gestion de la couleur selon la case cochée
+        if show_colors:
+            if render_type == 'highlight':
+                word_html_parts.append(f"<span style='color: {color}; font-weight: bold;'>{text}</span>")
+            elif render_type == 'color_text':
+                word_html_parts.append(f"<span style='color: {color};'>{text}</span>")
+            elif render_type == 'muted':
+                word_html_parts.append(f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>")
+            else:
+                word_html_parts.append(f"<span>{text}</span>")
         else:
-            word_html_parts.append(f"<span>{text}</span>")
+            if render_type == 'muted':
+                word_html_parts.append(f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>")
+            else:
+                word_html_parts.append(f"<span>{text}</span>")
             
         if show_phonemes and phoneme:
-            ph_color = color if color else '#555555'
+            ph_color = color if show_colors and color else '#555555'
             phoneme_html_parts.append(f"<span style='color: {ph_color}; font-size: 0.75em;'>{phoneme}</span>")
         else:
             phoneme_html_parts.append(f"<span style='font-size: 0.75em;'>&nbsp;</span>")
@@ -261,7 +267,7 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
     
     return html
 
-def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
+def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
     lines = text.split('\n')
     rendered_lines_adapted = []
     
@@ -271,7 +277,13 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
         
         for idx, word in enumerate(words):
             prev_word = words[idx - 1] if idx > 0 else ""
-            word_html = render_word_multilevel(word, show_phonemes=show_phonemes, prev_word=prev_word)
+            word_html = render_word_multilevel(
+                word, 
+                show_phonemes=show_phonemes, 
+                show_colors=show_colors, 
+                show_arcs=show_arcs, 
+                prev_word=prev_word
+            )
             
             if word_alt and not show_colors:
                 color = "#0055ff" if idx % 2 == 0 else "#cc0000"
@@ -321,6 +333,7 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
         mime="text/html",
         key=button_key
     )
+    
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
