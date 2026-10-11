@@ -7,10 +7,10 @@ import unicodedata
 import random
 import google.generativeai as genai
 
-# Configuration de la clé d'API Gemini depuis vos Secrets Streamlit
+# Configuration de la clé (via les secrets Streamlit Cloud)
 if "GEMINI_API_KEY" in st.secrets:
     genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-    
+
 
 # 1. Configuration unique de la page
 st.set_page_config(
@@ -673,25 +673,37 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name="page3_dictee_a_trous.html", mime="text/html", key="dl_p3_v3")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (Actualisée dynamiquement)
+        # PAGE 4 : Phrase de dictée en contexte (Adaptée aux enfants)
         # -----------------------------------------
         with dic_tab4:
-            st.markdown("### Page 4 : Phrase de dictée en contexte")
+            st.markdown("### Page 4 : Phrase ou mini-histoire adaptée pour les enfants")
             
-            words_key_signature = "_".join(words_list)
-            if 'last_words_sig' not in st.session_state or st.session_state['last_words_sig'] != words_key_signature:
-                st.session_state['last_words_sig'] = words_key_signature
-                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous révisons avec attention ces nouveaux mots : " + ", ".join(words_list) + "."
+            current_signature = "_".join(words_list)
+            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != current_signature:
+                st.session_state['current_words_sig'] = current_signature
+                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une histoire rigolote avec les mots : " + ", ".join(words_list) + "."
 
-            if st.button("🤖 Générer la phrase avec les nouveaux mots (IA)", type="primary", key="btn_gen_ia_phrase_v3"):
-                prompt_phrase = "Écris une phrase simple, cohérente et adaptée à des enfants en français qui intègre obligatoirement TOUS les mots suivants : " + ", ".join(words_list) + ". Donne uniquement la phrase, sans texte introductif."
+            if st.button("🤖 Générer une histoire adaptée avec l'IA", type="primary", key="btn_gen_ia_final"):
                 try:
+                    if "GEMINI_API_KEY" in st.secrets:
+                        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                    
+                    # Consigne stricte pour cibler un contenu enfantin, simple et sans jargon
+                    prompt_phrase = (
+                        "Écris une phrase ou une mini-histoire très simple, rigolote et parfaitement "
+                        "adaptée à des enfants (niveau école primaire), qui intègre obligatoirement "
+                        f"TOUS les mots suivants : {', '.join(words_list)}. "
+                        "Donne uniquement le texte de l'histoire, sans aucun commentaire, sans mise en forme superflue "
+                        "et avec un vocabulaire très accessible."
+                    )
+                    
                     model = genai.GenerativeModel("gemini-1.5-flash")
                     res = model.generate_content(prompt_phrase)
                     if res and res.text:
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
-                except Exception:
-                    st.session_state['phrase_ia_dictee'] = f"Voici l'exercice du jour avec nos mots : " + ", ".join(words_list) + "."
+                except Exception as err:
+                    st.warning(f"Mode secours activé. Erreur: {err}")
+                    st.session_state['phrase_ia_dictee'] = f"Voici l'histoire du jour avec nos mots : " + ", ".join(words_list) + "."
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
@@ -704,8 +716,4 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
             
             p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrase_dictee_a_trous.html", mime="text/html", key="dl_p4_v3")
-    else:
-        st.info("💡 Veuillez saisir au moins un mot ci-dessus pour afficher et générer instantanément les 4 pages de travail.")
-        
-            
+            st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrase_dictee_a_trous.html", mime="text/html", key="dl_p4_final")
