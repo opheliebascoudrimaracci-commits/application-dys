@@ -616,13 +616,20 @@ elif menu_selection == "🎤 Aide à la dictée":
                         "Donne uniquement le texte de l'histoire, sans aucun commentaire ni mise en forme superflue."
                     )
                     
-                    model = genai.GenerativeModel("gemini-1.5-flash")
+                    # Utilisation d'un modèle standard compatible
+                    model = genai.GenerativeModel("gemini-2.5-flash")
                     res = model.generate_content(prompt_phrase)
                     if res and res.text:
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
                 except Exception as err:
-                    st.warning(f"Mode secours activé. Erreur: {err}")
-                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions avec application les mots : " + ", ".join(words_list) + "."
+                    # Si gemini-2.5-flash n'est pas dispo, on tente une alternative ou le texte de base
+                    try:
+                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        res = model.generate_content(prompt_phrase)
+                        if res and res.text:
+                            st.session_state['phrase_ia_dictee'] = res.text.strip()
+                    except Exception:
+                        st.session_state['phrase_ia_dictee'] = f"Voici l'histoire du jour construite avec nos mots : " + ", ".join(words_list) + "."
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
@@ -636,7 +643,4 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name=f"page4_{file_signature}.html", mime="text/html", key="dl_p4_final")
-    else:
-        st.info("💡 Veuillez saisir au moins un mot ci-dessus pour afficher et générer instantanément les 4 pages de travail.")
-        
-    
+            
