@@ -644,25 +644,52 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
 
-        # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (IA dynamique)
+         # -----------------------------------------
+        # PAGE 4 : Phrase de dictée en contexte (IA dynamique & Niveaux scolaires)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte (Générée par l'IA)")
             
-            # Génération automatique dès que les mots changent
-            if 'phrase_ia_dictee' not in st.session_state or st.session_state.get('current_words_sig') != file_signature:
-                st.session_state['current_words_sig'] = file_signature
-                with st.spinner("🤖 L'IA compose une histoire unique avec vos mots..."):
+            # Sélecteur de niveau scolaire (de la Grande Section à la 3ème)
+            niveau_scolaire = st.selectbox(
+                "🎯 Choisissez le niveau scolaire de l'enfant :",
+                [
+                    "Grande Section",
+                    "CP",
+                    "CE1",
+                    "CE2",
+                    "CM1",
+                    "CM2",
+                    "6ème",
+                    "5ème",
+                    "4ème",
+                    "3ème"
+                ],
+                index=2, # Par défaut sur CE1
+                key=f"select_niveau_{file_signature}"
+            )
+            
+            # Signature combinée pour forcer la régénération si on change les mots OU le niveau
+            combined_sig = f"{file_signature}_{niveau_scolaire}"
+            
+            # Initialisation par défaut de sécurité
+            if 'phrase_ia_dictee' not in st.session_state:
+                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions {', '.join(words_list)} avec beaucoup d'attention."
+            
+            # Génération automatique dès que les mots ou le niveau changent
+            if st.session_state.get('current_combined_sig') != combined_sig:
+                st.session_state['current_combined_sig'] = combined_sig
+                with st.spinner(f"🤖 L'IA compose une dictée adaptée au niveau {niveau_scolaire}..."):
                     try:
                         if "GEMINI_API_KEY" in st.secrets:
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         
                         prompt_phrase = (
-                            "Écris une mini-histoire courte, amusante et cohérente (2 à 3 phrases maximum) "
-                            "pour des enfants du primaire, qui intègre impérativement TOUS ces mots : "
-                            f"{', '.join(words_list)}. "
-                            "Renvoie uniquement le texte de l'histoire, sans introduction ni guillemets."
+                            f"Tu es un professeur expert en pédagogie et élèves DYS. "
+                            f"Écris une courte dictée parfaitement adaptée au niveau scolaire : **{niveau_scolaire}**. "
+                            f"Adapte la complexité grammaticale, la longueur des phrases et le vocabulaire précisément à ce niveau (par exemple, des phrases très simples et courtes pour la Grande Section/CP, et des structures un peu plus riches pour le collège jusqu'en 3ème). "
+                            f"Le texte doit intégrer impérativement et naturellement TOUS ces mots : {', '.join(words_list)}. "
+                            f"Renvoie uniquement le texte de la dictée, sans aucune introduction, sans guillemets et sans commentaires."
                         )
                         
                         model = genai.GenerativeModel("gemini-1.5-flash")
@@ -670,24 +697,20 @@ elif menu_selection == "🎤 Aide à la dictée":
 
                         if res and res.text:
                             st.session_state['phrase_ia_dictee'] = res.text.strip()
-                        else:
-                            st.session_state['phrase_ia_dictee'] = f"Le petit chat observe {words_list[0]} avec attention."
                     except Exception as err:
                         st.error(f"Erreur de l'IA : {err}")
-                        st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions {', '.join(words_list)} avec joie."
 
             # Bouton pour relancer une autre variante
-            if st.button("🔄 Générer une autre variante d'histoire", key=f"btn_regen_variant_{file_signature}"):
+            if st.button("🔄 Générer une autre variante pour ce niveau", key=f"btn_regen_variant_{combined_sig}"):
                 with st.spinner("Création d'une nouvelle variante..."):
                     try:
                         if "GEMINI_API_KEY" in st.secrets:
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         
                         prompt_phrase = (
-                            "Écris une *autre* mini-histoire totalement différente, amusante et cohérente (2 à 3 phrases maximum) "
-                            "pour des enfants, qui intègre TOUS ces mots : "
-                            f"{', '.join(words_list)}. "
-                            "Renvoie uniquement le texte."
+                            f"Tu es un professeur expert. Écris une *autre* dictée différente, parfaitement adaptée au niveau **{niveau_scolaire}**, "
+                            f"qui intègre impérativement TOUS ces mots : {', '.join(words_list)}. "
+                            f"Renvoie uniquement le texte."
                         )
                         model = genai.GenerativeModel("gemini-1.5-flash")
                         res = model.generate_content(prompt_phrase)
@@ -697,7 +720,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                         pass
                     st.rerun()
 
-            phrase_base = st.session_state['phrase_ia_dictee']
+            phrase_base = st.session_state.get('phrase_ia_dictee', f"Étude des mots : {', '.join(words_list)}")
             
             # Application DYS sécurisée sur la phrase générée
             words_in_phrase = phrase_base.split() if phrase_base else ["Erreur", "de", "génération"]
@@ -736,8 +759,8 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown("#### 📝 Version Élève (À trous avec Code Couleur DYS)")
             st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous_dys}</div>", unsafe_allow_html=True)
             
-            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte (Exercice)</h1><hr><br><div style='padding: 20px;'>{phrase_trous_dys}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{file_signature}.html", mime="text/html", key=f"dl_p4_eleve_{file_signature}")
+            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte ({niveau_scolaire}) - Exercice</h1><hr><br><div style='padding: 20px;'>{phrase_trous_dys}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{niveau_scolaire}_{file_signature}.html", mime="text/html", key=f"dl_p4_eleve_{file_signature}")
 
             st.markdown("---")
             
@@ -745,5 +768,5 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
             
-            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key=f"dl_p4_corr_{file_signature}")
+            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte ({niveau_scolaire})</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{niveau_scolaire}_{file_signature}.html", mime="text/html", key=f"dl_p4_corr_{file_signature}")
