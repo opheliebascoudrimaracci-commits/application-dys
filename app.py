@@ -621,24 +621,25 @@ elif menu_selection == "🎤 Aide à la dictée":
             p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
-        # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte + Corrigé
+         # -----------------------------------------
+        # PAGE 4 : Phrase de dictée en contexte (Courte + Code Couleur)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
+            if 'current_words_sig' not in st.session_state || st.session_state['current_words_sig'] != file_signature:
                 st.session_state['current_words_sig'] = file_signature
-                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une histoire rigolote avec nos mots : " + ", ".join(words_list) + "."
+                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une courte histoire avec nos mots : " + ", ".join(words_list) + "."
 
-            if st.button("🤖 Générer une histoire adaptée avec l'IA", type="primary", key="btn_gen_ia_final"):
+            if st.button("🤖 Générer une histoire courte avec l'IA", type="primary", key="btn_gen_ia_final"):
                 try:
                     if "GEMINI_API_KEY" in st.secrets:
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                     
+                    # Prompt modifié pour exiger une histoire plus courte
                     prompt_phrase = (
-                        "Écris une mini-histoire très simple, rigolote et parfaitement "
-                        "adaptée à des enfants en école primaire, qui intègre obligatoirement "
+                        "Écris une mini-histoire très courte (maximum 3 courtes phrases), simple et rigolote "
+                        "pour des enfants en école primaire, qui intègre obligatoirement "
                         f"TOUS les mots suivants : {', '.join(words_list)}. "
                         "Donne uniquement le texte de l'histoire, sans aucun titre ni mise en forme."
                     )
@@ -650,11 +651,11 @@ elif menu_selection == "🎤 Aide à la dictée":
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
                 except Exception as err:
                     st.warning(f"Mode secours activé. Erreur: {err}")
-                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions avec application les mots : " + ", ".join(words_list) + "."
+                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions les mots : " + ", ".join(words_list) + "."
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
-            # Création de la version à trous
+            # 1. Version Élève (À trous)
             phrase_trous = phrase_base
             for w in words_list:
                 pattern = re.compile(re.escape(w), re.IGNORECASE)
@@ -662,24 +663,25 @@ elif menu_selection == "🎤 Aide à la dictée":
                 phrase_trous = pattern.sub(hole, phrase_trous)
                 
             st.markdown("#### 📝 Version Élève (À trous)")
-            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
             
-            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
+            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée en contexte (Exercice)</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{file_signature}.html", mime="text/html", key="dl_p4_final")
 
             st.markdown("---")
             
-            # --- SECTION CORRIGÉ ---
-            st.markdown("#### ✅ Version Correcteur (Corrigé)")
-            # On met en valeur les mots recherchés en gras/couleur dans le corrigé
+            # 2. Version Correcteur avec le Code Couleur DYS sur les mots de la liste
+            st.markdown("#### ✅ Version Correcteur (Avec Code Couleur DYS)")
+            
             phrase_corrige = phrase_base
             for w in words_list:
-                pattern = re.compile(re.escape(w), re.IGNORECASE)
-                highlighted_w = f"<span style='color: #4f46e5; font-weight: bold; text-decoration: underline;'>{w}</span>"
-                phrase_corrige = pattern.sub(highlighted_w, phrase_corrige)
+                # On applique votre moteur DYS sur les mots de la dictée pour le corrigé
+                coded_target = render_word_multilevel(w, show_phonemes=False) # Sans les arcs du bas pour garder de la fluidité dans la phrase
+                pattern = re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE)
+                phrase_corrige = pattern.sub(coded_target, phrase_corrige)
 
-            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_corrige}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2;'>{phrase_corrige}</div>", unsafe_allow_html=True)
             
-            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_corrige}</div></body></html>"
+            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_corrige}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key="dl_p4_corr")
             
