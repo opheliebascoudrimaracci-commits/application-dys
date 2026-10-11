@@ -619,8 +619,33 @@ elif menu_selection == "🎤 Aide à la dictée":
             p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
+
+            phrase_base_dys = " ".join(dys_phrase_parts)
+            
+            # Version Élève : Création des trous sur les mots de la liste
+            phrase_trous_dys = phrase_base_dys
+            for w in words_list:
+                w_clean = w.strip()
+                if w_clean:
+                    coded_w = render_word_multilevel(w_clean, show_phonemes=False)
+                    hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
+                    phrase_trous_dys = re.sub(re.escape(coded_w), hole, phrase_trous_dys, flags=re.IGNORECASE)
+                    phrase_trous_dys = re.sub(r'\b' + re.escape(w_clean) + r'\b', hole, phrase_trous_dys, flags=re.IGNORECASE)
+                
+            st.markdown("#### 📝 Version Élève (À trous avec Code Couleur DYS)")
+            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous_dys}</div>", unsafe_allow_html=True)
+            
+            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte (Exercice)</h1><hr><br><div style='padding: 20px;'>{phrase_trous_dys}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{file_signature}.html", mime="text/html", key=f"dl_p4_eleve_{file_signature}")
+
+            st.markdown("---")
+            
+            # Version Correcteur
+            st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
+            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
+
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (IA dynamique automatique)
+        # PAGE 4 : Phrase de dictée en contexte (IA dynamique)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte (Générée par l'IA)")
@@ -640,17 +665,18 @@ elif menu_selection == "🎤 Aide à la dictée":
                             "Renvoie uniquement le texte de l'histoire, sans introduction ni guillemets."
                         )
                         
-                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        model = genai.GenerativeModel("gemini-1.5-flash")
                         res = model.generate_content(prompt_phrase)
 
                         if res and res.text:
                             st.session_state['phrase_ia_dictee'] = res.text.strip()
                         else:
-                            raise Exception("Vide")
+                            st.session_state['phrase_ia_dictee'] = f"Le petit chat observe {words_list[0]} avec attention."
                     except Exception as err:
-                        st.session_state['phrase_ia_dictee'] = "Aujourd'hui, pour notre dictée magique avec " + ", ".join(words_list) + ", l'aventure commence ici."
+                        st.error(fErreur de l'IA : {err}")
+                        st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions {', '.join(words_list)} avec joie."
 
-            # Bouton pour relancer une autre variante si l'histoire ne plaît pas
+            # Bouton pour relancer une autre variante
             if st.button("🔄 Générer une autre variante d'histoire", key=f"btn_regen_variant_{file_signature}"):
                 with st.spinner("Création d'une nouvelle variante..."):
                     try:
@@ -663,7 +689,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                             f"{', '.join(words_list)}. "
                             "Renvoie uniquement le texte."
                         )
-                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        model = genai.GenerativeModel("gemini-1.5-flash")
                         res = model.generate_content(prompt_phrase)
                         if res and res.text:
                             st.session_state['phrase_ia_dictee'] = res.text.strip()
