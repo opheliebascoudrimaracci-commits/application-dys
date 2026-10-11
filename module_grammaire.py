@@ -2,6 +2,7 @@ import streamlit as st
 import json
 import os
 import random
+from app import interroger_ia
 
 # ==========================================
 # 1. SYMBOLES ET COULEURS GRAMMATICAUX
@@ -33,9 +34,9 @@ def charger_historique():
 
 def sauvegarder_phrase_dans_historique(nouvelle_phrase):
     historique = charger_historique()
-    historique.insert(0, nouvelle_phrase)  # Ajout en tête
+    historique.insert(0, nouvelle_phrase)
     if len(historique) > MAX_PHRASES:
-        historique = historique[:MAX_PHRASES]  # La 101e est supprimée
+        historique = historique[:MAX_PHRASES]
     with open(FICHIER_HISTORIQUE, "w", encoding="utf-8") as f:
         json.dump(historique, f, ensure_ascii=False, indent=2)
 
@@ -110,7 +111,6 @@ Réponds UNIQUEMENT avec le JSON.
 # 4. AFFICHAGE DE LA LÉGENDE ET DES MOTS
 # ==========================================
 def afficher_legende_couleurs():
-    """ Affiche le rappel visuel des couleurs et symboles grammaticales """
     st.markdown("""
     <div style="background-color: #f1f3f5; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #3498db;">
         <h4 style="margin-top: 0; color: #2c3e50;">🎨 Code couleur et symboles :</h4>
@@ -148,6 +148,72 @@ def afficher_phrase_symboles(phrase_data):
         {''.join(html_mots)}
     </div>
     """, unsafe_allow_html=True)
+
+def generer_fiche_html_imprimable(phrase_data):
+    mots_html = []
+    for m in phrase_data["mots"]:
+        t = m["type"]
+        info_symb = SYMBOLES_GRAMMAIRE.get(t, {"emoji": ""})
+        
+        emoji_display = info_symb["emoji"]
+        if m.get("is_sujet") and t != "sujet":
+            emoji_display = f"🔴 {info_symb['emoji']}"
+            
+        mots_html.append(f"""
+        <div style="display: inline-block; text-align: center; margin: 15px 20px; vertical-align: top;">
+            <div style="font-size: 28px; font-weight: bold; font-family: Arial, sans-serif; color: #2c3e50; margin-bottom: 8px;">{m['mot']}</div>
+            <div style="font-size: 26px;">{emoji_display}</div>
+        </div>
+        """)
+
+    accord = phrase_data.get("accord", {})
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Fiche d'exercice Grammaire DYS</title>
+        <style>
+            body {{ font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 40px; background-color: #ffffff; color: #2c3e50; }}
+            .titre {{ text-align: center; color: #2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px; margin-bottom: 30px; }}
+            .legende {{ background-color: #f8f9fa; border: 2px solid #e9ecef; border-radius: 10px; padding: 15px; margin-bottom: 30px; }}
+            .legende-items {{ display: flex; flex-wrap: wrap; gap: 15px; font-size: 16px; }}
+            .zone-phrase {{ display: flex; flex-wrap: wrap; justify-content: center; padding: 30px; background-color: #fafafa; border: 2px dashed #cbd5e1; border-radius: 12px; margin-bottom: 40px; }}
+            .section-accord {{ background-color: #f1f5f9; padding: 20px; border-radius: 10px; }}
+            @media print {{ body {{ padding: 0; }} .no-print {{ display: none; }} }}
+        </style>
+    </head>
+    <body>
+        <div class="no-print" style="text-align: right; margin-bottom: 20px;">
+            <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                🖨️ Imprimer / Enregistrer en PDF
+            </button>
+        </div>
+        <h1 class="titre">📐 Fiche d'Exercice Grammaire & Accords</h1>
+        <div class="legende">
+            <h3>🎨 Légende du code couleur et symboles :</h3>
+            <div class="legende-items">
+                <div>🔴 <b>Sujet</b> (Rond rouge)</div>
+                <div>🟩 <b>Verbe</b> (Carré vert)</div>
+                <div>⭐ <b>Nom commun</b> (Étoile jaune)</div>
+                <div>✨ <b>Nom propre</b> (Étoile brillante)</div>
+                <div>🔺 <b>Déterminant</b> (Triangle bleu)</div>
+                <div>💖 <b>Pronom</b> (Cœur rose)</div>
+                <div>⬛ <b>Mot invariable</b> (Carré noir)</div>
+            </div>
+        </div>
+        <h2>1. Analyse visuelle de la phrase :</h2>
+        <div class="zone-phrase">{''.join(mots_html)}</div>
+        <h2>2. Exercice d'accord :</h2>
+        <div class="section-accord">
+            <p style="font-size: 22px; font-weight: bold;">{accord.get('phrase_trou', phrase_data['texte'])}</p>
+            <p><b>Choix possibles :</b> {', '.join(accord.get('options', []))}</p>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
 
 # ==========================================
 # 5. FONCTION PRINCIPALE APPELÉE PAR STREAMLIT
@@ -200,33 +266,18 @@ def afficher_page_grammaire(fonction_appel_ia):
 
     phrase = st.session_state.phrase_grammaire
 
-    # --- BOUTON DE TÉLÉCHARGEMENT DE LA FICHE ---
-    st.divider()
-    html_fiche = generer_fiche_html_imprimable(phrase)
-    
-    st.download_button(
-        label="📥 Télécharger la fiche d'exercice (avec code couleur)",
-        data=html_fiche,
-        file_name=f"fiche_grammaire_niveau_{phrase.get('niveau', 1)}.html",
-        mime="text/html",
-        type="primary"
-    )
-
     st.divider()
 
     # --- SOUS-ONGLETS ---
     tab_ex, tab_exo, tab_acc = st.tabs(["📖 Exemple (Démonstration)", "✏️ Exercice (Symboles)", "✍️ Accords Grammaticaux"])
 
-    # 1. EXEMPLE (Avec la légende intégrée)
     with tab_ex:
         st.subheader("Analyse de la phrase")
         afficher_legende_couleurs()
         afficher_phrase_symboles(phrase)
 
-    # 2. EXERCICE SYMBOLES
     with tab_exo:
         st.subheader("Identifie le symbole de chaque mot")
-        # On peut aussi afficher la légende ici en version repliable ou directe si besoin
         with st.expander("ℹ️ Rappel du code couleur"):
             afficher_legende_couleurs()
             
@@ -247,7 +298,7 @@ def afficher_page_grammaire(fonction_appel_ia):
         if st.button("Valider mes symboles", type="primary"):
             exact = True
             for idx, m in enumerate(mots):
-                label_attendu = SYMBOLES_GRAMMARE = SYMBOLES_GRAMMAIRE.get(m["type"], {}).get("label", "")
+                label_attendu = SYMBOLES_GRAMMAIRE.get(m["type"], {}).get("label", "")
                 if choix_eleve[idx] != label_attendu:
                     exact = False
             if exact:
@@ -256,7 +307,6 @@ def afficher_page_grammaire(fonction_appel_ia):
             else:
                 st.warning("Il y a des erreurs. Vérifie dans l'onglet Exemple !")
 
-    # 3. ACCORDS
     with tab_acc:
         st.subheader("Exercice d'accord : Faut-il accorder ?")
         accord = phrase.get("accord", {})
@@ -276,117 +326,13 @@ def afficher_page_grammaire(fonction_appel_ia):
             else:
                 st.error(f"Attention ! La bonne réponse était : '{accord.get('reponse')}'")
 
-# ==========================================
-# FONCTION D'EXPORTATION AVEC CODE COULEUR
-# ==========================================
-def generer_fiche_html_imprimable(phrase_data):
-    """ Génère un fichier HTML autonome imprimable avec le code couleur complet """
-    mots_html = []
-    for m in phrase_data["mots"]:
-        t = m["type"]
-        info_symb = SYMBOLES_GRAMMAIRE.get(t, {"emoji": ""})
-        
-        emoji_display = info_symb["emoji"]
-        if m.get("is_sujet") and t != "sujet":
-            emoji_display = f"🔴 {info_symb['emoji']}"
-            
-        mots_html.append(f"""
-        <div style="display: inline-block; text-align: center; margin: 15px 20px; vertical-align: top;">
-            <div style="font-size: 28px; font-weight: bold; font-family: 'OpenDyslexic', Arial, sans-serif; color: #2c3e50; margin-bottom: 8px;">{m['mot']}</div>
-            <div style="font-size: 26px;">{emoji_display}</div>
-        </div>
-        """)
-
-    accord = phrase_data.get("accord", {})
-
-    html_content = f"""
-    <!DOCTYPE html>
-    <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <title>Fiche d'exercice Grammaire DYS</title>
-        <style>
-            body {{
-                font-family: 'OpenDyslexic', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                padding: 40px;
-                background-color: #ffffff;
-                color: #2c3e50;
-            }}
-            .titre {{
-                text-align: center;
-                color: #2c3e50;
-                border-bottom: 3px solid #3498db;
-                padding-bottom: 10px;
-                margin-bottom: 30px;
-            }}
-            .legende {{
-                background-color: #f8f9fa;
-                border: 2px solid #e9ecef;
-                border-radius: 10px;
-                padding: 15px;
-                margin-bottom: 30px;
-            }}
-            .legende-items {{
-                display: flex;
-                flex-wrap: wrap;
-                gap: 15px;
-                font-size: 16px;
-            }}
-            .zone-phrase {{
-                display: flex;
-                flex-wrap: wrap;
-                justify-content: center;
-                padding: 30px;
-                background-color: #fafafa;
-                border: 2px dashed #cbd5e1;
-                border-radius: 12px;
-                margin-bottom: 40px;
-            }}
-            .section-accord {{
-                background-color: #f1f5f9;
-                padding: 20px;
-                border-radius: 10px;
-            }}
-            @media print {{
-                body {{ padding: 0; }}
-                .no-print {{ display: none; }}
-            }}
-        </style>
-    </head>
-    <body>
-        <div class="no-print" style="text-align: right; margin-bottom: 20px;">
-            <button onclick="window.print()" style="padding: 10px 20px; font-size: 16px; background-color: #2ecc71; color: white; border: none; border-radius: 5px; cursor: pointer;">
-                🖨️ Imprimer / Enregistrer en PDF
-            </button>
-        </div>
-
-        <h1 class="titre">📐 Fiche d'Exercice Grammaire & Accords</h1>
-
-        <div class="legende">
-            <h3>🎨 Légende du code couleur et symboles :</h3>
-            <div class="legende-items">
-                <div>🔴 <b>Sujet</b> (Rond rouge)</div>
-                <div>🟩 <b>Verbe</b> (Carré vert)</div>
-                <div>⭐ <b>Nom commun</b> (Étoile jaune)</div>
-                <div>✨ <b>Nom propre</b> (Étoile brillante)</div>
-                <div>🔺 <b>Déterminant</b> (Triangle bleu)</div>
-                <div>💖 <b>Pronom</b> (Cœur rose)</div>
-                <div>⬛ <b>Mot invariable</b> (Carré noir)</div>
-            </div>
-        </div>
-
-        <h2>1. Analyse visuelle de la phrase :</h2>
-        <div class="zone-phrase">
-            {''.join(mots_html)}
-        </div>
-
-        <h2>2. Exercice d'accord :</h2>
-        <div class="section-accord">
-            <p style="font-size: 22px; font-weight: bold;">{accord.get('phrase_trou', phrase_data['texte'])}</p>
-            <p><b>Choix possibles :</b> {', '.join(accord.get('options', []))}</p>
-        </div>
-    </body>
-    </html>
-    """
-    return html_content
-    
+    # --- BOUTON DE TÉLÉCHARGEMENT DE LA FICHE ---
+    st.divider()
+    html_fiche = generer_fiche_html_imprimable(phrase)
+    st.download_button(
+        label="📥 Télécharger la fiche d'exercice (avec code couleur)",
+        data=html_fiche,
+        file_name=f"fiche_grammaire_niveau_{phrase.get('niveau', 1)}.html",
+        mime="text/html",
+        type="primary"
+    )
