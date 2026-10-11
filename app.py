@@ -9,6 +9,8 @@ import hashlib
 import json
 from openai import OpenAI
 import google.generativeai as genai
+from module_grammaire import afficher_page_grammaire
+
 
 # ==========================================
 # UTILITAIRE IA CENTRALISÉ (Groq / Gemini)
@@ -77,7 +79,8 @@ menu_selection = st.sidebar.radio(
         "🏠 Présentation",
         "📄 Aide à la lecture (Texte & OCR)",
         "✨ Générateur d'histoires",
-        "🎤 Aide à la dictée"
+        "🎤 Aide à la dictée",
+        "📐 Grammaire Visuelle & Accords"
     ]
 )
 
