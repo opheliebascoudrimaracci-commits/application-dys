@@ -261,7 +261,6 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
     
     return html
 
-
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
     lines = text.split('\n')
     rendered_lines_adapted = []
@@ -313,7 +312,6 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
     </html>
     """
     
-    # Ajout d'une clé unique pour éviter l'erreur Duplicate ID
     button_key = f"download_btn_{hashlib.md5((text + str(key_suffix)).encode()).hexdigest()[:10]}"
     
     st.download_button(
@@ -323,6 +321,7 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
         mime="text/html",
         key=button_key
     )
+    
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
