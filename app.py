@@ -800,7 +800,6 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             phrase_base = st.session_state.get('phrase_ia_dictee', "Aujourd'hui nous révisons les mots : " + ", ".join(words_list) + ".")
             
-            # Application automatique des trous sur la phrase générée
             phrase_trous = phrase_base
             for w in words_list:
                 pattern = re.compile(re.escape(w), re.IGNORECASE)
@@ -812,6 +811,4 @@ elif menu_selection == "🎤 Aide à la dictée":
             p4_export = "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 26px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div>" + phrase_trous + "</div></body></html>"
             
             st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrase_dictee_a_trous.html", mime="text/html")
-    else:
-        st.info("💡 Veuillez saisir au moins un mot ci-dessus pour générer les 4 pages de travail.")
             
