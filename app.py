@@ -266,17 +266,24 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
     lines = text.split('\n')
     rendered_lines_adapted = []
     rendered_lines_training = []
-    
+
+
     for line_idx, line in enumerate(lines):
         words = line.split()
         rendered_words_adapted = []
         rendered_words_training = []
         
-        for word_idx, word in enumerate(words):
-            word_html = render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family)
+        for idx, word in enumerate(words):
+            # On récupère le mot juste avant (s'il existe)
+            prev_word = words[idx - 1] if idx > 0 else ""
+            
+            # On transmet ce mot précédent à votre fonction
+            word_html = render_word_multilevel(word, show_phonemes=show_phonemes, prev_word=prev_word)
+            
             if word_alt and not show_colors:
-                color = "#0055ff" if word_idx % 2 == 0 else "#cc0000"
+                color = "#0055ff" if idx % 2 == 0 else "#cc0000"
                 word_html = f"<span style='color: {color}; font-weight: bold;'>{word_html}</span>"
+                
             rendered_words_adapted.append(word_html)
             
             training_word_html = f"<span style='display: inline-block; margin-right: 18px;'>{word}</span>"
@@ -290,9 +297,9 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
         rendered_lines_adapted.append(line_content_adapted)
         rendered_lines_training.append(" ".join(rendered_words_training))
         
-    full_content_adapted = "<br><br>".join(rendered_lines_adapted)
-    full_content_training = "<br><br><br>".join(rendered_lines_training)
-    
+full_content_adapted = "<br><br>".join(rendered_lines_adapted)
+full_content_training = "<br><br><br>".join(rendered_lines_training)
+
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
     st.markdown("### 👁️ Aperçu adapté :")
