@@ -644,34 +644,37 @@ elif menu_selection == "🎤 Aide à la dictée":
 elif menu_selection == "📐 Grammaire Visuelle & Accords":
     afficher_page_grammaire(interroger_ia)
     
+# Placez cette fonction tout en haut, alignée tout à gauche :
 def format_to_str(content):
-                if isinstance(content, list):
-                    return "\n".join([format_to_str(item) for item in content])
-                elif isinstance(content, dict):
-                    return "\n".join([f"{k}: {format_to_str(v)}" for k, v in content.items()])
-                return str(content)
+    if isinstance(content, list):
+        return "\n".join([format_to_str(item) for item in content])
+    elif isinstance(content, dict):
+        return "\n".join([f"{k}: {format_to_str(v)}" for k, v in content.items()])
+    return str(content)
 
-            with tab_j1:
-                st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
-                mots_texte = " • ".join(data.get("mots_cles", []))
-                render_full_dys_text(mots_texte, key_suffix="j1_mots", **opts)
-                
-                st.write("---")
-                st.write("**Phrases de découverte :**")
-                j1_content = format_to_str(data.get("jour1", ""))
-                render_full_dys_text(j1_content, key_suffix="j1_exo", **opts)
+# Et ensuite, à l'endroit de vos onglets, gardez uniquement l'affichage :
+with tab_j1:
+    st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
+    mots_texte = " • ".join(data.get("mots_cles", []))
+    render_full_dys_text(mots_texte, key_suffix="j1_mots", **opts)
+    
+    st.write("---")
+    st.write("**Phrases de découverte :**")
+    j1_content = format_to_str(data.get("jour1", ""))
+    render_full_dys_text(j1_content, key_suffix="j1_exo", **opts)
 
-            with tab_j2:
-                st.markdown("### ✏️ Jour 2 : Mots à trous (Lettres manquantes)")
-                j2_content = format_to_str(data.get("jour2", ""))
-                render_full_dys_text(j2_content, key_suffix="j2_exo", **opts)
+with tab_j2:
+    st.markdown("### ✏️ Jour 2 : Mots à trous (Lettres manquantes)")
+    j2_content = format_to_str(data.get("jour2", ""))
+    render_full_dys_text(j2_content, key_suffix="j2_exo", **opts)
 
-            with tab_j3:
-                st.markdown("### 🧠 Jour 3 : Auto-dictée & Mémorisation")
-                j3_content = format_to_str(data.get("jour3", ""))
-                render_full_dys_text(j3_content, key_suffix="j3_exo", **opts)
+with tab_j3:
+    st.markdown("### 🧠 Jour 3 : Auto-dictée & Mémorisation")
+    j3_content = format_to_str(data.get("jour3", ""))
+    render_full_dys_text(j3_content, key_suffix="j3_exo", **opts)
 
-            with tab_j4:
-                st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
-                dictee_finale = format_to_str(data.get("dictee_finale", ""))
-                render_full_dys_text(dictee_finale, key_suffix="j4_exo", **opts)
+with tab_j4:
+    st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
+    dictee_finale = format_to_str(data.get("dictee_finale", ""))
+    render_full_dys_text(dictee_finale, key_suffix="j4_exo", **opts)
+    
