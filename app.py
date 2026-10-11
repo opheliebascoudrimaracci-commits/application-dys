@@ -8,6 +8,7 @@ import random
 import hashlib
 import json
 import google.generativeai as genai
+from groq import Groq
 
 # Configuration de la clé (via les secrets Streamlit Cloud)
 if "GEMINI_API_KEY" in st.secrets:
