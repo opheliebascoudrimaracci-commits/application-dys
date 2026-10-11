@@ -457,7 +457,7 @@ elif menu_selection == "✨ Générateur d'histoires":
             key="input_nom_personnage"
         )
 
-            if st.button("✨ Générer l'histoire magique avec l'IA", type="primary", key="btn_generer_histoire"):
+        if st.button("✨ Générer l'histoire magique avec l'IA", type="primary", key="btn_generer_histoire"):
         h = nom_personnage.strip() if nom_personnage.strip() else "Le héros"
         
         prompt_ia = "Écris une histoire pour enfants douce, captivante et adaptée en français. Le héros s'appelle " + h + ". "
