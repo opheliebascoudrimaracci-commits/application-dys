@@ -123,37 +123,42 @@ VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 @st.cache_data
 def analyser_syllabes_texte_ia(texte):
     """
-    Demande à l'IA de réécrire le texte en séparant les syllabes par des tirets.
-    Exemple : "Le petit chat" -> "Le pe-tit chat"
+    Analyse les syllabes en appliquant la règle pédagogique française : 
+    la syllabe se termine par une voyelle, sauf pour les sons complexes/nasaux indivisibles.
     """
-    if not texte.strip():
+    words = list(set(texte.lower().strip().split()))
+    words_clean = [w.strip(".,;:?!'\"«»") for w in words if len(w.strip(".,;:?!'\"«»")) > 0]
+    
+    if not words_clean:
         return {}
         
     prompt = f"""
-Réécris le texte français ci-dessous en séparant les syllabes de CHAQUE mot par un tiret (-).
-Ne change pas les mots, ne rajoute rien d'autre, respecte strictement la ponctuation et les espaces entre les mots.
-Exemple : "Le petit chat mange." -> "Le pe-tit chat man-ge."
+Analyse ces mots en français en comptant leur nombre de syllabes orales selon cette règle pédagogique stricte :
+1. Une syllabe se termine généralement par une voyelle (ex: ba-na-ne -> 3).
+2. SAUF en présence d'un son complexe ou d'une nasale (ex: ou, an, on, in, en, ch, gn, oi, eu, au, eau) qui forme un bloc unique et indivisible (ex: bon-jour -> 2, car 'on' ne se sépare pas).
 
-Texte à traiter :
-{texte}
+Réponds UNIQUEMENT sous la forme "mot:nombre", un mot par ligne, sans texte autour.
+Exemples :
+bonjour:2
+banane:3
+j'aime:2
+chat:1
+
+Voici les mots à analyser :
+{", ".join(words_clean)}
 """
     try:
         reponse = interroger_ia(prompt, temperature=0.0).strip()
-        # On nettoie d'éventuelles balises de code markdown si l'IA en a mis
-        reponse_clean = reponse.replace("```", "").strip()
-        
-        # On associe chaque mot d'origine à son nombre de syllabes calculé via les tirets
-        mots_originaux = texte.split()
-        mots_decoupes = reponse_clean.split()
-        
         syllables_map = {}
-        for orig, decoupe in zip(mots_originaux, mots_decoupes):
-            clean_orig = orig.lower().strip(".,;:?!'\"«» ")
-            # Le nombre de syllabes = nombre de tirets + 1
-            nb = decoupe.count("-") + 1
-            if clean_orig:
-                syllables_map[clean_orig] = max(1, nb)
-                
+        for ligne in reponse.split("\n"):
+            if ":" in ligne:
+                parts = ligne.split(":")
+                mot = parts[0].strip().lower()
+                try:
+                    nb = int(parts[1].strip())
+                    syllables_map[mot] = max(1, nb)
+                except ValueError:
+                    continue
         return syllables_map
     except Exception:
         return {}
