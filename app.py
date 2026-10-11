@@ -243,7 +243,7 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False,
         i += 1
         
     return blocks
-def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word=""):
+def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word="", is_end_of_sentence=False):
     clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
     is_consonne_prononcee = clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE
         
@@ -252,7 +252,12 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
     
     is_plural_verb = (clean_prev in PLURAL_SUBJECTS) and clean_word.endswith("ent") and len(clean_word) > 4
     
-    blocks = parse_word_to_blocks(word, is_plural_verb=is_plural_verb, keep_final_consonant=is_consonne_prononcee)
+    blocks = parse_word_to_blocks(
+        word, 
+        is_plural_verb=is_plural_verb, 
+        keep_final_consonant=is_consonne_prononcee,
+        is_end_of_sentence=is_end_of_sentence
+    )
     
     word_html_parts = []
     phoneme_html_parts = []
@@ -263,7 +268,6 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
         phoneme = block.get('phoneme', '')
         render_type = block.get('render_type', 'normal')
         
-        # Gestion de la couleur selon la case cochée
         if show_colors:
             if render_type == 'highlight':
                 word_html_parts.append(f"<span style='color: {color}; font-weight: bold;'>{text}</span>")
@@ -288,19 +292,34 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
     
+    # Ponts syllabiques
     num_syllables = count_syllables_approx(word)
-    w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
+    if show_arcs:
+        arcs_html = "".join([
+            "<span style='"
+            "display: inline-block; "
+            "width: 14px; "
+            "height: 7px; "
+            "border: 2px solid #4a90e2; "
+            "border-top: none; "
+            "border-radius: 0 0 12px 12px; "
+            "margin: 0 1px;"
+            "'></span>" 
+            for _ in range(num_syllables)
+        ])
+        w_arcs = f"<div style='line-height: 0; margin-top: 3px;'>{arcs_html}</div>"
+    else:
+        w_arcs = ""
     
-    html = f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'>"
+    html = f"<span style='display: inline-block; text-align: center; margin: 0 4px; vertical-align: top;'>"
     html += f"<div>{w_main}</div>"
     if show_arcs:
-        html += f"<div style='font-size: 0.7em; color: #888888; margin-top: -4px;'>{w_arcs}</div>"
+        html += w_arcs
     if show_phonemes:
-        html += f"<div style='font-size: 0.8em; margin-top: 1px;'>{w_ph}</div>"
+        html += f"<div style='font-size: 0.8em; margin-top: 2px;'>{w_ph}</div>"
     html += "</span>"
     
     return html
-
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
     lines = text.split('\n')
     rendered_lines_adapted = []
