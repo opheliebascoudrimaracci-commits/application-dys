@@ -436,7 +436,7 @@ elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
         txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
         if txt:
             st.write("---")
-            opts = build_controls("t1")
+            opts = build_controls("histoire_t1")
             render_full_dys_text(txt, **opts)
 
     with tab2:
@@ -459,7 +459,7 @@ elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
                     with st.expander("Voir / Modifier le texte extrait"):
                         ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
                     st.write("---")
-                    opts2 = build_controls("t2")
+                    opts2 = build_controls("histoire_t2")
                     render_full_dys_text(ext_txt, **opts2)
                 else:
                     st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
@@ -509,11 +509,10 @@ elif menu_selection == "✨ Générateur d'histoires":
         st.success("📖 Histoire générée :")
         st.write(st.session_state['histoire_generee'])
         
-        opts3 = build_controls("t3")
+        opts3 = build_controls("histoire_t3")
         render_full_dys_text(st.session_state['histoire_generee'], **opts3)
         
         
-
         prompt_ia = "Écris une histoire pour enfants douce, captivante et adaptée en français. Le héros s'appelle " + h + ". "
         if "Niveau 1" in niveau_histoire:
             prompt_ia += "L'histoire doit faire exactement 5 à 6 phrases très simples avec du vocabulaire facile, parfaite pour un débutant en lecture."
@@ -532,7 +531,7 @@ elif menu_selection == "✨ Générateur d'histoires":
                 st.session_state['histoire_generee'] = h + " part à l'aventure dans une grande forêt magique. Il croise un petit oiseau bleu qui chante une belle mélodie. Ensemble, ils découvrent un trésor caché au pied d'un grand arbre. Content de sa journée, " + h + " rentre chez lui le cœur joyeux."
 
         # Options d'adaptation DYS sur l'histoire
-        opts3 = build_controls("t3")
+        opts3 = build_controls("histoire_t3")
         render_full_dys_text(st.session_state['histoire_generee'], **opts3)
 
 # ==========================================
