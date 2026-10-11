@@ -652,18 +652,23 @@ def format_to_str(content):
         return "\n".join([f"{k}: {format_to_str(v)}" for k, v in content.items()])
     return str(content)
 
-# S'assure que 'data' existe pour éviter le NameError
-if "data" not in st.locals or not data:
-    data = {
-        "mots_cles": ["chat", "chien", "maison"],
-        "jour1": "Le chat dort dans la maison.",
-        "jour2": "Le c_at dort dans la mai_on.",
-        "jour3": "Le chat dort.",
-        "dictee_finale": "Le petit chat dort dans la maison."
-    }
+# Vérification correcte en Python
+if "data" not in locals() or not data:
+    data = st.session_state.get("data", {
+        "mots_cles": [],
+        "jour1": "",
+        "jour2": "",
+        "jour3": "",
+        "dictee_finale": ""
+    })
 
-# Vos onglets et le reste du code suivent :
-tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs(["🧩 Jour 1", "✏️ Jour 2", "🧠 Jour 3", "🏆 Jour 4"])
+# Création des onglets
+tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs([
+    "🧩 Jour 1", 
+    "✏️ Jour 2", 
+    "🧠 Jour 3", 
+    "🏆 Jour 4"
+])
 
 with tab_j1:
     st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
