@@ -622,45 +622,46 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (Courte + Code Couleur)
+        # PAGE 4 : Phrase de dictée en contexte (Corrigé & Robuste)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
             if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
                 st.session_state['current_words_sig'] = file_signature
-                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une courte histoire avec nos mots : " + ", ".join(words_list) + "."
+                st.session_state['phrase_ia_dictee'] = f"Le chat joue dans le jardin avec les enfants et attrape sa balle."
 
             if st.button("🤖 Générer une histoire courte avec l'IA", type="primary", key="btn_gen_ia_final"):
-                try:
-                    if "GEMINI_API_KEY" in st.secrets:
-                        genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                    
-                    # Prompt modifié pour exiger une histoire plus courte
-                    prompt_phrase = (
-                        "Écris une mini-histoire très courte (maximum 3 courtes phrases), simple et rigolote "
-                        "pour des enfants en école primaire, qui intègre obligatoirement "
-                        f"TOUS les mots suivants : {', '.join(words_list)}. "
-                        "Donne uniquement le texte de l'histoire, sans aucun titre ni mise en forme."
-                    )
-                    
-                    model = genai.GenerativeModel("gemini-3.8-flash")
-                    res = model.generate_content(prompt_phrase)
+                with st.spinner("Génération rapide de l'histoire en cours..."):
+                    try:
+                        if "GEMINI_API_KEY" in st.secrets:
+                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                        
+                        prompt_phrase = (
+                            "Écris une mini-histoire très courte (2 phrases maximum), simple et rigolote "
+                            "pour des enfants en école primaire, qui intègre obligatoirement "
+                            f"TOUS les mots suivants : {', '.join(words_list)}. "
+                            "Donne uniquement le texte de l'histoire, sans aucun titre ni mise en forme."
+                        )
+                        
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        res = model.generate_content(prompt_phrase)
 
-                    if res and res.text:
-                        st.session_state['phrase_ia_dictee'] = res.text.strip()
-                except Exception as err:
-                    st.warning(f"Mode secours activé. Erreur: {err}")
-                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions les mots : " + ", ".join(words_list) + "."
+                        if res and res.text:
+                            st.session_state['phrase_ia_dictee'] = res.text.strip()
+                    except Exception as err:
+                        st.warning(f"Mode secours activé. Erreur: {err}")
+                        st.session_state['phrase_ia_dictee'] = f"Voici l'histoire du jour à compléter avec attention."
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
-            # 1. Version Élève (À trous)
+            # 1. Version Élève (À trous - remplacement strict par mots entiers)
             phrase_trous = phrase_base
             for w in words_list:
-                pattern = re.compile(re.escape(w), re.IGNORECASE)
-                hole = "<span style='display: inline-block; min-width: 70px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
-                phrase_trous = pattern.sub(hole, phrase_trous)
+                if len(w.strip()) > 0:
+                    pattern = re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE)
+                    hole = "<span style='display: inline-block; min-width: 70px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
+                    phrase_trous = pattern.sub(hole, phrase_trous)
                 
             st.markdown("#### 📝 Version Élève (À trous)")
             st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
@@ -670,14 +671,15 @@ elif menu_selection == "🎤 Aide à la dictée":
 
             st.markdown("---")
             
-            # 2. Version Correcteur avec le Code Couleur DYS sur les mots de la liste
+            # 2. Version Correcteur (Avec Code Couleur DYS)
             st.markdown("#### ✅ Version Correcteur (Avec Code Couleur DYS)")
             
             phrase_corrige = phrase_base
             for w in words_list:
-                coded_target = render_word_multilevel(w, show_phonemes=False)
-                pattern = re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE)
-                phrase_corrige = pattern.sub(coded_target, phrase_corrige)
+                if len(w.strip()) > 0:
+                    coded_target = render_word_multilevel(w, show_phonemes=False)
+                    pattern = re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE)
+                    phrase_corrige = pattern.sub(coded_target, phrase_corrige)
 
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2;'>{phrase_corrige}</div>", unsafe_allow_html=True)
             
