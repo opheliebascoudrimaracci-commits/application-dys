@@ -183,14 +183,42 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
         char = word[i]
         c_lower = w_lower[i]
         
-        # Gestion du "th" (le t se prononce, le h est grisé)
+        # 1. Gestion du "th" (le t se prononce normalement, le h est grisé/muet)
         if i < n - 1 and w_lower[i:i+2] == 'th':
             blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
             blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 2
             continue
 
-        # Gestion du 's' final (prenant en compte keep_final_consonant pour Mathis, etc.)
+        # 2. Sons complexes (ex: 'ai', 'ou', 'an', 'en', 'in', 'on', 'eu', 'ch', 'gn', etc.)
+        matched_complex = False
+        for length in [3, 2]:
+            if i + length <= n:
+                sub = w_lower[i:i+length]
+                if sub in SOUND_RULES:
+                    rule = SOUND_RULES[sub]
+                    combined_text = word[i:i+length]
+                    blocks.append({
+                        'text': combined_text, 
+                        'is_muted': False, 
+                        'render_type': 'color_text', 
+                        'color': rule.get('color', '#000000'), 
+                        'phoneme': rule.get('phoneme', '')
+                    })
+                    i += length
+                    matched_complex = True
+                    break
+        if matched_complex:
+            continue
+
+        # 3. Gestion du 'ent' muet des verbes au pluriel
+        if is_plural_verb and i >= n - 3:
+            # On traite 'ent' comme muet à la fin des verbes pluriels
+            blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+            i += 1
+            continue
+
+        # 4. Gestion spécifique du 's' final (prend en compte Mathis, Alexis, etc.)
         if c_lower == 's':
             is_prev_vowel = (i > 0 and word[i-1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
             is_next_vowel = (i + 1 < n and word[i+1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
@@ -205,7 +233,7 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # Autres consonnes finales (t, d, x)
+        # 5. Autres consonnes finales (t, d, x)
         if i == n - 1 and c_lower in ['t', 'd', 'x'] and n > 2:
             if keep_final_consonant:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
@@ -214,7 +242,7 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # Caractère par défaut
+        # 6. Caractère par défaut
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
