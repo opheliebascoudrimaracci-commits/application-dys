@@ -620,28 +620,24 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (IA dynamique)
+        # PAGE 4 : Phrase de dictée en contexte (IA dynamique automatique)
         # -----------------------------------------
         with dic_tab4:
-            st.markdown("### Page 4 : Phrase de dictée en contexte")
+            st.markdown("### Page 4 : Phrase de dictée en contexte (Générée par l'IA)")
             
-            default_sentence = "Aujourd'hui, pour notre dictée, nous découvrons ces mots : " + " ".join([f"Le {w} est joli." for w in words_list])
-            
+            # Génération automatique dès que les mots changent
             if 'phrase_ia_dictee' not in st.session_state or st.session_state.get('current_words_sig') != file_signature:
                 st.session_state['current_words_sig'] = file_signature
-                st.session_state['phrase_ia_dictee'] = default_sentence
-
-            if st.button("🤖 Générer une histoire courte avec l'IA", type="primary", key="btn_gen_ia_final"):
-                with st.spinner("L'IA invente une histoire rigolote avec vos mots..."):
+                with st.spinner("🤖 L'IA compose une histoire unique avec vos mots..."):
                     try:
                         if "GEMINI_API_KEY" in st.secrets:
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         
                         prompt_phrase = (
-                            "Écris une mini-histoire amusante et cohérente (2 à 3 phrases grand maximum) "
-                            "pour des enfants du primaire, qui utilise TOUS ces mots : "
+                            "Écris une mini-histoire courte, amusante et cohérente (2 à 3 phrases maximum) "
+                            "pour des enfants du primaire, qui intègre impérativement TOUS ces mots : "
                             f"{', '.join(words_list)}. "
-                            "Renvoie uniquement le texte de l'histoire."
+                            "Renvoie uniquement le texte de l'histoire, sans introduction ni guillemets."
                         )
                         
                         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -649,12 +645,35 @@ elif menu_selection == "🎤 Aide à la dictée":
 
                         if res and res.text:
                             st.session_state['phrase_ia_dictee'] = res.text.strip()
-                            st.rerun()
+                        else:
+                            raise Exception("Vide")
                     except Exception as err:
-                        st.warning(f"Impossible de joindre l'IA : {err}")
+                        st.session_state['phrase_ia_dictee'] = "Aujourd'hui, pour notre dictée magique avec " + ", ".join(words_list) + ", l'aventure commence ici."
+
+            # Bouton pour relancer une autre variante si l'histoire ne plaît pas
+            if st.button("🔄 Générer une autre variante d'histoire", key=f"btn_regen_variant_{file_signature}"):
+                with st.spinner("Création d'une nouvelle variante..."):
+                    try:
+                        if "GEMINI_API_KEY" in st.secrets:
+                            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                        
+                        prompt_phrase = (
+                            "Écris une *autre* mini-histoire totalement différente, amusante et cohérente (2 à 3 phrases maximum) "
+                            "pour des enfants, qui intègre TOUS ces mots : "
+                            f"{', '.join(words_list)}. "
+                            "Renvoie uniquement le texte."
+                        )
+                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        res = model.generate_content(prompt_phrase)
+                        if res and res.text:
+                            st.session_state['phrase_ia_dictee'] = res.text.strip()
+                    except Exception:
+                        pass
+                    st.rerun()
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
+            # Application DYS globale sur la phrase générée
             words_in_phrase = phrase_base.split()
             dys_phrase_parts = []
             for token in words_in_phrase:
@@ -668,6 +687,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                     
             phrase_base_dys = " ".join(dys_phrase_parts)
             
+            # Version Élève : Création des trous sur les mots de la liste
             phrase_trous_dys = phrase_base_dys
             for w in words_list:
                 w_clean = w.strip()
@@ -685,6 +705,7 @@ elif menu_selection == "🎤 Aide à la dictée":
 
             st.markdown("---")
             
+            # Version Correcteur
             st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
             
