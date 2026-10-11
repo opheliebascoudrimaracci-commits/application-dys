@@ -692,7 +692,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.write("### Page 4 : Phrase de dictée créée par l'IA en contexte")
             
             if st.button("🤖 Générer la phrase de dictée avec l'IA", type="primary", key="btn_gen_phrase_ia"):
-                prompt_phrase = f"Écris une ou deux phrases grammaticalement correctes et simples en français qui contiennent obligatoirement TOUS les mots suivants : {', '.join(words_list)}. Ne donne aucune explication, uniquement le texte de la phrase."
+                prompt_phrase = "Écris une ou deux phrases grammaticalement correctes et simples en français qui contiennent obligatoirement TOUS les mots suivants : " + ", ".join(words_list) + ". Ne donne aucune explication, uniquement le texte de la phrase."
                 
                 with st.spinner("L'IA génère la phrase de dictée..."):
                     try:
@@ -700,32 +700,21 @@ elif menu_selection == "🎤 Aide à la dictée":
                         res = model.generate_content(prompt_phrase)
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
                     except Exception:
-                        st.session_state['phrase_ia_dictee'] = f"Aujourd'hui nous révisons les mots : {', '.join(words_list)}."
+                        st.session_state['phrase_ia_dictee'] = "Aujourd'hui nous révisons les mots : " + ", ".join(words_list) + "."
             
-            phrase_base = st.session_state.get('phrase_ia_dictee', f"Aujourd'hui nous révisons les mots : {', '.join(words_list)}.")
+            phrase_base = st.session_state.get('phrase_ia_dictee', "Aujourd'hui nous révisons les mots : " + ", ".join(words_list) + ".")
             
             # Application automatique des trous sur la phrase générée
             phrase_trous = phrase_base
             for w in words_list:
                 pattern = re.compile(re.escape(w), re.IGNORECASE)
-                hole = f"<span style='display: inline-block; min-width: {max(70, len(w)*16)}px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
+                hole = "<span style='display: inline-block; min-width: 70px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
                 phrase_trous = pattern.sub(hole, phrase_trous)
                 
-            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
+            st.markdown("<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 24px; line-height: 2.2;'>" + phrase_trous + "</div>", unsafe_allow_html=True)
             
-            p4_export = (
-                "<!DOCTYPE html>"
-                "<html lang='fr'>"
-                "<head><meta charset='UTF-8'><title>Page 4 - Dictée en contexte</title></head>"
-                "<body style='font-family: sans-serif; padding: 40px; font-size: 26px; line-height: 2.5;'>"
-                "<h1 style='text-align: center;'>Dictée de phrases en contexte</h1>"
-                "<p style='text-align: center; font-size: 18px;'>Écoute la dictée et complète les mots manquants :</p>"
-                "<hr><br>"
-                f"<div>{phrase_trous}</div>"
-                "</body>"
-                "</html>"
-            )
+            p4_export = "<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 26px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div>" + phrase_trous + "</div></body></html>"
+            
             st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrase_dictee_a_trous.html", mime="text/html")
     else:
         st.info("💡 Veuillez saisir au moins un mot ci-dessus pour générer les 4 pages de travail.")
-            
