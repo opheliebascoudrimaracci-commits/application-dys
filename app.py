@@ -120,6 +120,36 @@ EXACT_COMPLEX_SOUNDS = {
 PRENOMS_CONSONNE_FINALE_PRONONCEE = {"mathis", "iris", "lucas", "yanis", "alix", "félix", "david"}
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
+@st.cache_data
+def analyser_syllabes_texte_ia(texte):
+    """
+    Analyse les syllabes via l'IA avec cache de Streamlit (zéro crédit gaspillé sur les mots déjà vus).
+    """
+    words = list(set(texte.lower().strip().split()))
+    words_to_query = [w.strip(".,;:?!'\"«»") for w in words if len(w.strip(".,;:?!'\"«»")) > 1]
+    
+    if not words_to_query:
+        return {}
+        
+    prompt = f"""
+Voici une liste de mots en français : {words_to_query}
+
+Pour CHAQUE mot, découpe-le en syllabes orales exactes (ex: "petit" -> "pe-tit", "licorne" -> "li-corne").
+Renvoie EXCLUSIVEMENT un objet JSON valide au format exact suivant, sans aucun autre texte :
+{{
+  "petit": 2,
+  "licorne": 2,
+  "garçon": 2
+}}
+"""
+    try:
+        reponse = interroger_ia(prompt, temperature=0.0)
+        reponse_clean = reponse.replace("```json", "").replace("```", "").strip()
+        syllables_map = json.loads(reponse_clean)
+        return {k.lower(): int(v) for k, v in syllables_map.items()}
+    except Exception:
+        return {}
+
 def count_syllables_approx(word):
     clean_w = word.lower().strip(".,;:?!'\"«» ")
     if not clean_w:
@@ -244,9 +274,10 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False,
         i += 1
         
     return blocks
-def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word="", is_end_of_sentence=False):
+def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word="", is_end_of_sentence=False, nb_syllables_override=None):
     clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
-    is_consonne_prononcee = clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE
+    prenoms_exclus = globals().get('PRENOMS_CONSONNE_FINALE_PRONONCEE', {"mathis"})
+    is_consonne_prononcee = clean_word_lower in prenoms_exclus
         
     clean_prev = prev_word.strip().lower() if prev_word else ""
     clean_word = word.strip().lower()
@@ -292,9 +323,14 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
             
     w_main = "".join(word_html_parts)
     w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
-    
-    # Ponts syllabiques
-    num_syllables = count_syllables_approx(word)
+
+    # ➔ Choix du nombre de syllabes (IA prioritaire, sinon fonction de secours)
+    if nb_syllables_override is not None:
+        num_syllables = max(1, nb_syllables_override)
+    else:
+        num_syllables = count_syllables_approx(word)
+
+    # Génération des arcs/ponts syllabiques en CSS
     if show_arcs:
         arcs_html = "".join([
             "<span style='"
@@ -308,18 +344,18 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
             "'></span>" 
             for _ in range(num_syllables)
         ])
-        w_arcs = f"<div style='line-height: 0; margin-top: 3px;'>{arcs_html}</div>"
+        w_arcs = f"<div style='line-height: 0; margin-top: 2px;'>{arcs_html}</div>"
     else:
         w_arcs = ""
-    
-    html = f"<span style='display: inline-block; text-align: center; margin: 0 4px; vertical-align: top;'>"
+
+    html = f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'>"
     html += f"<div>{w_main}</div>"
     if show_arcs:
         html += w_arcs
     if show_phonemes:
         html += f"<div style='font-size: 0.8em; margin-top: 2px;'>{w_ph}</div>"
     html += "</span>"
-    
+
     return html
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
     lines = text.split('\n')
