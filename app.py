@@ -697,20 +697,27 @@ elif menu_selection == "🎤 Aide à la dictée":
                         pass
                     st.rerun()
 
-            phrase_base = st.session_state['phrase_ia_dictee']
+                 phrase_base = st.session_state['phrase_ia_dictee']
             
-            # Application DYS globale sur la phrase générée
-            words_in_phrase = phrase_base.split()
+            # Application DYS sécurisée sur la phrase générée
+            words_in_phrase = phrase_base.split() if phrase_base else ["Erreur", "de", "génération"]
             dys_phrase_parts = []
+            
             for token in words_in_phrase:
-                match = re.match(r"^(\W*)([\wàâäéèêëîïôöùûüçÑñæœ-]+)(\W*)$", token, re.IGNORECASE)
-                if match:
-                    prefix, word_core, suffix = match.groups()
-                    coded_word = render_word_multilevel(word_core, show_phonemes=False)
-                    dys_phrase_parts.append(f"{prefix}{coded_word}{suffix}")
-                else:
+                try:
+                    match = re.match(r"^(\W*)([\wàâäéèêëîïôöùûüçÑñæœ-]+)(\W*)$", token, re.IGNORECASE)
+                    if match:
+                        prefix, word_core, suffix = match.groups()
+                        coded_word = render_word_multilevel(word_core, show_phonemes=False)
+                        dys_phrase_parts.append(f"{prefix}{coded_word}{suffix}")
+                    else:
+                        dys_phrase_parts.append(token)
+                except Exception:
                     dys_phrase_parts.append(token)
                     
+            if not dys_phrase_parts:
+                dys_phrase_parts = [phrase_base]
+                
             phrase_base_dys = " ".join(dys_phrase_parts)
             
             # Version Élève : Création des trous sur les mots de la liste
@@ -718,10 +725,13 @@ elif menu_selection == "🎤 Aide à la dictée":
             for w in words_list:
                 w_clean = w.strip()
                 if w_clean:
-                    coded_w = render_word_multilevel(w_clean, show_phonemes=False)
-                    hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
-                    phrase_trous_dys = re.sub(re.escape(coded_w), hole, phrase_trous_dys, flags=re.IGNORECASE)
-                    phrase_trous_dys = re.sub(r'\b' + re.escape(w_clean) + r'\b', hole, phrase_trous_dys, flags=re.IGNORECASE)
+                    try:
+                        coded_w = render_word_multilevel(w_clean, show_phonemes=False)
+                        hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
+                        phrase_trous_dys = re.sub(re.escape(coded_w), hole, phrase_trous_dys, flags=re.IGNORECASE)
+                        phrase_trous_dys = re.sub(r'\b' + re.escape(w_clean) + r'\b', hole, phrase_trous_dys, flags=re.IGNORECASE)
+                    except Exception:
+                        pass
                 
             st.markdown("#### 📝 Version Élève (À trous avec Code Couleur DYS)")
             st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous_dys}</div>", unsafe_allow_html=True)
