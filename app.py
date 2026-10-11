@@ -473,7 +473,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                         "dictee_finale": res_ia
                     }
 
-                if "data_dictee" in st.session_state:
+                elif "data_dictee" in st.session_state:
             data = st.session_state["data_dictee"]
             st.write("---")
             st.subheader("📚 Fiche de travail & Préparation en 4 Étapes")
