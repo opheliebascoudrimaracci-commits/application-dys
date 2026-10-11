@@ -111,6 +111,23 @@ def parse_word_to_blocks(word):
                 i += 1
                 continue
 
+        # 1. RÈGLE "ET" : Si 'et' est suivi d'une voyelle, on sépare le e et le t
+        if w_lower[i:i+2] == 'et':
+            next_idx = i + 2
+            if next_idx < n and w_lower[next_idx] in VOWELS:
+                pass  # On laisse le code traiter le 'e' puis le 't' normalement
+            else:
+                color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#8E44AD', 'é'))
+                blocks.append({
+                    'text': word[i:i+2],
+                    'is_muted': False,
+                    'render_type': 'highlight',
+                    'color': color,
+                    'phoneme': phoneme
+                })
+                i += 2
+                continue
+
         matched_complex = False
         for key in sorted_keys:
             if w_lower[i:i+len(key)] == key:
@@ -119,10 +136,10 @@ def parse_word_to_blocks(word):
                     if next_idx < n and w_lower[next_idx] in VOWELS:
                         continue 
                     
-                # RÈGLE D'EXCLUSION : Si le son est suivi de la même consonne (ex: ann, emm...)
+                # Exclusion si la nasale est suivie d'un doublement de consonne (ex: ann)
                 next_idx = i + len(key)
                 if next_idx < n and key[-1] == w_lower[next_idx]:
-                    continue  # On ignore pour laisser la consonne se comporter normalement
+                    continue
 
                 color, phoneme = EXACT_COMPLEX_SOUNDS[key]
                 
@@ -147,7 +164,10 @@ def parse_word_to_blocks(word):
 
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
-            is_final_mute = (i == n - 1 and n > 2)
+            
+            # 2. RÈGLE DU 'E' FINAL : Il n'est muet que s'il est précédé d'une voyelle (-ie, -ée).
+            # Après une consonne, il ne sera plus grisé (compte comme prononcé).
+            is_final_mute = (i == n - 1 and n > 2 and word[i-1].lower() in VOWELS)
             
             if is_before_double:
                 color, phoneme = EXACT_COMPLEX_SOUNDS.get('et', ('#8E44AD', 'è'))
@@ -193,6 +213,7 @@ def parse_word_to_blocks(word):
         i += 1
         
     return blocks
+
    
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family):
