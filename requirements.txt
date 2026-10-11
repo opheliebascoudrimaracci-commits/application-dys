@@ -2,3 +2,5 @@ streamlit
 pytesseract
 Pillow
 google-generativeai
+groq
+streamlit
