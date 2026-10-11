@@ -601,7 +601,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (IA à jour et syntaxe corrigée)
+        # PAGE 4 : Phrase de dictée en contexte (IA à jour)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
@@ -622,12 +622,9 @@ elif menu_selection == "🎤 Aide à la dictée":
                         "Donne uniquement le texte de l'histoire, sans aucun titre ni mise en forme."
                     )
                     
-                    try:
-                        model = genai.GenerativeModel("gemini-2.0-flash")
-                        res = model.generate_content(prompt_phrase)
-                    except Exception:
-                        model = genai.GenerativeModel("gemini-2.5-flash")
-                        res = model.generate_content(prompt_phrase)
+                    # Utilisation du modèle recommandé par l'API
+                    model = genai.GenerativeModel("gemini-3.8-flash")
+                    res = model.generate_content(prompt_phrase)
 
                     if res and res.text:
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
@@ -647,4 +644,4 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name=f"page4_{file_signature}.html", mime="text/html", key="dl_p4_final")
-            
+            .
