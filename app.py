@@ -21,6 +21,12 @@ st.subheader("Ophélie Bascou Drimaracci")
 
 tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
 
+
+PLURAL_SUBJECTS = {
+    "ils", "elles", "les", "des", "ces", "mes", "tes", "ses", "nos", "vos", "leurs",
+    "deux", "trois", "quatre", "cinq", "plusieurs", "certains", "certaines"
+}
+
 # Dictionnaire des sons complexes
 EXACT_COMPLEX_SOUNDS = {
     'eau': ('#FFD700', 'o'),
@@ -83,7 +89,7 @@ def count_syllables(word):
 
 count_syllables_approx = count_syllables
 
-def parse_word_to_blocks(word):
+def parse_word_to_blocks(word, is_plural_verb=False):
     blocks = []
     w_lower = word.lower()
     
@@ -114,16 +120,21 @@ def parse_word_to_blocks(word):
         matched_complex = False
         for key in sorted_keys:
             if w_lower[i:i+len(key)] == key:
-                # 1. RÈGLE POUR "ET" : ne forme le son [é] QUE si c'est le mot "et" ou en toute fin de mot (ex: filet)
                 if key == 'et':
                     is_word_et = (w_lower == 'et')
                     is_end_of_word = (i + 2 == n)
                     if not (is_word_et or is_end_of_word):
-                        continue # On ignore 'et' au milieu de mots comme 'petite'
+                        continue 
                 
-                # 2. Exclusions des nasales (in, an, on, en, un) si suivies d'une voyelle ou d'une consonne doublée
+                # Exclusions des nasales (in, an, on, en, un)
                 if key in ['in', 'an', 'on', 'en', 'un']:
                     next_idx = i + len(key)
+                    
+                    # RÈGLE DU VERBE EN -ENT : Si c'est un verbe avec un sujet au pluriel, -ent N'EST PAS une nasale [an]
+                    if key == 'en' and w_lower.endswith('ent') and i == n - 3:
+                        if is_plural_verb:
+                            continue
+                        
                     if next_idx < n and w_lower[next_idx] in VOWELS:
                         continue 
                     if next_idx < n and key[-1] == w_lower[next_idx]:
@@ -151,9 +162,6 @@ def parse_word_to_blocks(word):
 
         if c_lower == 'e':
             is_before_double = (i + 2 < n and word[i+1].lower() == word[i+2].lower())
-            
-            # 3. RÈGLE DU 'E' FINAL : Muet uniquement après une voyelle (-ie, -ée).
-            # Après une consonne (ex: petite, fenêtre), il reste actif.
             is_final_mute = (i == n - 1 and n > 2 and word[i-1].lower() in VOWELS)
             
             if is_before_double:
@@ -200,9 +208,6 @@ def parse_word_to_blocks(word):
         i += 1
         
     return blocks
-
-
-   
 
 def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_family):
     blocks = parse_word_to_blocks(word)
