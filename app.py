@@ -622,12 +622,12 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (Intégration garantie des mots)
+        # PAGE 4 : Phrase de dictée en contexte (Code couleur généralisé & Téléchargement dynamique)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            # Phrase par défaut qui intègre obligatoirement VOS mots de la liste
+            # Phrase par défaut basée sur vos mots
             default_sentence = "Aujourd'hui, pour notre dictée, nous découvrons ces mots : " + " ".join([f"Le {w} est joli." for w in words_list])
             
             if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
@@ -658,36 +658,54 @@ elif menu_selection == "🎤 Aide à la dictée":
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
-            # 1. Version Élève (Génération des trous sur les mots de la liste)
-            phrase_trous = phrase_base
+            # Application du rendu DYS sur l'intégralité des mots du texte de base
+            words_in_phrase = phrase_base.split()
+            dys_phrase_parts = []
+            for token in words_in_phrase:
+                # Nettoyage des ponctuations collées aux mots
+                match = re.match(r"^(\W*)([\wàâäéèêëîïôöùûüçÑñæœ-]+)(\W*)$", token, re.IGNORECASE)
+                if match:
+                    prefix, word_core, suffix = match.groups()
+                    coded_word = render_word_multilevel(word_core, show_phonemes=False)
+                    dys_phrase_parts.append(f"{prefix}{coded_word}{suffix}")
+                else:
+                    dys_phrase_parts.append(token)
+                    
+            phrase_base_dys = " ".join(dys_phrase_parts)
+            
+            # 1. Version Élève : On remplace les mots cibles par des trous au sein du texte DYS
+            phrase_trous_dys = phrase_base_dys
             for w in words_list:
                 w_clean = w.strip()
                 if w_clean:
-                    pattern = re.compile(r'\b' + re.escape(w_clean) + r'\b', re.IGNORECASE)
+                    coded_w = render_word_multilevel(w_clean, show_phonemes=False)
+                    # Remplacement du mot codé ou brut par le trou
+                    pattern = re.compile(re.escape(coded_w), re.IGNORECASE)
                     hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
-                    phrase_trous = pattern.sub(hole, phrase_trous)
+                    phrase_trous_dys = pattern.sub(hole, phrase_trous_dys)
+                    
+                    # Sécurité si le mot est resté brut dans le texte
+                    pattern_raw = re.compile(r'\b' + re.escape(w_clean) + r'\b', re.IGNORECASE)
+                    phrase_trous_dys = pattern_raw.sub(hole, phrase_trous_dys)
                 
-            st.markdown("#### 📝 Version Élève (À trous)")
-            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous}</div>", unsafe_allow_html=True)
+            st.markdown("#### 📝 Version Élève (À trous avec Code Couleur DYS)")
+            st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous_dys}</div>", unsafe_allow_html=True)
             
-            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte (Exercice)</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{file_signature}.html", mime="text/html", key="dl_p4_final")
+            # Export Élève dynamique
+            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte (Exercice)</h1><hr><br><div style='padding: 20px;'>{phrase_trous_dys}</div></body></html>"
+            
+            # Clé dynamique basée sur la phrase active pour forcer le rafraîchissement Streamlit
+            text_hash = hashlib.md5(phrase_base.encode('utf-8')).hexdigest()[:6]
+            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{text_hash}.html", mime="text/html", key=f"dl_p4_eleve_{text_hash}")
 
             st.markdown("---")
             
-            # 2. Version Correcteur (Application du Code Couleur DYS sur les mots)
-            st.markdown("#### ✅ Version Correcteur (Avec Code Couleur DYS)")
+            # 2. Version Correcteur : Texte intégral avec Code Couleur DYS
+            st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
             
-            phrase_corrige = phrase_base
-            for w in words_list:
-                w_clean = w.strip()
-                if w_clean:
-                    coded_target = render_word_multilevel(w_clean, show_phonemes=False)
-                    pattern = re.compile(r'\b' + re.escape(w_clean) + r'\b', re.IGNORECASE)
-                    phrase_corrige = pattern.sub(coded_target, phrase_corrige)
-
-            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_corrige}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
             
-            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_corrige}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key="dl_p4_corr")
+            # Export Corrigé dynamique
+            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{text_hash}.html", mime="text/html", key=f"dl_p4_corr_{text_hash}")
             
