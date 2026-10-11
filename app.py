@@ -208,15 +208,53 @@ def parse_word_to_blocks(word, is_plural_verb=False):
         i += 1
         
     return blocks
-    
-def count_syllables_approx(word):
-    import re
-    word = word.lower()
-    if word.endswith('e') and len(word) > 1:
-        word = word[:-1]
-    vowels = re.findall(r'[aeiouyàâäéèêëîïôöùûüÿœæ]+', word)
-    return max(1, len(vowels))
 
+def render_word_multilevel(word, show_phonemes=True, show_arcs=False, prev_word=""):
+    clean_prev = prev_word.strip().lower().strip(".,;:!?()[]{}\"'«»")
+    clean_word = word.strip().lower().strip(".,;:!?()[]{}\"'«»")
+    
+    is_plural_verb = (clean_prev in PLURAL_SUBJECTS) and clean_word.endswith("ent") and len(clean_word) > 4
+    blocks = parse_word_to_blocks(word, is_plural_verb=is_plural_verb)
+    
+    word_html_parts = []
+    phoneme_html_parts = []
+    
+    for block in blocks:
+        text = block.get('text', '')
+        color = block.get('color', '#000000')
+        phoneme = block.get('phoneme', '')
+        render_type = block.get('render_type', 'normal')
+        
+        if render_type == 'highlight':
+            word_html_parts.append(f"<span style='color: {color}; font-weight: bold;'>{text}</span>")
+        elif render_type == 'color_text':
+            word_html_parts.append(f"<span style='color: {color};'>{text}</span>")
+        elif render_type == 'muted':
+            word_html_parts.append(f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>")
+        else:
+            word_html_parts.append(f"<span>{text}</span>")
+            
+        if show_phonemes and phoneme:
+            ph_color = color if color else '#555555'
+            phoneme_html_parts.append(f"<span style='color: {ph_color}; font-size: 0.75em;'>{phoneme}</span>")
+        else:
+            phoneme_html_parts.append(f"<span style='font-size: 0.75em;'>&nbsp;</span>")
+            
+    w_main = "".join(word_html_parts)
+    w_ph = " ".join(phoneme_html_parts) if show_phonemes else ""
+    
+    num_syllables = count_syllables_approx(word)
+    w_arcs = " ".join(["•"] * num_syllables) if show_arcs else ""
+    
+    html = f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'>"
+    html += f"<div>{w_main}</div>"
+    if show_arcs:
+        html += f"<div style='font-size: 0.7em; color: #888888; margin-top: -4px;'>{w_arcs}</div>"
+    if show_phonemes:
+        html += f"<div style='font-size: 0.8em; margin-top: 1px;'>{w_ph}</div>"
+    html += "</span>"
+    
+    return html
 
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
     lines = text.split('\n')
@@ -229,10 +267,7 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
         rendered_words_training = []
         
         for idx, word in enumerate(words):
-            # On récupère le mot juste avant (s'il existe)
             prev_word = words[idx - 1] if idx > 0 else ""
-            
-            # On transmet ce mot précédent à votre fonction
             word_html = render_word_multilevel(word, show_phonemes=show_phonemes, prev_word=prev_word)
             
             if word_alt and not show_colors:
@@ -255,7 +290,16 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
     full_content_adapted = "<br><br>".join(rendered_lines_adapted)
     full_content_training = "<br><br><br>".join(rendered_lines_training)
     
-    style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
+    if soft_bg:
+        style_bg = (
+            "background-color: #f4f6f9; "
+            "padding: 15px; "
+            "border-radius: 8px; "
+            "border-left: 5px solid #4a90e2; "
+            "color: #111111;"
+        )
+    else:
+        style_bg = ""
     
     st.markdown("### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
@@ -279,7 +323,6 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
         file_name="texte_adapte_dys.html",
         mime="text/html"
     )
-
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
@@ -331,7 +374,7 @@ with tab1:
     if txt:
         st.write("---")
         opts = build_controls("t1")
-        render_full_dys_text(txt, **opts, export_key="onglet1")
+        render_full_dys_text(txt, **opts)
 
 # ONGLET 2 : Appareil photo direct ou Import de fichier
 with tab2:
@@ -355,7 +398,7 @@ with tab2:
                     ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
                 st.write("---")
                 opts2 = build_controls("t2")
-                render_full_dys_text(ext_txt, **opts2, export_key="onglet2")
+                render_full_dys_text(ext_txt, **opts2)
             else:
                 st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
         except Exception as e:
@@ -431,16 +474,16 @@ if st.button("✨ Générer l'histoire magique", type="primary", key="btn_genere
             "Il prit le temps de lire le texte gravé sur le parchemin, apprenant de merveilleuses histoires sur l'origine du monde.",
             "Le soleil commença lentement à descendre à l'horizon, peignant le ciel de teintes orangées et pourpres.",
             "Le cœur rempli de souvenirs inoubliables et de sagesse, {h} prit le chemin du retour, fier de cette grande aventure.",
-            "De retour chez lui, il déposa le parchemin en lieu sûr et s'endormit paisiblement, prêt pour de nouveaux rêves."
+            "De retour chez lui, il déposa le précieux parchemin dans la bibliothèque du village pour que tous puissent en profiter."
         ]
         st.session_state['histoire_generee'] = " ".join(phrases_niv3)
 
 if 'histoire_generee' in st.session_state:
     st.write("---")
-    st.markdown("### 📖 Histoire générée :")
-    opts_histoire = build_controls("adaptation_histoire")
-    st.write("---")
-    render_full_dys_text(st.session_state['histoire_generee'], **opts_histoire, export_key="histoire_gen")
+    st.success("📖 Histoire générée :")
+    st.write(st.session_state['histoire_generee'])
+    opts3 = build_controls("t3")
+    render_full_dys_text(st.session_state['histoire_generee'], **opts3)
 
 st.write("---")
 st.caption("Ophélie Bascou Drimaracci - Application Pédagogique DYS")
