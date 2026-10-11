@@ -456,12 +456,35 @@ elif menu_selection == "✨ Générateur d'histoires":
             placeholder="Ex: Léo, Léna, Mathis...",
             key="input_nom_personnage"
         )
-
-            if st.button("✨ Générer l'histoire magique avec l'IA", type="primary", key="btn_generer_histoire"):
+    if st.button("✨ Générer l'histoire magique avec l'IA", type="primary", key="btn_generer_histoire"):
         h = nom_personnage.strip() if nom_personnage.strip() else "Le héros"
         
         prompt_ia = "Écris une histoire pour enfants douce, captivante et adaptée en français. Le héros s'appelle " + h + ". "
+        if "Niveau 1" in niveau_histoire:
+            prompt_ia += "L'histoire doit faire exactement 5 à 6 phrases très simples avec du vocabulaire facile, parfaite pour un débutant en lecture."
+        elif "Niveau 2" in niveau_histoire:
+            prompt_ia += "L'histoire doit faire environ 10 phrases avec un vocabulaire enrichi et une petite péripétie."
+        else:
+            prompt_ia += "L'histoire doit faire environ 20 phrases, très riche en détails, avec un véritable récit captivant et un beau dénouement."
+            
+        with st.spinner("🤖 L'IA invente votre histoire sur-mesure..."):
+            try:
+                model = genai.GenerativeModel("gemini-1.5-flash")
+                response = model.generate_content(prompt_ia)
+                st.session_state['histoire_generee'] = response.text.strip()
+            except Exception as e:
+                st.warning("Mode secours (génération hors-ligne) :")
+                st.session_state['histoire_generee'] = h + " part à l'aventure dans une grande forêt magique. Il croise un petit oiseau bleu qui chante une belle mélodie. Ensemble, ils découvrent un trésor caché au pied d'un grand arbre. Content de sa journée, " + h + " rentre chez lui le cœur joyeux."
 
+    if 'histoire_generee' in st.session_state:
+        st.write("---")
+        st.success("📖 Histoire générée :")
+        st.write(st.session_state['histoire_generee'])
+        
+        opts3 = build_controls("t3")
+        render_full_dys_text(st.session_state['histoire_generee'], **opts3)
+        
+        
 
         prompt_ia = "Écris une histoire pour enfants douce, captivante et adaptée en français. Le héros s'appelle " + h + ". "
         if "Niveau 1" in niveau_histoire:
