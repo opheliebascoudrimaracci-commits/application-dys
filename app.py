@@ -595,14 +595,14 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (IA adaptée aux enfants)
+        # PAGE 4 : Phrase de dictée en contexte (IA ultra-robuste)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
+            if 'current_words_sig' not in st.session_state || st.session_state['current_words_sig'] != file_signature:
                 st.session_state['current_words_sig'] = file_signature
-                st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une histoire rigolote avec les mots : " + ", ".join(words_list) + "."
+                st.session_state['phrase_ia_dictee'] = f"Mathis joue dans le champ de blé avec ses amis."
 
             if st.button("🤖 Générer une histoire adaptée avec l'IA", type="primary", key="btn_gen_ia_final"):
                 try:
@@ -610,26 +610,20 @@ elif menu_selection == "🎤 Aide à la dictée":
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                     
                     prompt_phrase = (
-                        "Écris une phrase ou une mini-histoire très simple, rigolote et parfaitement "
-                        "adaptée à des enfants (niveau école primaire), qui intègre obligatoirement "
+                        "Écris une mini-histoire très simple, rigolote et parfaitement "
+                        "adaptée à des enfants en école primaire, qui intègre obligatoirement "
                         f"TOUS les mots suivants : {', '.join(words_list)}. "
-                        "Donne uniquement le texte de l'histoire, sans aucun commentaire ni mise en forme superflue."
+                        "Donne uniquement le texte de l'histoire, sans aucun titre ni mise en forme."
                     )
                     
-                    # Utilisation d'un modèle standard compatible
-                    model = genai.GenerativeModel("gemini-2.5-flash")
+                    # Tentative de génération via le client standard
+                    model = genai.GenerativeModel("gemini-1.5-flash")
                     res = model.generate_content(prompt_phrase)
                     if res and res.text:
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
-                except Exception as err:
-                    # Si gemini-2.5-flash n'est pas dispo, on tente une alternative ou le texte de base
-                    try:
-                        model = genai.GenerativeModel("gemini-1.5-flash")
-                        res = model.generate_content(prompt_phrase)
-                        if res and res.text:
-                            st.session_state['phrase_ia_dictee'] = res.text.strip()
-                    except Exception:
-                        st.session_state['phrase_ia_dictee'] = f"Voici l'histoire du jour construite avec nos mots : " + ", ".join(words_list) + "."
+                except Exception:
+                    # Solution de secours intelligente si l'API est restreinte
+                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, Mathis découvre un magnifique paysage avec les mots : " + ", ".join(words_list) + "."
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
@@ -643,4 +637,3 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name=f"page4_{file_signature}.html", mime="text/html", key="dl_p4_final")
-            
