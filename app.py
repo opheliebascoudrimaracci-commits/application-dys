@@ -173,27 +173,31 @@ def count_syllables_approx(word):
         return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
     return max(1, len(w_clean) // 3)
 
+# 1. La liste des prénoms dont la consonne finale se prononce
+PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "thomas"]
+
+# 2. La fonction complète de découpage (avec tes couleurs et la gestion du "th")
 def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False):
     blocks = []
     w_lower = word.lower()
     n = len(word)
     i = 0
     
-    # Récupération automatique du dictionnaire des sons (quel que soit son nom dans ton code)
-    sounds_dict = globals().get('SOUND_RULES', globals().get('REGLES_SONS', globals().get('SONS_DICT', {})))
+    # Récupération sécurisée de ton dictionnaire de sons d'origine
+    sounds_dict = globals().get('SOUND_RULES', globals().get('REGLES_SONS', {}))
     
     while i < n:
         char = word[i]
         c_lower = w_lower[i]
         
-        # 1. AJOUT : Gestion propre du "th" (le t se prononce, le h est grisé/muet)
+        # Gestion du "th" (le t se prononce, le h est grisé/muet)
         if i < n - 1 and w_lower[i:i+2] == 'th':
             blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
             blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 2
             continue
 
-        # 2. RÈGLE D'ORIGINE : Sons complexes (3 et 2 caractères)
+        # Sons complexes (tes couleurs d'origine)
         matched_complex = False
         if sounds_dict:
             for length in [3, 2]:
@@ -215,13 +219,13 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
         if matched_complex:
             continue
 
-        # 3. RÈGLE D'ORIGINE : Gestion du 'ent' muet des verbes au pluriel
+        # Gestion du 'ent' muet des verbes au pluriel
         if is_plural_verb and i >= n - 3:
             blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 1
             continue
 
-        # 4. MODIFICATION : Gestion du 's' final (tient compte de keep_final_consonant pour Mathis, etc.)
+        # Gestion du 's' final (prend en compte Mathis, Alexis, etc.)
         if c_lower == 's':
             is_prev_vowel = (i > 0 and word[i-1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
             is_next_vowel = (i + 1 < n and word[i+1].lower() in ['a', 'e', 'i', 'o', 'u', 'y'])
@@ -236,7 +240,7 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # 5. MODIFICATION : Autres consonnes finales (t, d, x) avec respect des prénoms
+        # Autres consonnes finales (t, d, x)
         if i == n - 1 and c_lower in ['t', 'd', 'x'] and n > 2:
             if keep_final_consonant:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
@@ -245,19 +249,18 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False)
             i += 1
             continue
 
-        # 6. RÈGLE D'ORIGINE : Caractère par défaut (lettres simples, e muets, etc.)
+        # Caractère par défaut
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
     return blocks
-    
-# Liste des prénoms dont la consonne finale (s, x, etc.) se prononce en français
-PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "jervis"]
 
+
+# 3. La fonction d'affichage mise à jour
 def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=True):
     clean_word_lower = word.lower().strip()
     
-    # On vérifie si c'est un prénom à consonne finale prononcée
+    # Vérifie si c'est un prénom dont la consonne finale se prononce
     is_consonne_prononcee = clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE
         
     clean_prev = prev_word.strip().lower() if prev_word else ""
@@ -265,7 +268,7 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
     
     is_plural_verb = (clean_prev in PLURAL_SUBJECTS) and clean_word.endswith("ent") and len(clean_word) > 4
     
-    # On transmet l'information au parseur
+    # Transmission de l'info au parseur
     blocks = parse_word_to_blocks(word, is_plural_verb=is_plural_verb, keep_final_consonant=is_consonne_prononcee)
     
     word_html_parts = []
@@ -307,7 +310,6 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
     html += "</span>"
     
     return html
-
 
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
     lines = text.split('\n')
