@@ -321,7 +321,6 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
         mime="text/html",
         key=button_key
     )
-    
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
