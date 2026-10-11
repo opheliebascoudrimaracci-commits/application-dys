@@ -587,19 +587,36 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name=f"page2_{file_signature}.html", mime="text/html", key="dl_p2_final")
             
         # -----------------------------------------
-        # PAGE 3 : Dictée à trous (Mots isolés)
+        # PAGE 3 : Mots à trous (Ciblant les sons complexes et lettres muettes)
         # -----------------------------------------
         with dic_tab3:
             st.markdown("### Page 3 : Dictée à trous sur les mots isolés")
             p3_parts = []
             for w in words_list:
-                half = max(1, len(w) // 2)
-                visible = w[:half]
-                hidden = "".join(["<span style='display: inline-block; width: 22px; border-bottom: 2px solid #000; margin: 0 2px;'>&nbsp;</span>" for _ in w[half:]])
-                p3_parts.append(f"<div style='font-size: 26px; margin: 10px; display: inline-block; min-width: 140px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid #ddd; white-space: nowrap;'><b>{visible}{hidden}</b></div>")
-                
+                try:
+                    clean_prev = "" # si besoin
+                    blocks = parse_word_to_blocks(w)
+                    hole_word_parts = []
+                    
+                    for block in blocks:
+                        text = block.get('text', '')
+                        render_type = block.get('render_type', 'normal')
+                        is_muted = block.get('is_muted', False)
+                        
+                        # Si c'est un son complexe ou une lettre muette, on met des trous
+                        if render_type == 'highlight' or is_muted:
+                            hole_word_parts.append("_" * len(text))
+                        else:
+                            hole_word_parts.append(text)
+                            
+                    coded_w = "".join(hole_word_parts)
+                except Exception:
+                    coded_w = w[:2] + "_" * max(0, len(w) - 2)
+                    
+                p3_parts.append(f"<div style='display: inline-block; margin: 10px; padding: 15px 20px; background: #fff; border: 2px solid #4f46e5; border-radius: 8px; font-size: 24px; font-weight: bold; color: #1e1b4b;'>{coded_w}</div>")
+            
             p3_content = "".join(p3_parts)
-            st.markdown(f"<div style='background-color: #f9f9f9; padding: 20px; border-radius: 10px;'>{p3_content}</div>", unsafe_allow_html=True)
+            st.markdown(f"<div style='background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>{p3_content}</div>", unsafe_allow_html=True)
             
             p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
