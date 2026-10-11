@@ -234,20 +234,31 @@ def afficher_page_grammaire(fonction_appel_ia):
             st.session_state.phrase_grammaire = nouvelle
 
     elif mode_choix == "Écrire ma propre phrase":
-        saisie_user = st.text_input("Saisissez votre phrase ici :", key="saisie_libre_gram")
-        if st.button("Analyser et ajouter à la banque", key="btn_analyser_gram") and saisie_user:
-            nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_libre=saisie_user)
-            sauvegarder_phrase_dans_historique(nouvelle)
-            st.session_state.phrase_grammaire = nouvelle
-            st.success("Phrase analysée et sauvegardée !")
-
+    saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
+    if st.button("Analyser et ajouter à la banque", key="btn_analyse_libre"):
+        if saisie_user.strip():
+            with st.spinner("Analyse grammaticale en cours..."):
+                nouvelle = generer_ou_analyser_phrase_ia(interroger_ia, texte_force=saisie_user)
+            if nouvelle:
+                sauvegarder_phrase_dans_historique(nouvelle)
+                st.session_state.phrase_grammaire = nouvelle
+                st.success("Phrase analysée et sauvegardée !")
+            else:
+                st.error("Erreur lors de l'analyse par l'IA.")
+        else:
+            st.warning("Veuillez entrer une phrase valide.")
 
     elif mode_choix == "Générer une phrase inédite avec l'IA":
-        niveau_gen = st.selectbox("Niveau à générer :", [1, 2, 3], key="niv_gen_gram")
-        if st.button("Générer une nouvelle phrase", key="btn_gen_gram"):
-            nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, niveau=niveau_gen)
+       niveau_gen = st.selectbox("Niveau à générer :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
+       if st.button("Générer une nouvelle phrase", key="btn_gen_ia"):
+          with st.spinner("Génération en cours..."):
+            nouvelle = generer_ou_analyser_phrase_ia(interroger_ia, niveau=niveau_gen)
+          if nouvelle:
             sauvegarder_phrase_dans_historique(nouvelle)
             st.session_state.phrase_grammaire = nouvelle
+            st.success("Phrase générée et sauvegardée !")
+          else:
+            st.error("Erreur lors de la génération par l'IA.")
 
     if "phrase_grammaire" not in st.session_state:
         if historique:
