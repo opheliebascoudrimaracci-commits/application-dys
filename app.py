@@ -652,7 +652,14 @@ def format_to_str(content):
         return "\n".join([f"{k}: {format_to_str(v)}" for k, v in content.items()])
     return str(content)
 
-# Et ensuite, à l'endroit de vos onglets, gardez uniquement l'affichage :
+# Définition obligatoire des 4 onglets avant les "with"
+tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs([
+    "🧩 Jour 1", 
+    "✏️ Jour 2", 
+    "🧠 Jour 3", 
+    "🏆 Jour 4"
+])
+
 with tab_j1:
     st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
     mots_texte = " • ".join(data.get("mots_cles", []))
@@ -677,4 +684,3 @@ with tab_j4:
     st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
     dictee_finale = format_to_str(data.get("dictee_finale", ""))
     render_full_dys_text(dictee_finale, key_suffix="j4_exo", **opts)
-    
