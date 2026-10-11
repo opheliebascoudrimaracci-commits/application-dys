@@ -663,12 +663,12 @@ elif menu_selection == "🎤 Aide à la dictée":
                         prompt_phrase = (
                             f"Tu es un professeur expert en pédagogie et élèves DYS. "
                             f"Écris une courte dictée parfaitement adaptée au niveau scolaire : **{niveau_scolaire}**. "
-                            f"Adapte la complexité grammaticale, la longueur des phrases et le vocabulaire précisément à ce niveau (par exemple, des phrases très simples et courtes pour la Grande Section/CP, et des structures un peu plus riches pour le collège jusqu'en 3ème). "
+                            f"Adapte la complexité grammaticale, la longueur des phrases et le vocabulaire précisément à ce niveau. "
                             f"Le texte doit intégrer impérativement et naturellement TOUS ces mots : {', '.join(words_list)}. "
                             f"Renvoie uniquement le texte de la dictée, sans aucune introduction, sans guillemets et sans commentaires."
                         )
                         
-                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        model = genai.GenerativeModel("gemini-1.5-flash-latest")
                         res = model.generate_content(prompt_phrase)
 
                         if res and res.text:
@@ -688,7 +688,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                             f"qui intègre impérativement TOUS ces mots : {', '.join(words_list)}. "
                             f"Renvoie uniquement le texte."
                         )
-                        model = genai.GenerativeModel("gemini-1.5-flash")
+                        model = genai.GenerativeModel("gemini-1.5-flash-latest")
                         res = model.generate_content(prompt_phrase)
                         if res and res.text:
                             st.session_state['phrase_ia_dictee'] = res.text.strip()
@@ -700,7 +700,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             if not phrase_base:
                 phrase_base = default_phrase
             
-            # Application DYS sécurisée sur la phrase générée (Déclaration explicite de la liste)
+            # Application DYS sécurisée sur la phrase générée
             words_in_phrase = phrase_base.split() if phrase_base else ["Erreur", "de", "génération"]
             dys_phrase_parts = []
             
