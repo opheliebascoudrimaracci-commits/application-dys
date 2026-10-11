@@ -261,7 +261,8 @@ def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=Tru
     
     return html
 
-def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
+
+        def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
     lines = text.split('\n')
     rendered_lines_adapted = []
     
@@ -312,11 +313,15 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=Fa
     </html>
     """
     
+    # Ajout d'une clé unique pour éviter l'erreur Duplicate ID
+    button_key = f"download_btn_{hashlib.md5((text + str(key_suffix)).encode()).hexdigest()[:10]}"
+    
     st.download_button(
         label="📥 Télécharger / Imprimer le texte adapté (avec couleurs et aides)",
         data=html_export_adapte,
         file_name="texte_adapte_dys.html",
-        mime="text/html"
+        mime="text/html",
+        key=button_key
     )
 
 def build_controls(key_prefix):
@@ -470,7 +475,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                         "dictee_finale": res_ia
                     }
 
-        if "data_dictee" in st.session_state:
+                if "data_dictee" in st.session_state:
             data = st.session_state["data_dictee"]
             st.write("---")
             st.subheader("📚 Fiche de travail & Préparation en 4 Étapes")
@@ -485,25 +490,24 @@ elif menu_selection == "🎤 Aide à la dictée":
             with tab_j1:
                 st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
                 mots_texte = " • ".join(data.get("mots_cles", []))
-                render_full_dys_text(mots_texte, **opts)
+                render_full_dys_text(mots_texte, key_suffix="j1_mots", **opts)
                 
                 st.write("---")
                 st.write("**Exercices d'observation :**")
                 j1_content = "\n".join(data.get("jour1", [])) if isinstance(data.get("jour1"), list) else str(data.get("jour1", ""))
-                render_full_dys_text(j1_content, **opts)
+                render_full_dys_text(j1_content, key_suffix="j1_exo", **opts)
 
             with tab_j2:
                 st.markdown("### ✏️ Jour 2 : Entraînement & Consolidation")
                 j2_content = "\n".join(data.get("jour2", [])) if isinstance(data.get("jour2"), list) else str(data.get("jour2", ""))
-                render_full_dys_text(j2_content, **opts)
+                render_full_dys_text(j2_content, key_suffix="j2_exo", **opts)
 
             with tab_j3:
                 st.markdown("### 🧠 Jour 3 : Auto-dictée & Mémorisation")
                 j3_content = "\n".join(data.get("jour3", [])) if isinstance(data.get("jour3"), list) else str(data.get("jour3", ""))
-                render_full_dys_text(j3_content, **opts)
+                render_full_dys_text(j3_content, key_suffix="j3_exo", **opts)
 
             with tab_j4:
                 st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
                 dictee_finale = data.get("dictee_finale", "")
-                render_full_dys_text(dictee_finale, **opts)
-                
+                render_full_dys_text(dictee_finale, key_suffix="j4_exo", **opts)
