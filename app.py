@@ -252,22 +252,11 @@ def render_word_multilevel(word, show_colors, show_arcs, show_phonemes, font_fam
     
     return html
 
-def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, line_alt, soft_bg, size, spacing, font_choice, export_key="default"):
-    if not text:
-        return
-
-    fonts_map = {
-        "OpenDyslexic (Police DYS spécialisée)": "'Open Dyslexic', sans-serif",
-        "Comic Sans MS / Lexie Readable (Anti-confusion b/d)": "'Comic Sans MS', 'Comic Sans', cursive, sans-serif",
-        "Arial / Luciole (Grande clarté)": "Arial, sans-serif"
-    }
-    font_family = fonts_map.get(font_choice, "'Open Dyslexic', sans-serif")
-        
+def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True):
     lines = text.split('\n')
     rendered_lines_adapted = []
     rendered_lines_training = []
-
-
+    
     for line_idx, line in enumerate(lines):
         words = line.split()
         rendered_words_adapted = []
@@ -297,97 +286,34 @@ def render_full_dys_text(text, show_colors, show_arcs, show_phonemes, word_alt, 
         rendered_lines_adapted.append(line_content_adapted)
         rendered_lines_training.append(" ".join(rendered_words_training))
         
-full_content_adapted = "<br><br>".join(rendered_lines_adapted)
-full_content_training = "<br><br><br>".join(rendered_lines_training)
-
-style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
-
-st.markdown("### 👁️ Aperçu adapté :")
-st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
+    full_content_adapted = "<br><br>".join(rendered_lines_adapted)
+    full_content_training = "<br><br><br>".join(rendered_lines_training)
     
- html_export_adapte = f"""
- <!DOCTYPE html>
- <html>
- <head>
-<meta charset="utf-8">
- <title>Texte Adapté DYS</title>
- <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
-<style>
-    body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; font-size: {size}px; line-height: {spacing}; }}
-</style>
-</head>
-<body>
-    <div>{full_content_adapted}</div>
-</body>
-</html>
-"""
-st.download_button(
-    label="📥 Télécharger / Imprimer le texte adapté (avec couleurs et aides)",
-    data=html_export_adapte,
-    file_name="texte_adapte_dys.html",
-    mime="text/html",
-    key=f"dl_adapt_{export_key}"
-)
+    style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
-st.markdown("---")
-st.markdown("### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
-st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
-st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #f0fdf4; padding: 15px; border: 3px solid #84cc16; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
+    st.markdown("### 👁️ Aperçu adapté :")
+    st.markdown(f"<div style='font-size: {size}px; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
- html_fiche_vierge = (
-    "<!DOCTYPE html>\n<html>\n<head>\n"
-    '<meta charset="utf-8">\n'
-    "<title>Fiche d'entrainement DYS</title>\n"
-    '<link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">\n'
-    "<style>\n"
-    f"    body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; }}\n"
-    .consigne {{ margin-bottom: 25px; text-decoration: underline; font-weight: bold; font-size: 18px; }}\n'
-    f"    .cadre {{ font-size: {size}px; line-height: 3.0; padding: 20px; border: 3px solid #84cc16; border-radius: 8px; background-color: #f0fdf4; }}\n"
-    "</style>\n</head>\n<body>\n"
-    '    <div class="consigne">Consigne : Entoure ou surligne les sons complexes et les pièges.</div>\n'
-    f'    <div class="cadre">{full_content_training}</div>\n'
-    "</body>\n</html>"
-  )
-
-st.download_button(
-    label="📥 Télécharger la fiche d'entraînement vierge (Prête à imprimer)",
-    data=html_fiche_vierge,
-    file_name="fiche_entrainement_dys.html",
-    mime="text/html",
-    key=f"dl_vierge_{export_key}"
+    html_export_adapte = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <title>Texte Adapté</title>
+    </head>
+    <body style="font-size: {size}px; {style_bg}">
+        {full_content_adapted}
+    </body>
+    </html>
+    """
+    
+    st.download_button(
+        label="📥 Télécharger / Imprimer le texte adapté (avec couleurs et aides)",
+        data=html_export_adapte,
+        file_name="texte_adapte_dys.html",
+        mime="text/html"
     )
-    st.caption("💡 Astuce : Ouvrez le fichier téléchargé sur votre téléphone pour l'imprimer directement via le menu de votre navigateur.")
-def show_color_legend():
-    with st.expander("📖 Légende et Code Couleur Pédagogique"):
-        st.markdown("### 🧠 Surlignage des sons complexes (Fond pastel soutenu)")
-        cols = st.columns(4)
-        with cols[0]:
-            st.markdown("<span style='background-color: #FF000073; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ou</span> : Son [ou] (Rouge vif)", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #6E2C0073; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>on</span> : Son [on] (Marron)", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #E67E2273; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>an / en</span> : Son [an] (Orange)", unsafe_allow_html=True)
-        with cols[1]:
-            st.markdown("<span style='background-color: #FFD70073; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eau / au / o</span> : Son [o] (Jaune)", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #8E44AD73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>et / é / ez</span> : Son [é/è] (Violet)", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #0066FF73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>eu / oeu</span> : Son [eu] (Bleu)", unsafe_allow_html=True)
-        with cols[2]:
-            st.markdown("<span style='background-color: #0E663673; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>in / ain</span> : Son [in] (Vert sapin)", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #212F3D73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>oi</span> : Son [oi] (Noir)", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #D4AC0D73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ch</span> : Son [ch] (Moutarde)", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #C2185B73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>ge</span> : Son [j] (Rose)", unsafe_allow_html=True)
-        with cols[3]:
-            st.markdown("<span style='background-color: #8E44AD73; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>qu / ph</span> : [k] / [f]", unsafe_allow_html=True)
-            st.markdown("<span style='background-color: #16A08573; padding: 2px 6px; font-weight: bold; border-radius: 4px;'>gn</span> : Son [gn] (Turquoise)", unsafe_allow_html=True)
 
-        st.markdown("---")
-        st.markdown("### 🔤 Couleur des lettres contextuelles & Muettes")
-        c_cols = st.columns(3)
-        with c_cols[0]:
-            st.markdown("<span style='color: #2563eb; font-weight: bold;'>C</span> : Son [k] (ex: *cas* e)", unsafe_allow_html=True)
-        with c_cols[1]:
-            st.markdown("<span style='color: #059669; font-weight: bold;'>C</span> : Son [s] (ex: *c*e)", unsafe_allow_html=True)
-        with c_cols[2]:
-            st.markdown("<span style='color: #0d9488; font-weight: bold;'>S</span> : Son [z] entre 2 voyelles", unsafe_allow_html=True)
-        st.markdown("<span style='color: #b0b0b0; opacity: 0.8; font-weight: bold;'>Lettre grisée</span> : Lettre muette (ex: e, s, t finaux)", unsafe_allow_html=True)
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
