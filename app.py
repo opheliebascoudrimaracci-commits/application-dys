@@ -71,22 +71,61 @@ def interroger_ia(prompt_texte, temperature=0.8):
         except Exception as e:
             erreurs.append(f"Gemini: {e}")
     else:
+def interroger_ia(prompt_texte, temperature=0.8):
+    """
+    Fonction centralisée : 
+    1. Priorité à Groq (via SDK OpenAI, avec les modèles actuellement actifs).
+    2. Secours automatique sur Gemini en cas de besoin.
+    """
+    erreurs = []
+
+    # 1. TENTATIVE AVEC GROQ
+    groq_key = st.secrets.get("GROQ_API_KEY")
+    if groq_key:
+        try:
+            client = OpenAI(
+                api_key=groq_key.strip(),
+                base_url="https://api.groq.com/openai/v1",
+            )
+            # Modèles actifs sur Groq
+            groq_models = [
+                "gpt-oss-20b",
+                "llama-3.3-70b-versatile",
+                "gpt-oss-120b"
+            ]
+            
+            for g_model in groq_models:
+                try:
+                    response = client.chat.completions.create(
+                        model=g_model,
+                        messages=[{"role": "user", "content": prompt_texte}],
+                        temperature=temperature,
+                    )
+                    if response.choices and response.choices[0].message.content:
+                        return response.choices[0].message.content.strip()
+                except Exception as e_inner:
+                    erreurs.append(f"Groq ({g_model}): {e_inner}")
+
+        except Exception as e:
+            erreurs.append(f"Groq Init: {e}")
+    else:
+        erreurs.append("Groq: Clé 'GROQ_API_KEY' absente des secrets")
+
+    # 2. SECOURS AUTOMATIQUE AVEC GOOGLE GEMINI
+    gemini_key = st.secrets.get("GEMINI_API_KEY")
+    if gemini_key:
+        try:
+            genai.configure(api_key=gemini_key.strip())
+            model = genai.GenerativeModel("gemini-3.8-flash")
+            res = model.generate_content(prompt_texte, generation_config={"temperature": temperature})
+            if res and res.text:
+                return res.text.strip()
+        except Exception as e:
+            erreurs.append(f"Gemini: {e}")
+    else:
         erreurs.append("Gemini: Clé 'GEMINI_API_KEY' absente des secrets")
 
-    # Si les deux services échouent
     return f"Erreur IA -> " + " | ".join(erreurs)
-
-
-# 1. Configuration unique de la page
-st.set_page_config(
-    page_title="Ophélie Bascou Drimaracci",
-    page_icon="✏️",
-    layout="wide"
-)
-
-# 2. Injection minimale des polices
-st.markdown("<link href='https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap' rel='stylesheet'>", unsafe_allow_html=True)
-
 # --- MENU LATÉRAL PRINCIPAL ---
 st.sidebar.title("📌 Navigation")
 menu_selection = st.sidebar.radio(
