@@ -3,6 +3,12 @@ import json
 import os
 import random
 
+def sauvegarder_phrase_dans_historique(phrase):
+    if "historique_phrases" not in st.session_state:
+        st.session_state["historique_phrases"] = []
+    if phrase and phrase not in st.session_state["historique_phrases"]:
+        st.session_state["historique_phrases"].append(phrase)
+        
 # ==========================================
 # 1. SYMBOLES ET COULEURS GRAMMATICAUX
 # ==========================================
