@@ -603,31 +603,42 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name=f"page2_{file_signature}.html", mime="text/html", key=f"dl_p2_final_{file_signature}")
 
         # -----------------------------------------
-        # PAGE 3 : Mots à trous (Ciblant les sons complexes et lettres muettes)
+        # PAGE 3 : Mots à trous (Trous systématiques)
         # -----------------------------------------
         with dic_tab3:
             st.markdown("### Page 3 : Dictée à trous sur les mots isolés")
             p3_parts = []
             for w in words_list:
+                w_clean = w.strip()
                 try:
-                    clean_prev = "" # si besoin
-                    blocks = parse_word_to_blocks(w)
+                    blocks = parse_word_to_blocks(w_clean)
                     hole_word_parts = []
+                    has_hole = False
                     
                     for block in blocks:
                         text = block.get('text', '')
                         render_type = block.get('render_type', 'normal')
                         is_muted = block.get('is_muted', False)
                         
-                        # Si c'est un son complexe ou une lettre muette, on met des trous
+                        # Sons complexes ou lettres muettes
                         if render_type == 'highlight' or is_muted:
                             hole_word_parts.append("_" * len(text))
+                            has_hole = True
                         else:
                             hole_word_parts.append(text)
                             
-                    coded_w = "".join(hole_word_parts)
+                    # Sécurité : Si le mot n'a aucun son complexe (ex: pull), on crée quand même un trou
+                    if not has_hole:
+                        if len(w_clean) <= 3:
+                            coded_w = w_clean[0] + "_" * (len(w_clean) - 1)
+                        else:
+                            mid = len(w_clean) // 2
+                            coded_w = w_clean[:1] + "_" * (len(w_clean) - 2) + w_clean[-1]
+                    else:
+                        coded_w = "".join(hole_word_parts)
+                        
                 except Exception:
-                    coded_w = w[:2] + "_" * max(0, len(w) - 2)
+                    coded_w = w_clean[:1] + "_" * max(1, len(w_clean) - 1)
                     
                 p3_parts.append(f"<div style='display: inline-block; margin: 10px; padding: 15px 20px; background: #fff; border: 2px solid #4f46e5; border-radius: 8px; font-size: 24px; font-weight: bold; color: #1e1b4b;'>{coded_w}</div>")
             
@@ -638,29 +649,28 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (Code couleur généralisé & Téléchargement dynamique)
+        # PAGE 4 : Phrase de dictée en contexte (IA dynamique)
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            # Phrase par défaut basée sur vos mots
             default_sentence = "Aujourd'hui, pour notre dictée, nous découvrons ces mots : " + " ".join([f"Le {w} est joli." for w in words_list])
             
-            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
+            if 'phrase_ia_dictee' not in st.session_state or st.session_state.get('current_words_sig') != file_signature:
                 st.session_state['current_words_sig'] = file_signature
                 st.session_state['phrase_ia_dictee'] = default_sentence
 
             if st.button("🤖 Générer une histoire courte avec l'IA", type="primary", key="btn_gen_ia_final"):
-                with st.spinner("Génération rapide de l'histoire en cours..."):
+                with st.spinner("L'IA invente une histoire rigolote avec vos mots..."):
                     try:
                         if "GEMINI_API_KEY" in st.secrets:
                             genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                         
                         prompt_phrase = (
-                            "Écris une mini-histoire très courte (2 phrases maximum), simple et rigolote "
-                            "pour des enfants en école primaire, qui intègre obligatoirement "
-                            f"TOUS les mots suivants : {', '.join(words_list)}. "
-                            "Donne uniquement le texte de l'histoire, sans aucun titre ni mise en forme."
+                            "Écris une mini-histoire amusante et cohérente (2 à 3 phrases grand maximum) "
+                            "pour des enfants du primaire, qui utilise TOUS ces mots : "
+                            f"{', '.join(words_list)}. "
+                            "Renvoie uniquement le texte de l'histoire."
                         )
                         
                         model = genai.GenerativeModel("gemini-2.5-flash")
@@ -668,17 +678,16 @@ elif menu_selection == "🎤 Aide à la dictée":
 
                         if res and res.text:
                             st.session_state['phrase_ia_dictee'] = res.text.strip()
+                            st.rerun()
                     except Exception as err:
-                        st.warning(f"Mode secours activé. Erreur: {err}")
-                        st.session_state['phrase_ia_dictee'] = default_sentence
+                        st.warning(f"Impossible de joindre l'IA : {err}")
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
-            # Application du rendu DYS sur l'intégralité des mots du texte de base
+            # Application DYS globale
             words_in_phrase = phrase_base.split()
             dys_phrase_parts = []
             for token in words_in_phrase:
-                # Nettoyage des ponctuations collées aux mots
                 match = re.match(r"^(\W*)([\wàâäéèêëîïôöùûüçÑñæœ-]+)(\W*)$", token, re.IGNORECASE)
                 if match:
                     prefix, word_core, suffix = match.groups()
@@ -689,39 +698,28 @@ elif menu_selection == "🎤 Aide à la dictée":
                     
             phrase_base_dys = " ".join(dys_phrase_parts)
             
-            # 1. Version Élève : On remplace les mots cibles par des trous au sein du texte DYS
+            # Version Élève : Création des trous
             phrase_trous_dys = phrase_base_dys
             for w in words_list:
                 w_clean = w.strip()
                 if w_clean:
                     coded_w = render_word_multilevel(w_clean, show_phonemes=False)
-                    # Remplacement du mot codé ou brut par le trou
-                    pattern = re.compile(re.escape(coded_w), re.IGNORECASE)
                     hole = "<span style='display: inline-block; min-width: 80px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
-                    phrase_trous_dys = pattern.sub(hole, phrase_trous_dys)
-                    
-                    # Sécurité si le mot est resté brut dans le texte
-                    pattern_raw = re.compile(r'\b' + re.escape(w_clean) + r'\b', re.IGNORECASE)
-                    phrase_trous_dys = pattern_raw.sub(hole, phrase_trous_dys)
+                    phrase_trous_dys = re.sub(re.escape(coded_w), hole, phrase_trous_dys, flags=re.IGNORECASE)
+                    phrase_trous_dys = re.sub(r'\b' + re.escape(w_clean) + r'\b', hole, phrase_trous_dys, flags=re.IGNORECASE)
                 
             st.markdown("#### 📝 Version Élève (À trous avec Code Couleur DYS)")
             st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_trous_dys}</div>", unsafe_allow_html=True)
             
-            # Export Élève dynamique
             p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Dictée en contexte (Exercice)</h1><hr><br><div style='padding: 20px;'>{phrase_trous_dys}</div></body></html>"
-            
-            # Clé dynamique basée sur la phrase active pour forcer le rafraîchissement Streamlit
-            text_hash = hashlib.md5(phrase_base.encode('utf-8')).hexdigest()[:6]
-            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{text_hash}.html", mime="text/html", key=f"dl_p4_eleve_{text_hash}")
+            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{file_signature}.html", mime="text/html", key=f"dl_p4_eleve_{file_signature}")
 
             st.markdown("---")
             
-            # 2. Version Correcteur : Texte intégral avec Code Couleur DYS
+            # Version Correcteur
             st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
-            
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
             
-            # Export Corrigé dynamique
             p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 22px; line-height: 2.5; color: #000000;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_base_dys}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{text_hash}.html", mime="text/html", key=f"dl_p4_corr_{text_hash}")
-            
+            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key=f"dl_p4_corr_{file_signature}")
+                    
