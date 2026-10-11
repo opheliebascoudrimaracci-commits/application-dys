@@ -115,6 +115,8 @@ EXACT_COMPLEX_SOUNDS = {
     'qu': ('#8E44AD', 'k'),
     'o': ('#FFD700', 'o'),
     'é': ('#8E44AD', 'é'),
+    'el': ('#333333', 'l'),     # Son "el" en fin de mot (ex: sel, bel)
+    'elle': ('#333333', 'l'),   # Son "elle" (ex: ficelle, gazelle)
 }
 
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
