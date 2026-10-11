@@ -34,77 +34,43 @@ menu_selection = st.sidebar.radio(
         "🎤 Aide à la dictée"
     ]
 )
-
 PLURAL_SUBJECTS = {
     "ils", "elles", "les", "des", "ces", "mes", "tes", "ses", "nos", "vos", "leurs",
     "deux", "trois", "quatre", "cinq", "plusieurs", "certains", "certaines"
 }
 
-# ---------------------------------------------------------
-# ANALYSE INTELLIGENTE PAR L'IA (Syllabes, Blocs & Phonèmes)
-# ---------------------------------------------------------
+# Dictionnaire des sons complexes
+EXACT_COMPLEX_SOUNDS = {
+    'eau': ('#FFD700', 'o'),
+    'au': ('#FFD700', 'o'),
+    'oeu': ('#0066FF', 'eu'),
+    'eu': ('#0066FF', 'eu'),
+    'ain': ('#0E6636', 'in'),
+    'ein': ('#0E6636', 'in'),
+    'in': ('#0E6636', 'in'),
+    'on': ('#6E2C00', 'on'),
+    'un': ('#B9770E', 'un'),
+    'ou': ('#FF0000', 'ou'),
+    'an': ('#E67E22', 'an'),
+    'en': ('#E67E22', 'an'),
+    'et': ('#8E44AD', 'é'),
+    'ez': ('#8E44AD', 'é'),
+    'er': ('#8E44AD', 'é'),
+    'ai': ('#C0392B', 'è'),
+    'ei': ('#C0392B', 'è'),
+    'ch': ('#D4AC0D', 'ch'),
+    'ge': ('#C2185B', 'j'),
+    'oi': ('#212F3D', 'oi'),
+    'oin': ('#D35400', 'oin'),
+    'ien': ('#CA6F1E', 'ien'),
+    'ph': ('#8E44AD', 'f'),
+    'gn': ('#16A085', 'gn'),
+    'qu': ('#8E44AD', 'k'),
+    'o': ('#FFD700', 'o'),
+    'é': ('#8E44AD', 'é'),
+}
 
-def analyze_word_with_ai(word):
-    """Interroge Gemini pour obtenir le découpage pédagogique complet d'un mot (syllabes, blocs de couleurs, phonèmes, lettres muettes)."""
-    try:
-        if "GEMINI_API_KEY" in st.secrets:
-            genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-        
-        prompt = f"""
-Analyse ce mot français pour un élève dysléxique : '{word}'.
-Renvoie STRICTEMENT un objet JSON valide (sans markdown autour, sans texte explicatif) avec cette structure exacte :
-{{
-  "syllables_count": <nombre entier de syllabes orales>,
-  "blocks": [
-    {{
-      "text": "<segment ou lettre du mot>",
-      "render_type": "<'normal' ou 'highlight' ou 'muted' ou 'color_text'>",
-      "color": "<code hexadécimal de couleur si coloré ou mis en valeur, ex: #8E44AD, ou null>",
-      "phoneme": "<phonème simplifié associé en phonétique si pertinent, ex: 'è', 'j', 'k', ou null>"
-    }}
-  ]
-}}
-Règles pédagogiques :
-- Les lettres muettes (comme le 'h' dans Mathis, le 'e' final muet, le 's' muet) doivent avoir "render_type": "muted" et une couleur grise ou null.
-- Les sons complexes (ou, an, in, ch, ge [j], qu [k], etc.) doivent être regroupés dans un même bloc avec "render_type": "highlight" et une couleur spécifique.
-- Le découpage combiné de tous les blocs de texte doit reformer exactement le mot d'origine.
-"""
-        model = genai.GenerativeModel("gemini-2.5-flash")
-        res = model.generate_content(prompt)
-        
-        if res and res.text:
-            cleaned_text = res.text.strip()
-            # Nettoyage au cas où l'IA ajoute des balises markdown de code
-            cleaned_text = re.sub(r'^```json\s*', '', cleaned_text)
-            cleaned_text = re.sub(r'\s*```$', '', cleaned_text)
-            data = json.loads(cleaned_text)
-            if "blocks" in data and "syllables_count" in data:
-                return data
-    except Exception:
-        pass
-    
-    # Mode secours par défaut si l'IA échoue
-    return {
-        "syllables_count": max(1, len(word) // 3),
-        "blocks": [{"text": char, "render_type": "normal", "color": None, "phoneme": None} for char in word]
-    }
-
-# Initialisation du cache global des mots analysés par l'IA
-if 'words_list' in locals() and words_list:
-    if 'file_signature' not in locals():
-        file_signature = "_".join([w.strip() for w in words_list])
-
-    if 'word_analysis_cache' not in st.session_state or st.session_state.get('sig_analysis') != file_signature:
-        st.session_state['sig_analysis'] = file_signature
-        st.session_state['word_analysis_cache'] = {}
-        for w in words_list:
-            w_clean = w.strip().lower()
-            if w_clean:
-                st.session_state['word_analysis_cache'][w_clean] = analyze_word_with_ai(w_clean)
-
-# ---------------------------------------------------------
-# MOTEUR DE RÈGLES ET COULEURS D'ORIGINE + COMPTAGE IA
-# ---------------------------------------------------------
+VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 def get_syllables_count_ai(word):
     """Interroge Gemini pour obtenir le nombre exact de syllabes d'un mot."""
@@ -126,19 +92,6 @@ def get_syllables_count_ai(word):
     except Exception:
         pass
     return max(1, len(word) // 3)
-
-# Initialisation du cache des syllabes
-if 'words_list' in locals() and words_list:
-    if 'file_signature' not in locals():
-        file_signature = "_".join([w.strip() for w in words_list])
-
-    if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllables') != file_signature:
-        st.session_state['sig_syllables'] = file_signature
-        st.session_state['syllables_cache'] = {}
-        for w in words_list:
-            w_clean = w.strip().lower()
-            if w_clean:
-                st.session_state['syllables_cache'][w_clean] = get_syllables_count_ai(w_clean)
 
 def count_syllables_approx(word):
     w_clean = word.strip().lower()
@@ -168,14 +121,12 @@ def parse_word_to_blocks(word, is_plural_verb=False):
     sorted_keys = sorted(EXACT_COMPLEX_SOUNDS.keys(), key=len, reverse=True)
     
     while i < n:
-        # Règle universelle du 'th' (le 't' se prononce, le 'h' est muet)
         if i < n - 1 and w_lower[i:i+2] == 'th':
             blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 2
             continue
 
-        # Règle phonétique du 'g' suivi de 'e', 'i', 'y' (son [j])
         if i < n - 1 and w_lower[i] == 'g' and w_lower[i+1] in 'eéêëiîïy':
             blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'highlight', 'color': '#C2185B', 'phoneme': 'j'})
             i += 2
