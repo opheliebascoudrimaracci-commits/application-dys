@@ -117,26 +117,35 @@ def afficher_legende_couleurs():
     """, unsafe_allow_html=True)
 
 def afficher_phrase_symboles(phrase_data):
-    html_mots = []
-    for m in phrase_data["mots"]:
-        type_mot = m["type"]
-        info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": ""})
+    mots = phrase_data.get("mots", [])
+    if not mots:
+        st.warning("Aucun mot à afficher.")
+        return
+
+    # Utilisation de colonnes Streamlit natives pour un affichage propre
+    cols = st.columns(len(mots))
+    
+    for idx, m in enumerate(mots):
+        type_mot = m.get("type", "")
+        info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": "❓"})
         emoji_display = info_symb["emoji"]
-        if m.get("is_sujet") and type_mot != "sujet":
-            emoji_display = f"🔴 {info_symb['emoji']}"
-            
-        html_mots.append(f"""
-        <div style="display: inline-block; text-align: center; margin: 8px 14px; vertical-align: top;">
-            <div style="font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 6px;">{m['mot']}</div>
-            <div style="font-size: 22px;">{emoji_display}</div>
-        </div>
-        """)
         
-    st.markdown(f"""
-    <div style="display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #dee2e6; margin: 15px 0;">
-        {''.join(html_mots)}
-    </div>
-    """, unsafe_allow_html=True)
+        # Ajout du rond rouge si c'est le sujet
+        if m.get("is_sujet") and type_mot != "sujet":
+            emoji_display = f"🔴 {emoji_display}"
+            
+        with cols[idx]:
+            st.markdown(
+                f"<div style='text-align: center; font-size: 22px; font-weight: bold; color: #2c3e50;'>"
+                f"{m.get('mot', '')}</div>", 
+                unsafe_allow_html=True
+            )
+            st.markdown(
+                f"<div style='text-align: center; font-size: 24px; margin-top: 5px;'>"
+                f"{emoji_display}</div>", 
+                unsafe_allow_html=True
+            )
+
 
 def generer_fiche_html_imprimable(phrase_data):
     mots_html = []
