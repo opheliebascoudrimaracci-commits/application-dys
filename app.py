@@ -627,7 +627,7 @@ elif menu_selection == "🎤 Aide à la dictée":
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            if 'current_words_sig' not in st.session_state || st.session_state['current_words_sig'] != file_signature:
+            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
                 st.session_state['current_words_sig'] = file_signature
                 st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une courte histoire avec nos mots : " + ", ".join(words_list) + "."
 
@@ -675,8 +675,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             
             phrase_corrige = phrase_base
             for w in words_list:
-                # On applique votre moteur DYS sur les mots de la dictée pour le corrigé
-                coded_target = render_word_multilevel(w, show_phonemes=False) # Sans les arcs du bas pour garder de la fluidité dans la phrase
+                coded_target = render_word_multilevel(w, show_phonemes=False)
                 pattern = re.compile(r'\b' + re.escape(w) + r'\b', re.IGNORECASE)
                 phrase_corrige = pattern.sub(coded_target, phrase_corrige)
 
