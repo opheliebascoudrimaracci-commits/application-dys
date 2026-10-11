@@ -644,7 +644,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown("#### ✅ Version Correcteur (Texte Complet DYS)")
             st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 22px; line-height: 2.2; color: #000000;'>{phrase_base_dys}</div>", unsafe_allow_html=True)
 
-         # -----------------------------------------
+        # -----------------------------------------
         # PAGE 4 : Phrase de dictée en contexte (IA dynamique & Niveaux scolaires)
         # -----------------------------------------
         with dic_tab4:
