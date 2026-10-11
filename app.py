@@ -354,9 +354,10 @@ def build_controls(key_prefix):
         "font_choice": font_choice
     }
 
-show_color_legend()
-st.write("---")
-
+def show_color_legend():
+    st.markdown("**Légende des couleurs et des sons :**")
+    st.markdown("Les sons complexes et les indices visuels sont adaptés pour faciliter la lecture.")
+    
 # ONGLET 1 : Texte
 with tab1:
     st.write("### Saisir ou coller un texte")
