@@ -74,7 +74,6 @@ EXACT_COMPLEX_SOUNDS = {
 VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 import re
-import re
 
 def get_syllables_count_ai(word):
     """Interroge Gemini pour obtenir le nombre exact de syllabes d'un mot."""
