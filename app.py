@@ -697,7 +697,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                         pass
                     st.rerun()
 
-                 phrase_base = st.session_state['phrase_ia_dictee']
+            phrase_base = st.session_state['phrase_ia_dictee']
             
             # Application DYS sécurisée sur la phrase générée
             words_in_phrase = phrase_base.split() if phrase_base else ["Erreur", "de", "génération"]
