@@ -301,7 +301,7 @@ full_content_adapted = "<br><br>".join(rendered_lines_adapted)
 full_content_training = "<br><br><br>".join(rendered_lines_training)
 
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
-    
+
     st.markdown("### 👁️ Aperçu adapté :")
     st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
