@@ -16,11 +16,17 @@ st.set_page_config(
 # 2. Injection minimale des polices
 st.markdown("<link href='https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap' rel='stylesheet'>", unsafe_allow_html=True)
 
-st.title("✏️ Application Pédagogique & Adaptation DYS")
-st.subheader("Ophélie Bascou Drimaracci")
-
-tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
-
+# 3. MENU LATÉRAL DE NAVIGATION
+st.sidebar.title("📌 Navigation")
+menu_selection = st.sidebar.radio(
+    "Choisissez un module :",
+    [
+        "🏠 Présentation",
+        "📄 Aide à la lecture (Texte & OCR)",
+        "✨ Générateur d'histoires",
+        "🎤 Aide à la dictée"
+    ]
+)
 
 PLURAL_SUBJECTS = {
     "ils", "elles", "les", "des", "ces", "mes", "tes", "ses", "nos", "vos", "leurs",
@@ -130,7 +136,6 @@ def parse_word_to_blocks(word, is_plural_verb=False):
                 if key in ['in', 'an', 'on', 'en', 'un']:
                     next_idx = i + len(key)
                     
-                    # RÈGLE DU VERBE EN -ENT : Si c'est un verbe avec un sujet au pluriel, -ent N'EST PAS une nasale [an]
                     if key == 'en' and w_lower.endswith('ent') and i == n - 3:
                         if is_plural_verb:
                             continue
@@ -366,124 +371,150 @@ def build_controls(key_prefix):
 def show_color_legend():
     st.markdown("**Légende des couleurs et des sons :**")
     st.markdown("Les sons complexes et les indices visuels sont adaptés pour faciliter la lecture.")
-    
-# ONGLET 1 : Texte
-with tab1:
-    st.write("### Saisir ou coller un texte")
-    txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
-    if txt:
-        st.write("---")
-        opts = build_controls("t1")
-        render_full_dys_text(txt, **opts)
 
-# ONGLET 2 : Appareil photo direct ou Import de fichier
-with tab2:
-    st.write("### 📷 Capturer ou importer une photo")
-    choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
-    file = st.camera_input("Cliquez pour prendre la photo du texte") if choix_source == "Prendre une photo en direct" else st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
+# ==========================================
+# GESTION DES PAGES DU MENU LATÉRAL
+# ==========================================
 
-    if file:
-        img = Image.open(file)
-        st.image(img, caption="Image sélectionnée", use_container_width=True)
-        try:
-            img_gray = img.convert('L')
-            enhancer = ImageEnhance.Contrast(img_gray)
-            img_contrast = enhancer.enhance(1.8)
-            img_processed = img_contrast.filter(ImageFilter.SHARPEN)
-            ext_txt = pytesseract.image_to_string(img_processed, lang="fra", config=r'--oem 3 --psm 6')
-
-            if ext_txt.strip():
-                st.success("Texte extrait avec succès !")
-                with st.expander("Voir / Modifier le texte extrait"):
-                    ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
-                st.write("---")
-                opts2 = build_controls("t2")
-                render_full_dys_text(ext_txt, **opts2)
-            else:
-                st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
-        except Exception as e:
-            st.error(f"Erreur d'extraction OCR : {e}")
-
-# SECTION DÉDIÉE : Le Générateur d'histoires magiques
-st.write("---")
-st.markdown("## ✨ Générateur d'histoires magiques")
-st.write("Créez une histoire sur-mesure en choisissant son niveau de difficulté (Niveau 1 : 5+ phrases, Niveau 2 : 10+ phrases, Niveau 3 : 20+ phrases) et le prénom du héros !")
-
-col_gen1, col_gen2 = st.columns(2)
-with col_gen1:
-    niveau_histoire = st.selectbox(
-        "Niveau de difficulté :",
-        ["Niveau 1 : Débutant (5 phrases et +)", "Niveau 2 : Intermédiaire (10 phrases et +)", "Niveau 3 : Avancé (20 phrases et +)"],
-        key="select_niveau_histoire"
-    )
-with col_gen2:
-    nom_personnage = st.text_input(
-        "Nom du personnage principal :",
-        placeholder="Ex: Léo, Léna, Mathis...",
-        key="input_nom_personnage"
-    )
-
-if st.button("✨ Générer l'histoire magique", type="primary", key="btn_generer_histoire"):
-    h = nom_personnage if nom_personnage else "Le héros"
-    
-    if "Niveau 1" in niveau_histoire:
-        phrases_niv1 = [
-            f"{h} se réveille dans une petite maison colorée.",
-            "Il regarde par la fenêtre et voit un beau soleil.",
-            "Le chat de la maison vient lui dire bonjour en miaulant.",
-            "Il prend un bon bol de lait chaud avec du pain frais.",
-            "Ensuite, il sort dans le jardin pour jouer avec ses amis.",
-            "La journée s'annonce calme et très amusante pour tout le monde."
-        ]
-        st.session_state['histoire_generee'] = " ".join(phrases_niv1)
-
-    elif "Niveau 2" in niveau_histoire:
-        phrases_niv2 = [
-            f"Il était une fois, un courageux personnage nommé {h} qui adorait l'aventure.",
-            "Un beau matin de printemps, il décida de partir à la découverte de la grande forêt mystérieuse.",
-            "Sur son chemin, il rencontra un petit oiseau bleu qui chantait une douce mélodie.",
-            "L'oiseau décida de l'accompagner pour lui montrer le chemin le plus sûr.",
-            "Après une longue marche, ils arrivèrent près d'un ruisseau aux eaux scintillantes.",
-            "Ils burent un peu d'eau fraîche et se reposèrent sous un grand chêne centenaire.",
-            "Soudain, un écureuil malicieux leur indiqua un sentier caché derrière les buissons.",
-            "En suivant ce sentier, {h} découvrit un magnifique coffre en bois sculpté.",
-            "À l'intérieur, il y avait des livres magiques et des images pleines de couleurs.",
-            "Heureux de sa belle trouvade, il rentra chez lui à la tombée de la nuit pour tout raconter à sa famille."
-        ]
-        st.session_state['histoire_generee'] = " ".join(phrases_niv2)
-
-    else:  # Niveau 3
-        phrases_niv3 = [
-            f"Au cœur d'un royaume lointain et paisible, vivait un jeune explorateur nommé {h}.",
-            "Depuis son plus jeune âge, il passait des heures à lire des grimoires anciens dans la bibliothèque du village.",
-            "Un soir d'automne, en soufflant la poussière d'un vieux livre relié de cuir, il découvrit une carte secrète.",
-            "Cette carte indiquait l'emplacement exact de la vallée oubliée, un endroit légendaire où le temps semblait s'être arrêté.",
-            "Sans hésiter une seule seconde, {h} prépara son sac à dos avec un peu de nourriture, une gourde et sa boussole dorée.",
-            "Il quitta son village au lever du jour, alors que les premiers rayons de soleil doraient les sommets des montagnes.",
-            "La première étape de son voyage consistait à traverser la ténébreuse forêt des murmures.",
-            "Dans cette forêt, les arbres étaient si hauts qu'ils masquaient presque entièrement la lumière du ciel.",
-            "Heureusement, grâce à son grand sens de l'orientation et à son calme, il trouva rapidement la bonne direction.",
-            "Il croisa sur son passage des biches élégantes, des hiboux curieux et de jolies fleurs sauvages aux parfums enivrants.",
-            "Après avoir franchi la forêt, il se retrouva face au pont de pierre qui enjambait le torrent rugissant.",
-            "Le pont était gardé par une vieille statue de pierre représentant un dragon endormi depuis des siècles.",
-            "En posant la main sur la patte du dragon, un mécanisme secret s'activa et libéra le passage en douceur.",
-            "{h} traversa le pont d'un pas assuré, sentant l'excitation grandir au fond de son cœur.",
-            "Il pénétra enfin dans la fameuse vallée oubliée, baignée par une lumière douce et irréelle.",
-            "Au centre de la vallée se dressait un magnifique arbre de cristal dont les feuilles brillaient comme des diamants.",
-            "Au pied de cet arbre magique reposait un ancien parchemin contenant les secrets des grands sages d'autrefois.",
-            "Il prit le temps de lire le texte gravé sur le parchemin, apprenant de merveilleuses histoires sur l'origine du monde.",
-            "Le soleil commença lentement à descendre à l'horizon, peignant le ciel de teintes orangées et pourpres.",
-            "Le cœur rempli de souvenirs inoubliables et de sagesse, {h} prit le chemin du retour, fier de cette grande aventure.",
-            "De retour chez lui, il déposa le précieux parchemin dans la bibliothèque du village pour que tous puissent en profiter."
-        ]
-        st.session_state['histoire_generee'] = " ".join(phrases_niv3)
-
-if 'histoire_generee' in st.session_state:
+if menu_selection == "🏠 Présentation":
+    st.title("✏️ Application Pédagogique & Adaptation DYS")
+    st.subheader("Ophélie Bascou Drimaracci")
     st.write("---")
-    st.success("📖 Histoire générée :")
-    st.write(st.session_state['histoire_generee'])
-    opts3 = build_controls("t3")
-    render_full_dys_text(st.session_state['histoire_generee'], **opts3)
+    st.markdown("""
+    Bienvenue sur cette application pédagogique conçue pour faciliter l'accès à la lecture 
+    et accompagner les enfants et élèves présentant des troubles **DYS** (dyslexie, dyspraxie).
+    
+    ### 🌟 Ce que propose l'application :
+    * **📄 Aide à la lecture de texte** : Saisissez ou collez n'importe quel texte pour l'adapter instantanément.
+    * **📷 Importation OCR** : Prenez en photo un livre ou une feuille pour en extraire le texte et l'adapter.
+    * **✨ Générateur d'histoires magiques** : Créez des histoires personnalisées selon différents niveaux de difficulté.
+    * **🎨 Code couleur et phonèmes** : Coloration des sons complexes, gestion des lettres muettes, des liaisons et des accords au pluriel.
+    """)
 
-st.write("---")
-st.caption("Ophélie Bascou Drimaracci - Application Pédagogique DYS")
+elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
+    st.title("📄 Aide à la lecture & OCR")
+    st.subheader("Ophélie Bascou Drimaracci")
+    
+    tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
+    
+    with tab1:
+        st.write("### Saisir ou coller un texte")
+        txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
+        if txt:
+            st.write("---")
+            opts = build_controls("t1")
+            render_full_dys_text(txt, **opts)
+
+    with tab2:
+        st.write("### 📷 Capturer ou importer une photo")
+        choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
+        file = st.camera_input("Cliquez pour prendre la photo du texte") if choix_source == "Prendre une photo en direct" else st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
+
+        if file:
+            img = Image.open(file)
+            st.image(img, caption="Image sélectionnée", use_container_width=True)
+            try:
+                img_gray = img.convert('L')
+                enhancer = ImageEnhance.Contrast(img_gray)
+                img_contrast = enhancer.enhance(1.8)
+                img_processed = img_contrast.filter(ImageFilter.SHARPEN)
+                ext_txt = pytesseract.image_to_string(img_processed, lang="fra", config=r'--oem 3 --psm 6')
+
+                if ext_txt.strip():
+                    st.success("Texte extrait avec succès !")
+                    with st.expander("Voir / Modifier le texte extrait"):
+                        ext_txt = st.text_area("Texte détecté :", ext_txt, height=120, key="ocr_edit")
+                    st.write("---")
+                    opts2 = build_controls("t2")
+                    render_full_dys_text(ext_txt, **opts2)
+                else:
+                    st.warning("Aucun texte trouvé. Assurez-vous que l'éclairage est bon et que le texte est bien net.")
+            except Exception as e:
+                st.error(f"Erreur d'extraction OCR : {e}")
+
+elif menu_selection == "✨ Générateur d'histoires":
+    st.title("✨ Générateur d'histoires magiques")
+    st.subheader("Ophélie Bascou Drimaracci")
+    st.write("Créez une histoire sur-mesure en choisissant son niveau de difficulté et le prénom du héros !")
+
+    col_gen1, col_gen2 = st.columns(2)
+    with col_gen1:
+        niveau_histoire = st.selectbox(
+            "Niveau de difficulté :",
+            ["Niveau 1 : Débutant (5 phrases et +)", "Niveau 2 : Intermédiaire (10 phrases et +)", "Niveau 3 : Avancé (20 phrases et +)"],
+            key="select_niveau_histoire"
+        )
+    with col_gen2:
+        nom_personnage = st.text_input(
+            "Nom du personnage principal :",
+            placeholder="Ex: Léo, Léna, Mathis...",
+            key="input_nom_personnage"
+        )
+
+    if st.button("✨ Générer l'histoire magique", type="primary", key="btn_generer_histoire"):
+        h = nom_personnage if nom_personnage else "Le héros"
+        
+        if "Niveau 1" in niveau_histoire:
+            phrases_niv1 = [
+                f"{h} se réveille dans une petite maison colorée.",
+                "Il regarde par la fenêtre et voit un beau soleil.",
+                "Le chat de la maison vient lui dire bonjour en miaulant.",
+                "Il prend un bon bol de lait chaud avec du pain frais.",
+                "Ensuite, il sort dans le jardin pour jouer avec ses amis.",
+                "La journée s'annonce calme et très amusante pour tout le monde."
+            ]
+            st.session_state['histoire_generee'] = " ".join(phrases_niv1)
+
+        elif "Niveau 2" in niveau_histoire:
+            phrases_niv2 = [
+                f"Il était une fois, un courageux personnage nommé {h} qui adorait l'aventure.",
+                "Un beau matin de printemps, il décida de partir à la découverte de la grande forêt mystérieuse.",
+                "Sur son chemin, il rencontra un petit oiseau bleu qui chantait une douce mélodie.",
+                "L'oiseau décida de l'accompagner pour lui montrer le chemin le plus sûr.",
+                "Après une longue marche, ils arrivèrent près d'un ruisseau aux eaux scintillantes.",
+                "Ils burent un peu d'eau fraîche et se reposèrent sous un grand chêne centenaire.",
+                "Soudain, un écureuil malicieux leur indiqua un sentier caché derrière les buissons.",
+                "En suivant ce sentier, {h} découvrit un magnifique coffre en bois sculpté.",
+                "À l'intérieur, il y avait des livres magiques et des images pleines de couleurs.",
+                "Heureux de sa belle trouvade, il rentra chez lui à la tombée de la nuit pour tout raconter à sa famille."
+            ]
+            st.session_state['histoire_generee'] = " ".join(phrases_niv2)
+
+        else:  # Niveau 3
+            phrases_niv3 = [
+                f"Au cœur d'un royaume lointain et paisible, vivait un jeune explorateur nommé {h}.",
+                "Depuis son plus jeune âge, il passait des heures à lire des grimoires anciens dans la bibliothèque du village.",
+                "Un soir d'automne, en soufflant la poussière d'un vieux livre relié de cuir, il découvrit une carte secrète.",
+                "Cette carte indiquait l'emplacement exact de la vallée oubliée, un endroit légendaire où le temps semblait s'être arrêté.",
+                "Sans hésiter une seule seconde, {h} prépara son sac à dos avec un peu de nourriture, une gourde et sa boussole dorée.",
+                "Il quitta son village au lever du jour, alors que les premiers rayons de soleil doraient les sommets des montagnes.",
+                "La première étape de son voyage consistait à traverser la ténébreuse forêt des murmures.",
+                "Dans cette forêt, les arbres étaient si hauts qu'ils masquaient presque entièrement la lumière du ciel.",
+                "Heureusement, grâce à son grand sens de l'orientation et à son calme, il trouva rapidement la bonne direction.",
+                "Il croisa sur son passage des biches élégantes, des hiboux curieux et de jolies fleurs sauvages aux parfums enivrants.",
+                "Après avoir franchi la forêt, il se retrouva face au pont de pierre qui enjambait le torrent rugissant.",
+                "Le pont était gardé par une vieille statue de pierre représentant un dragon endormi depuis des siècles.",
+                "En posant la main sur la patte du dragon, un mécanisme secret s'activa et libéra le passage en douceur.",
+                "{h} traversa le pont d'un pas assuré, sentant l'excitation grandir au fond de son cœur.",
+                "Il pénétra enfin dans la fameuse vallée oubliée, baignée par une lumière douce et irréelle.",
+                "Au centre de la vallée se dressait un magnifique arbre de cristal dont les feuilles brillaient comme des diamants.",
+                "Au pied de cet arbre magique reposait un ancien parchemin contenant les secrets des grands sages d'autrefois.",
+                "Il prit le temps de lire le texte gravé sur le parchemin, apprenant de merveilleuses histoires sur l'origine du monde.",
+                "Le soleil commença lentement à descendre à l'horizon, peignant le ciel de teintes orangées et pourpres.",
+                "Le cœur rempli de souvenirs inoubliables et de sagesse, {h} prit le chemin du retour, fier de cette grande aventure.",
+                "De retour chez lui, il déposa le précieux parchemin dans la bibliothèque du village pour que tous puissent en profiter."
+            ]
+            st.session_state['histoire_generee'] = " ".join(phrases_niv3)
+
+    if 'histoire_generee' in st.session_state:
+        st.write("---")
+        st.success("📖 Histoire générée :")
+        st.write(st.session_state['histoire_generee'])
+        opts3 = build_controls("t3")
+        render_full_dys_text(st.session_state['histoire_generee'], **opts3)
+
+elif menu_selection == "🎤 Aide à la dictée":
+    st.title("🎤 Aide à la dictée")
+    st.subheader("Ophélie Bascou Drimaracci")
+    st.write("---")
+    st.info("🚧 Ce module est en cours de conception. Il permettra bientôt de travailler l'orthographe, les sons muets et l'écoute pour préparer les dictées en toute sérénité !")
