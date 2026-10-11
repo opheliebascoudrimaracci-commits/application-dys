@@ -96,7 +96,7 @@ def get_syllables_count_ai(word):
         pass
     return max(1, len(word) // 3)
 
-# Cache global des syllabes pour toute l'application
+# Cache global des syllabes
 if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllables') != file_signature:
     st.session_state['sig_syllables'] = file_signature
     st.session_state['syllables_cache'] = {}
@@ -104,6 +104,11 @@ if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllab
         w_clean = w.strip().lower()
         if w_clean:
             st.session_state['syllables_cache'][w_clean] = get_syllables_count_ai(w_clean)
+
+def count_syllables_approx(word):
+    """Fonction globale alimentée par l'IA pour toute l'application."""
+    w_clean = word.strip().lower()
+    return st.session_state['syllables_cache'].get(w_clean, max(1, len(w_clean) // 3))
 
 def get_word_syllables(word):
     """Fonction globale à appeler partout où vous avez besoin du nombre de syllabes."""
