@@ -222,10 +222,12 @@ def parse_word_to_blocks(word, is_plural_verb=False):
 
 PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "jervis"]
 
-def render_word_multilevel(word, show_phonemes=True, prev_word=""):
+def render_word_multilevel(word, show_phonemes=True, prev_word="", show_arcs=True):
+    clean_word_lower = word.lower().strip()
+    
     # Exception pour que les prénoms avec consonne finale prononcée ne soient pas grisés
-    if word.lower().strip() in PRENOMS_CONSONNE_FINALE_PRONONCEE:
-        return f"<span style='color: #1e1b4b; font-weight: bold;'>{word}</span>"
+    if clean_word_lower in PRENOMS_CONSONNE_FINALE_PRONONCEE:
+        return f"<span style='display: inline-block; text-align: center; margin: 0 3px; vertical-align: top;'><div><span style='color: #1e1b4b; font-weight: bold;'>{word}</span></div></span>"
         
     clean_prev = prev_word.strip().lower() if prev_word else ""
     clean_word = word.strip().lower()
@@ -272,6 +274,7 @@ def render_word_multilevel(word, show_phonemes=True, prev_word=""):
     html += "</span>"
     
     return html
+
 
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, word_alt=False, line_alt=False, size=18, soft_bg=True, **kwargs):
     lines = text.split('\n')
