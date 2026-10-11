@@ -101,28 +101,28 @@ Réponds UNIQUEMENT avec le JSON.
         }
 
 def afficher_legende_couleurs():
-    st.markdown("""
-    <div style="background-color: #f1f3f5; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #3498db;">
-        <h4 style="margin-top: 0; color: #2c3e50;">🎨 Code couleur et symboles :</h4>
-        <div style="display: flex; flex-wrap: wrap; gap: 15px; font-size: 15px;">
-            <div>🔴 <b>Sujet</b> (Rond rouge)</div>
-            <div>🟩 <b>Verbe</b> (Carré vert)</div>
-            <div>⭐ <b>Nom commun</b> (Étoile jaune)</div>
-            <div>✨ <b>Nom propre</b> (Étoile brillante)</div>
-            <div>🔺 <b>Déterminant</b> (Triangle bleu)</div>
-            <div>💖 <b>Pronom</b> (Cœur rose)</div>
-            <div>⬛ <b>Mot invariable</b> (Carré noir / Gris)</div>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("### 🎨 Code couleur et symboles")
+    cols = st.columns(4)
+    with cols[0]:
+        st.write("🔴 **Sujet** (Rond rouge)")
+        st.write("🟩 **Verbe** (Carré vert)")
+    with cols[1]:
+        st.write("⭐ **Nom commun** (Étoile jaune)")
+        st.write("✨ **Nom propre** (Étoile brillante)")
+    with cols[2]:
+        st.write("🔺 **Déterminant** (Triangle bleu)")
+        st.write("💖 **Pronom** (Cœur rose)")
+    with cols[3]:
+        st.write("⬛ **Mot invariable** (Carré noir)")
 
 def afficher_phrase_symboles(phrase_data):
     mots = phrase_data.get("mots", [])
     if not mots:
-        st.warning("Aucun mot à afficher.")
+        st.warning("Aucune phrase à afficher.")
         return
 
-    # Utilisation de colonnes Streamlit natives pour un affichage propre
+    st.write("")
+    # Création de colonnes Streamlit natives pour chaque mot
     cols = st.columns(len(mots))
     
     for idx, m in enumerate(mots):
@@ -130,22 +130,15 @@ def afficher_phrase_symboles(phrase_data):
         info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": "❓"})
         emoji_display = info_symb["emoji"]
         
-        # Ajout du rond rouge si c'est le sujet
+        # Si c'est le sujet, on ajoute le rond rouge
         if m.get("is_sujet") and type_mot != "sujet":
             emoji_display = f"🔴 {emoji_display}"
             
         with cols[idx]:
-            st.markdown(
-                f"<div style='text-align: center; font-size: 22px; font-weight: bold; color: #2c3e50;'>"
-                f"{m.get('mot', '')}</div>", 
-                unsafe_allow_html=True
-            )
-            st.markdown(
-                f"<div style='text-align: center; font-size: 24px; margin-top: 5px;'>"
-                f"{emoji_display}</div>", 
-                unsafe_allow_html=True
-            )
-
+            # Affichage du mot
+            st.markdown(f"### {m.get('mot', '')}")
+            # Affichage du symbole
+            st.markdown(f"#### {emoji_display}")
 
 def generer_fiche_html_imprimable(phrase_data):
     mots_html = []
