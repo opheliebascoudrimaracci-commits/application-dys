@@ -100,20 +100,28 @@ Réponds UNIQUEMENT avec le JSON.
             }
         }
 
-def afficher_legende_couleurs():
-    st.markdown("### 🎨 Code couleur et symboles")
-    cols = st.columns(4)
-    with cols[0]:
-        st.write("🔴 **Sujet** (Rond rouge)")
-        st.write("🟩 **Verbe** (Carré vert)")
-    with cols[1]:
-        st.write("⭐ **Nom commun** (Étoile jaune)")
-        st.write("✨ **Nom propre** (Étoile brillante)")
-    with cols[2]:
-        st.write("🔺 **Déterminant** (Triangle bleu)")
-        st.write("💖 **Pronom** (Cœur rose)")
-    with cols[3]:
-        st.write("⬛ **Mot invariable** (Carré noir)")
+# Dictionnaire complet des symboles et couleurs pour les natures de mots
+SYMBOLES_GRAMMAIRE = {
+    "determinant": {"emoji": "🔺", "nom": "Déterminant (Triangle bleu)"},
+    "det": {"emoji": "🔺", "nom": "Déterminant (Triangle bleu)"},
+    
+    "pronom": {"emoji": "💖", "nom": "Pronom (Cœur rose)"},
+    "pron": {"emoji": "💖", "nom": "Pronom (Cœur rose)"},
+    
+    "nom": {"emoji": "⭐", "nom": "Nom commun (Étoile jaune)"},
+    "nom_commun": {"emoji": "⭐", "nom": "Nom commun (Étoile jaune)"},
+    "nom_propre": {"emoji": "✨", "nom": "Nom propre (Étoile brillante)"},
+    
+    "verbe": {"emoji": "🟩", "nom": "Verbe (Carré vert)"},
+    "v": {"emoji": "🟩", "nom": "Verbe (Carré vert)"},
+    
+    "invariable": {"emoji": "⬛", "nom": "Mot invariable (Carré noir)"},
+    "mot_invariable": {"emoji": "⬛", "nom": "Mot invariable (Carré noir)"},
+    "adv": {"emoji": "⬛", "nom": "Adverbe / Mot invariable"},
+    
+    "adjectif": {"emoji": "🔵", "nom": "Adjectif (Cercle bleu)"},
+    "adj": {"emoji": "🔵", "nom": "Adjectif"}
+}
 
 def afficher_phrase_symboles(phrase_data):
     mots = phrase_data.get("mots", [])
@@ -123,26 +131,29 @@ def afficher_phrase_symboles(phrase_data):
 
     html_mots = []
     for m in mots:
-        type_mot = m.get("type", "")
-        info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": "❓"})
-        emoji_display = info_symb["emoji"]
+        type_mot = m.get("type", "").lower()
         
+        # Récupération du symbole (cœur, carré, étoile, triangle, etc.)
+        info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": "❓"})
+        emoji_display = info_symb.get("emoji", "❓")
+        
+        # Si c'est le sujet identifié, on ajoute le rond rouge distinctif
         if m.get("is_sujet") and type_mot != "sujet":
             emoji_display = f"🔴 {emoji_display}"
-            
-        html_mots.append(f"""
-        <div style="display: inline-block; text-align: center; margin: 8px 14px; vertical-align: top; background-color: #ffffff; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <div style="font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 6px;">{m.get('mot', '')}</div>
-            <div style="font-size: 22px;">{emoji_display}</div>
-        </div>
-        """)
         
-    # On injecte tout le bloc HTML d'un seul coup proprement
-    st.markdown(f"""
-    <div style="display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #dee2e6; margin: 15px 0;">
-        {''.join(html_mots)}
-    </div>
-    """, unsafe_allow_html=True)
+        mot_texte = m.get('mot', '')
+        
+        html_mots.append(
+            f"<div style='display:inline-block; text-align:center; margin:8px 10px; padding:10px 12px; background:#ffffff; border-radius:8px; border:1px solid #dcdde1; box-shadow: 0 2px 4px rgba(0,0,0,0.05); vertical-align:top;'>"
+            f"<div style='font-size:22px; font-weight:bold; color:#2c3e50; margin-bottom:6px;'>{mot_texte}</div>"
+            f"<div style='font-size:20px;'>{emoji_display}</div>"
+            f"</div>"
+        )
+        
+    st.markdown(
+        f"<div style='text-align:center; background:#f8f9fa; padding:15px; border-radius:12px; border:1px solid #e1e8ed;'>{''.join(html_mots)}</div>", 
+        unsafe_allow_html=True
+    )
 
 def generer_fiche_html_imprimable(phrase_data):
     mots_html = []
