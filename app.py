@@ -123,25 +123,42 @@ VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 @st.cache_data
 def analyser_syllabes_texte_ia_v3(texte):
     """
-    Analyse les syllabes via l'IA avec un dictionnaire de sécurité et 
-    un repli mathématique automatique si l'IA ne répond pas.
+    Demande à l'IA de découper chaque mot en syllabes avec des tirets (ex: "va-can-ces").
     """
-    syllables_map = {
-        "bonjour": 2, "banane": 3, "j'aime": 2, "aime": 2,
-        "ecole": 2, "école": 2, "chat": 1, "maison": 2,
-        "appelle": 2, "m'appelle": 3, "voiture": 2, "mètre": 2,
-        "très": 1, "vite": 1, "mais": 1, "pense": 1, "longtemps": 2
+    # Dictionnaire de secours pour les mots courants
+    decoupages_fixes = {
+        "bonjour": "bon-jour",
+        "banane": "ba-na-ne",
+        "j'aime": "j'ai-me",
+        "ecole": é-cole,
+        "école": "é-cole",
+        "vacances": "va-can-ces",
+        "voiture": "voi-ture",
+        "maison": "mai-son",
+        "appelle": "ap-pel-le",
+        "m'appelle": "m'ap-pel-le"
     }
     
     words = list(set(texte.lower().strip().split()))
     words_clean = [w.strip(".,;:?!'\"«»' ") for w in words if len(w.strip(".,;:?!'\"«»' ")) > 0]
     
-    mots_a_analyser = [w for w in words_clean if w not in syllables_map]
+    syllables_map = {}
+    mots_a_analyser = []
     
+    for w in words_clean:
+        if w in decoupages_fixes:
+            syllables_map[w] = decoupages_fixes[w]
+        else:
+            mots_a_analyser.append(w)
+            
     if mots_a_analyser:
         prompt = f"""
-Analyse ces mots en français en comptant leur nombre de syllabes orales.
-Réponds UNIQUEMENT sous la forme "mot:nombre", un mot par ligne, sans texte autour. Ex: voiture:2
+Pour chacun des mots suivants en français, réécris le mot en séparant ses syllabes orales par un tiret (-).
+Respecte la règle : une syllabe se termine par une voyelle, sauf pour les sons complexes indivisibles (ou, an, on, in, ch, etc.).
+Réponds UNIQUEMENT sous la forme "mot:mo-t-de-cou-pé", un par ligne. Exemples :
+bonjour:bon-jour
+banane:ba-na-ne
+vacances:va-can-ces
 
 Mots à analyser :
 {", ".join(mots_a_analyser)}
@@ -152,18 +169,15 @@ Mots à analyser :
                 if ":" in ligne:
                     parts = ligne.split(":")
                     mot = parts[0].strip().lower()
-                    try:
-                        nb = int(parts[1].strip())
-                        syllables_map[mot] = max(1, nb)
-                    except ValueError:
-                        continue
+                    decoupe = parts[1].strip()
+                    syllables_map[mot] = decoupe
         except Exception:
             pass
             
-    # SÉCURITÉ TOTALE : Pour tout mot qui manquerait encore, on calcule mathématiquement ses syllabes
+    # Sécurité si un mot manque : on le renvoie tel quel
     for w in words_clean:
         if w not in syllables_map:
-            syllables_map[w] = count_syllables_approx(w)
+            syllables_map[w] = w
             
     return syllables_map
 
@@ -375,9 +389,8 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
     
     return html
 
-
 def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=True, word_alt=False, line_alt=False, size=18, soft_bg=True, key_suffix="", **kwargs):
-    # Appel de l'IA pour analyser le texte entier
+    # Appel de l'IA pour obtenir le découpage des mots en syllabes (ex: "va-can-ces")
     syllables_map = analyser_syllabes_texte_ia_v3(text) if show_arcs else {}
     lines = text.split('\n')
     rendered_lines_adapted = []
@@ -388,17 +401,17 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
         
         for idx, word in enumerate(words):
             prev_word = words[idx - 1] if idx > 0 else ""
-            clean_w = word.lower().strip(".,;:?!'\"«» ")
-            nb_syllables_ia = syllables_map.get(clean_w, None)
+            clean_w = word.lower().strip(".,;:?!'\"«»' ")
+            decoupe_ia = syllables_map.get(clean_w, word)
             
-            # Transmission du résultat de l'IA à la fonction de rendu du mot
+            # Transmission du découpage par syllabes à la fonction de rendu du mot
             word_html = render_word_multilevel(
                 word, 
                 show_phonemes=show_phonemes, 
                 show_colors=show_colors, 
                 show_arcs=show_arcs, 
                 prev_word=prev_word,
-                nb_syllables_override=nb_syllables_ia
+                nb_syllables_override=decoupe_ia
             )
             
             if word_alt and not show_colors:
@@ -449,7 +462,6 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
         mime="text/html",
         key=button_key
     )
-
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
