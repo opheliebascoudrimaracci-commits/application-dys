@@ -96,15 +96,6 @@ def get_syllables_count_ai(word):
         pass
     return max(1, len(word) // 3)
 
-# Cache global des syllabes (placé APRES file_signature et words_list)
-if 'syllables_cache' not in st.session_state or st.session_state.get('sig_syllables') != file_signature:
-    st.session_state['sig_syllables'] = file_signature
-    st.session_state['syllables_cache'] = {}
-    for w in words_list:
-        w_clean = w.strip().lower()
-        if w_clean:
-            st.session_state['syllables_cache'][w_clean] = get_syllables_count_ai(w_clean)
-
 # Sécurité pour créer la signature si elle n'existe pas encore
 if 'file_signature' not in locals() and 'file_signature' not in globals():
     file_signature = "_".join([w.strip() for w in words_list])
