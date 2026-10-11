@@ -217,7 +217,7 @@ def generer_fiche_html_imprimable(phrase_data):
 # ==========================================
 # 5. FONCTION PRINCIPALE APPELÉE PAR STREAMLIT
 # ==========================================
-def afficher_page_grammaire(fonction_appel_ia):
+def afficher_page_grammaire(fonction_appel_ia):  # <--- C'est ici qu'elle commence dans module_grammaire.py
     st.header("📐 Module Grammaire Visuelle & Accords")
     
     mode_choix = st.radio(
@@ -325,7 +325,6 @@ def afficher_page_grammaire(fonction_appel_ia):
             else:
                 st.error(f"Attention ! La bonne réponse était : '{accord.get('reponse')}'")
 
-    # --- BOUTON DE TÉLÉCHARGEMENT DE LA FICHE ---
     st.divider()
     html_fiche = generer_fiche_html_imprimable(phrase)
     st.download_button(
@@ -334,4 +333,4 @@ def afficher_page_grammaire(fonction_appel_ia):
         file_name=f"fiche_grammaire_niveau_{phrase.get('niveau', 1)}.html",
         mime="text/html",
         type="primary"
-    )
+)
