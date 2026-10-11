@@ -431,17 +431,6 @@ elif menu_selection == "✨ Générateur d'histoires":
         opts = build_controls("histoire_gen")
         render_full_dys_text(st.session_state["histoire_generee"], **opts)
 
-
-            with tab_j3:
-                st.markdown("### 🧠 Jour 3 : Auto-dictée & Mémorisation")
-                j3_content = "\n".join(data.get("jour3", [])) if isinstance(data.get("jour3"), list) else str(data.get("jour3", ""))
-                render_full_dys_text(j3_content, key_suffix="j3_exo", **opts)
-
-            with tab_j4:
-                st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
-                dictee_finale = data.get("dictee_finale", "")
-                render_full_dys_text(dictee_finale, key_suffix="j4_exo", **opts)
-
 elif menu_selection == "🎤 Aide à la dictée":
     st.title("🎤 Préparation de la Dictée Personnalisée")
     st.caption("Ophélie Bascou Drimaracci")
@@ -495,7 +484,6 @@ elif menu_selection == "🎤 Aide à la dictée":
                 "📄 Page 4 : Jour 4 (Dictée Finale)"
             ])
 
-            # Helper pour convertir tout contenu en texte sécurisé
             def format_to_str(content):
                 if isinstance(content, list):
                     return "\n".join([format_to_str(item) for item in content])
