@@ -7,50 +7,39 @@ import unicodedata
 import random
 import hashlib
 import json
-import streamlit as st
-from groq import Groq
 import google.generativeai as genai
+import streamlit as st
+from openai import OpenAI
 
 def interroger_ia(prompt_texte, temperature=0.8):
     """
-    Fonction centralisée avec le modèle Groq actif (llama-3.3-70b-versatile).
+    Fonction centralisée utilisant le client OpenAI pointant vers l'API Groq
+    avec le modèle GPT-OSS 20B.
     """
-    erreurs = []
-
-    # 1. Tentative avec GROQ (Modèle actif : llama-3.3-70b-versatile)
     groq_key = st.secrets.get("GROQ_API_KEY")
-    if groq_key:
-        try:
-            client = Groq(api_key=groq_key.strip())
-            chat_completion = client.chat.completions.create(
-                messages=[{"role": "user", "content": prompt_texte}],
-                model="llama-3.3-70b-versatile",
-                temperature=temperature,
-            )
-            if chat_completion.choices and chat_completion.choices[0].message.content:
-                return chat_completion.choices[0].message.content.strip()
-        except Exception as e:
-            erreurs.append(f"Groq: {e}")
-    else:
-        erreurs.append("Groq: Clé absente des secrets")
+    if not groq_key:
+        return "Erreur IA -> Groq: Clé absente des secrets"
 
-    # 2. Secours avec GEMINI (gemini-3.8-flash)
-    gemini_key = st.secrets.get("GEMINI_API_KEY")
-    if gemini_key:
-        try:
-            genai.configure(api_key=gemini_key.strip())
-            generation_config = {"temperature": temperature}
-            model = genai.GenerativeModel("gemini-3.8-flash")
-            res = model.generate_content(prompt_texte, generation_config=generation_config)
-            if res and res.text:
-                return res.text.strip()
-        except Exception as e:
-            erreurs.append(f"Gemini: {e}")
-    else:
-        erreurs.append("Gemini: Clé absente des secrets")
+    try:
+        # Initialisation du client configuré pour l'endpoint Groq
+        client = OpenAI(
+            api_key=groq_key.strip(),
+            base_url="https://api.groq.com/openai/v1",
+        )
 
-    return f"Erreur IA -> " + " | ".join(erreurs)
-    
+        # Appel via l'API Responses/Completions de Groq
+        response = client.responses.create(
+            input=prompt_texte,
+            model="openai/gpt-oss-20b",
+        )
+        
+        if response and hasattr(response, "output_text"):
+            return response.output_text.strip()
+            
+    except Exception as e:
+        return f"Erreur IA -> Groq (GPT-OSS): {e}"
+
+    return "Erreur : Impossible de récupérer la réponse de l'IA."
 
     # -------------------------------------------------------------
     # 2. SECOURS AVEC GOOGLE GEMINI
