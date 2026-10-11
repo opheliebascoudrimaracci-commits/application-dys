@@ -121,24 +121,28 @@ def afficher_phrase_symboles(phrase_data):
         st.warning("Aucune phrase à afficher.")
         return
 
-    st.write("")
-    # Création de colonnes Streamlit natives pour chaque mot
-    cols = st.columns(len(mots))
-    
-    for idx, m in enumerate(mots):
+    html_mots = []
+    for m in mots:
         type_mot = m.get("type", "")
         info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": "❓"})
         emoji_display = info_symb["emoji"]
         
-        # Si c'est le sujet, on ajoute le rond rouge
         if m.get("is_sujet") and type_mot != "sujet":
             emoji_display = f"🔴 {emoji_display}"
             
-        with cols[idx]:
-            # Affichage du mot
-            st.markdown(f"### {m.get('mot', '')}")
-            # Affichage du symbole
-            st.markdown(f"#### {emoji_display}")
+        html_mots.append(f"""
+        <div style="display: inline-block; text-align: center; margin: 8px 14px; vertical-align: top; background-color: #ffffff; padding: 10px 15px; border-radius: 8px; border: 1px solid #e2e8f0;">
+            <div style="font-size: 24px; font-weight: bold; color: #2c3e50; margin-bottom: 6px;">{m.get('mot', '')}</div>
+            <div style="font-size: 22px;">{emoji_display}</div>
+        </div>
+        """)
+        
+    # On injecte tout le bloc HTML d'un seul coup proprement
+    st.markdown(f"""
+    <div style="display: flex; flex-wrap: wrap; justify-content: center; padding: 20px; background-color: #f8f9fa; border-radius: 12px; border: 1px solid #dee2e6; margin: 15px 0;">
+        {''.join(html_mots)}
+    </div>
+    """, unsafe_allow_html=True)
 
 def generer_fiche_html_imprimable(phrase_data):
     mots_html = []
