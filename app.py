@@ -13,17 +13,16 @@ import google.generativeai as genai
 # ==========================================
 # UTILITAIRE IA CENTRALISÉ (Groq / Gemini)
 # ==========================================
+
 def interroger_ia(prompt_texte, temperature=0.8):
     """
     Fonction centralisée : 
-    1. Priorité à Groq (via SDK OpenAI standard, modèles rapides et stables).
-    2. Secours automatique sur Gemini (gemini-3.8-flash) en cas de besoin.
+    1. Priorité à Groq (via SDK OpenAI, avec les modèles actuellement actifs).
+    2. Secours automatique sur Gemini en cas de besoin.
     """
     erreurs = []
 
-    # -------------------------------------------------------------
-    # 1. TENTATIVE AVEC GROQ (via SDK OpenAI)
-    # -------------------------------------------------------------
+    # 1. TENTATIVE AVEC GROQ
     groq_key = st.secrets.get("GROQ_API_KEY")
     if groq_key:
         try:
@@ -31,11 +30,10 @@ def interroger_ia(prompt_texte, temperature=0.8):
                 api_key=groq_key.strip(),
                 base_url="https://api.groq.com/openai/v1",
             )
-            # Modèles stables et actifs sur Groq
             groq_models = [
-                "llama-3.1-8b-instant",
-                "mixtral-8x7b-32768",
-                "llama3-8b-8192"
+                "gpt-oss-20b",
+                "llama-3.3-70b-versatile",
+                "gpt-oss-120b"
             ]
             
             for g_model in groq_models:
@@ -55,29 +53,21 @@ def interroger_ia(prompt_texte, temperature=0.8):
     else:
         erreurs.append("Groq: Clé 'GROQ_API_KEY' absente des secrets")
 
-    # -------------------------------------------------------------
     # 2. SECOURS AUTOMATIQUE AVEC GOOGLE GEMINI
-    # -------------------------------------------------------------
     gemini_key = st.secrets.get("GEMINI_API_KEY")
     if gemini_key:
         try:
             genai.configure(api_key=gemini_key.strip())
-            generation_config = {"temperature": temperature}
-            
             model = genai.GenerativeModel("gemini-3.8-flash")
-            res = model.generate_content(prompt_texte, generation_config=generation_config)
+            res = model.generate_content(prompt_texte, generation_config={"temperature": temperature})
             if res and res.text:
                 return res.text.strip()
         except Exception as e:
             erreurs.append(f"Gemini: {e}")
     else:
-def interroger_ia(prompt_texte, temperature=0.8):
-    """
-    Fonction centralisée : 
-    1. Priorité à Groq (via SDK OpenAI, avec les modèles actuellement actifs).
-    2. Secours automatique sur Gemini en cas de besoin.
-    """
-    erreurs = []
+        erreurs.append("Gemini: Clé 'GEMINI_API_KEY' absente des secrets")
+
+    return f"Erreur IA -> " + " | ".join(erreurs)
 
     # 1. TENTATIVE AVEC GROQ
     groq_key = st.secrets.get("GROQ_API_KEY")
