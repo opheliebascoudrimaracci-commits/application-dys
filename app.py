@@ -622,7 +622,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (IA à jour)
+        # PAGE 4 : Phrase de dictée en contexte + Corrigé
         # -----------------------------------------
         with dic_tab4:
             st.markdown("### Page 4 : Phrase de dictée en contexte")
@@ -654,14 +654,32 @@ elif menu_selection == "🎤 Aide à la dictée":
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
+            # Création de la version à trous
             phrase_trous = phrase_base
             for w in words_list:
                 pattern = re.compile(re.escape(w), re.IGNORECASE)
                 hole = "<span style='display: inline-block; min-width: 70px; border-bottom: 2px solid #000; margin: 0 4px;'>&nbsp;</span>"
                 phrase_trous = pattern.sub(hole, phrase_trous)
                 
+            st.markdown("#### 📝 Version Élève (À trous)")
             st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
             
-            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name=f"page4_{file_signature}.html", mime="text/html", key="dl_p4_final")
+            p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Exercice</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer la Fiche Élève (HTML)", data=p4_export, file_name=f"page4_eleve_{file_signature}.html", mime="text/html", key="dl_p4_final")
+
+            st.markdown("---")
+            
+            # --- SECTION CORRIGÉ ---
+            st.markdown("#### ✅ Version Correcteur (Corrigé)")
+            # On met en valeur les mots recherchés en gras/couleur dans le corrigé
+            phrase_corrige = phrase_base
+            for w in words_list:
+                pattern = re.compile(re.escape(w), re.IGNORECASE)
+                highlighted_w = f"<span style='color: #4f46e5; font-weight: bold; text-decoration: underline;'>{w}</span>"
+                phrase_corrige = pattern.sub(highlighted_w, phrase_corrige)
+
+            st.markdown(f"<div style='background-color: #f8fafc; padding: 25px; border: 1px dashed #4f46e5; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_corrige}</div>", unsafe_allow_html=True)
+            
+            p4_corr_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4 - Corrigé</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Corrigé - Dictée en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_corrige}</div></body></html>"
+            st.download_button("📥 Télécharger / Imprimer le Corrigé (HTML)", data=p4_corr_export, file_name=f"page4_corrige_{file_signature}.html", mime="text/html", key="dl_p4_corr")
             
