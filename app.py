@@ -462,13 +462,6 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
 
     button_key = f"btn_download_{key_suffix}" if "key_suffix" in locals() and key_suffix else f"btn_download_{id(contenu_a_telecharger)}"
 
-    st.download_button(
-        label="📥 Télécharger / Imprimer le texte",
-        data=str(contenu_a_telecharger),
-        file_name=f"texte_adapte_{locals().get('key_suffix', 'export')}.html",
-        mime="text/html",
-        key=button_key
-    )
 
 
 def build_controls(key_prefix):
