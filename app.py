@@ -123,74 +123,62 @@ VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 @st.cache_data
 def analyser_syllabes_texte_ia_v3(texte):
     """
-    Analyse les syllabes avec l'IA et intègre un dictionnaire de sécurité 
-    pour les mots courants (banane, j'aime, etc.).
+    Analyse les syllabes via l'IA avec un dictionnaire de sécurité et 
+    un repli mathématique automatique si l'IA ne répond pas.
     """
-    # Dictionnaire de secours direct pour une fiabilité 100% garantie sur les mots usuels
     syllables_map = {
-        "bonjour": 2,
-        "banane": 3,
-        "j'aime": 2,
-        "aime": 2,
-        "ecole": 2,
-        "école": 2,
-        "chat": 1,
-        "maison": 2,
-        "appelle": 2,
-        "m'appelle": 3
+        "bonjour": 2, "banane": 3, "j'aime": 2, "aime": 2,
+        "ecole": 2, "école": 2, "chat": 1, "maison": 2,
+        "appelle": 2, "m'appelle": 3, "voiture": 2, "mètre": 2,
+        "très": 1, "vite": 1, "mais": 1, "pense": 1, "longtemps": 2
     }
     
     words = list(set(texte.lower().strip().split()))
-    # On inclut l'apostrophe (') dans le nettoyage pour gérer "j'aime"
     words_clean = [w.strip(".,;:?!'\"«»' ") for w in words if len(w.strip(".,;:?!'\"«»' ")) > 0]
     
-    # On filtre les mots pas encore dans notre base sûre
     mots_a_analyser = [w for w in words_clean if w not in syllables_map]
     
-    if not mots_a_analyser:
-        return syllables_map
-        
-    prompt = f"""
-Analyse ces mots en français en comptant leur nombre de syllabes orales selon cette règle pédagogique stricte :
-1. Une syllabe se termine généralement par une voyelle (ex: ba-na-ne -> 3).
-2. SAUF en présence d'un son complexe ou d'une nasale (ou, an, on, in, en, ch, gn, oi, eu, au, eau) qui forme un bloc indivisible (ex: bon-jour -> 2).
-
-Réponds UNIQUEMENT sous la forme "mot:nombre", un mot par ligne, sans texte autour.
+    if mots_a_analyser:
+        prompt = f"""
+Analyse ces mots en français en comptant leur nombre de syllabes orales.
+Réponds UNIQUEMENT sous la forme "mot:nombre", un mot par ligne, sans texte autour. Ex: voiture:2
 
 Mots à analyser :
 {", ".join(mots_a_analyser)}
 """
-    try:
-        reponse = interroger_ia(prompt, temperature=0.0).strip()
-        for ligne in reponse.split("\n"):
-            if ":" in ligne:
-                parts = ligne.split(":")
-                mot = parts[0].strip().lower()
-                try:
-                    nb = int(parts[1].strip())
-                    syllables_map[mot] = max(1, nb)
-                except ValueError:
-                    continue
-    except Exception:
-        pass
-        
+        try:
+            reponse = interroger_ia(prompt, temperature=0.0).strip()
+            for ligne in reponse.split("\n"):
+                if ":" in ligne:
+                    parts = ligne.split(":")
+                    mot = parts[0].strip().lower()
+                    try:
+                        nb = int(parts[1].strip())
+                        syllables_map[mot] = max(1, nb)
+                    except ValueError:
+                        continue
+        except Exception:
+            pass
+            
+    # SÉCURITÉ TOTALE : Pour tout mot qui manquerait encore, on calcule mathématiquement ses syllabes
+    for w in words_clean:
+        if w not in syllables_map:
+            syllables_map[w] = count_syllables_approx(w)
+            
     return syllables_map
 
 def count_syllables_approx(word):
-    clean_w = word.lower().strip(".,;:?!'\"«» ")
+    clean_w = word.lower().strip(".,;:?!'\"«»' ")
     if not clean_w:
         return 1
-    
-    # Liste des voyelles et diphtongues
+        
     vowels = "aeiouyàâäéèêëïîôöùûüÿ"
-    
-    # Supprimer les voyelles muettes finales ordinaires pour le comptage (ex: le 'e' de 'garçon' ou 'licorne')
-    if clean_w.endswith('e') and len(clean_w) > 2 and not clean_w.endswith(('ée', 'ie', 'ue')):
+    # Ignore le 'e' final muet standard
+    if clean_w.endswith('e') and len(clean_w) > 3 and not clean_w.endswith(('ée', 'ie', 'ue', 'oe')):
         clean_w = clean_w[:-1]
         
     count = 0
     in_vowel_group = False
-    
     for char in clean_w:
         if char in vowels:
             if not in_vowel_group:
