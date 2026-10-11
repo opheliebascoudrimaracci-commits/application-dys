@@ -1,6 +1,7 @@
 streamlit
 pytesseract
 Pillow
-google-generativeai
-groq
 streamlit
+groq
+google-generativeai
+openai
