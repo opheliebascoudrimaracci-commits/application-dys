@@ -644,7 +644,7 @@ elif menu_selection == "🎤 Aide à la dictée":
 elif menu_selection == "📐 Grammaire Visuelle & Accords":
     afficher_page_grammaire(interroger_ia)
     
-            def format_to_str(content):
+def format_to_str(content):
                 if isinstance(content, list):
                     return "\n".join([format_to_str(item) for item in content])
                 elif isinstance(content, dict):
