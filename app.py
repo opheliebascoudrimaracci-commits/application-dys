@@ -220,9 +220,15 @@ def parse_word_to_blocks(word, is_plural_verb=False):
         
     return blocks
 
-def render_word_multilevel(word, show_phonemes=True, show_arcs=False, prev_word=""):
-    clean_prev = prev_word.strip().lower().strip(".,;:!?()[]{}\"'«»")
-    clean_word = word.strip().lower().strip(".,;:!?()[]{}\"'«»")
+PRENOMS_CONSONNE_FINALE_PRONONCEE = ["mathis", "alexis", "loic", "loïc", "yanis", "iris", "jervis"]
+
+def render_word_multilevel(word, show_phonemes=True, prev_word=""):
+    # Exception pour que les prénoms avec consonne finale prononcée ne soient pas grisés
+    if word.lower().strip() in PRENOMS_CONSONNE_FINALE_PRONONCEE:
+        return f"<span style='color: #1e1b4b; font-weight: bold;'>{word}</span>"
+        
+    clean_prev = prev_word.strip().lower() if prev_word else ""
+    clean_word = word.strip().lower()
     
     is_plural_verb = (clean_prev in PLURAL_SUBJECTS) and clean_word.endswith("ent") and len(clean_word) > 4
     blocks = parse_word_to_blocks(word, is_plural_verb=is_plural_verb)
