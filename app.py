@@ -508,101 +508,20 @@ elif menu_selection == "✨ Générateur d'histoires":
         render_full_dys_text(st.session_state['histoire_generee'], **opts3)
 
 # ==========================================
-# MODULE : AIDE À LA DICTÉE
-# ==========================================
-elif menu_selection == "🎤 Aide à la dictée":
-    st.title("🎤 Préparation de la Dictée Personnalisée")
-    st.subheader("Ophélie Bascou Drimaracci")
-    st.write("Saisissez jusqu'à 20 mots à réviser. L'application générera vos fiches de travail prêtes à être imprimées !")
-    
-    st.write("---")
-    
-    # 1. Zone de saisie des mots
-    input_text = st.text_area(
-        "Entrez vos mots (séparés par un espace, une virgule ou une ligne) :",
-        height=120,
-        placeholder="Exemple: bateau maison cheval oiseau fleur château garçon soleil chêne dragon..."
-    )
-    
-    # Extraction et nettoyage des mots (max 20 mots)
-    raw_words = re.split(r'[\s,\n]+', input_text.strip())
-    words_list = [w.strip() for w in raw_words if w.strip()][:20]
-    
-    if words_list:
-        st.success(f"📋 **{len(words_list)} mot(s) enregistré(s)** : {', '.join(words_list)}")
-        st.write("---")
-        
-        dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
-            "Page 1 : 🎨 Mots codés DYS",
-            "Page 2 : ✂️ Mots découpés",
-            "Page 3 : ✏️ Mots à trous",
-            "Page 4 : 📝 Phrases à trous"
-        ])
-        
-        # PAGE 1 : Mots avec codes DYS
-        with dic_tab1:
-            st.write("### Page 1 : Fiche de révision avec codes visuels DYS")
-            p1_html_parts = []
-            for w in words_list:
-                coded_w = render_word_multilevel(w, show_phonemes=True)
-                p1_html_parts.append(f"<div style='display: inline-block; margin: 15px; font-size: 26px;'>{coded_w}</div>")
-            
-            p1_content = "".join(p1_html_parts)
-            st.markdown(f"<div style='background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>{p1_content}</div>", unsafe_allow_html=True)
-            
-            p1_export = f"""
-            <!DOCTYPE html>
-            <html lang="fr">
-            <head><meta charset="UTF-8"><title>Page 1 - Mots Codés DYS</title></head>
-            <body style="font-family: sans-serif; padding: 30px;">
-                <h1 style="text-align: center;">Fiche de Révision - Dictée</h1>
-                <hr><br>
-                <div style="display: flex; flex-wrap: wrap; gap: 20px; font-size: 28px;">
-                    {p1_content}
-                </div>
-            </body>
-            </html>
-            """
-            st.download_button("📥 Télécharger / Imprimer la Page 1 (HTML)", data=p1_export, file_name="page1_mots_codes.html", mime="text/html")
-            
-        # PAGE 2 : Mots découpés (Carrés)
-        with dic_tab2:
-            st.write("### Page 2 : Mots avec lettres séparées par des carrés (à découper)")
-            p2_html_parts = []
-            for w in words_list:
-                letters_squares = []
-                for char in w:
-                    letters_squares.append(
-                        f"<span style='display: inline-block; width: 40px; height: 40px; border: 2px solid #333; margin: 2px; text-align: center; line-height: 40px; font-weight: bold; font-size: 22px;'>{char}</span>"
-                    )
-                word_box = f"<div style='margin-bottom: 20px;'><span style='display: inline-block; margin-right: 15px; font-weight: bold; font-size: 18px; min-width: 120px;'>{w} :</span> {''.join(letters_squares)}</div>"
-                p2_html_parts.append(word_box)
-                
-            p2_content = "".join(p2_html_parts)
-            st.markdown(f"<div style='background-color: #ffffff; padding: 20px; border: 1px dashed #ccc; border-radius: 10px;'>{p2_content}</div>", unsafe_allow_html=True)
-            
-            p2_export = f"""
-            <!DOCTYPE html>
-            <html lang="fr">
-            <head><meta charset="UTF-8"><title>Page 2 - Mots à découper</title></head>
-
-f"""
-
-# ==========================================
 # MODULE : AIDE À LA DICTÉE (AVEC IA)
 # ==========================================
 elif menu_selection == "🎤 Aide à la dictée":
     st.title("🎤 Préparation de la Dictée Personnalisée")
     st.subheader("Ophélie Bascou Drimaracci")
-    st.write("Saisissez jusqu'à 20 mots. L'application génère instantanément les 4 pages de travail actualisées !")
+    st.write("Saisissez vos mots. L'application génère instantanément les 4 pages de travail actualisées !")
     
     st.write("---")
     
     input_text = st.text_area(
         "Entrez vos mots (séparés par un espace, une virgule ou une ligne) :",
         height=120,
-        placeholder="Exemple: poule, loupe, l'été, papi",
-        key="input_mots_dictee"
+        placeholder="Exemple: bateau, chant, poule",
+        key="input_mots_dictee_unique"
     )
     
     raw_words = re.split(r'[\s,\n]+', input_text.strip())
@@ -611,6 +530,9 @@ elif menu_selection == "🎤 Aide à la dictée":
     if words_list:
         st.success(f"📋 **{len(words_list)} mot(s) actif(s)** : " + ", ".join(words_list))
         st.write("---")
+        
+        # Signature unique pour éviter les confusions de fichiers en cache sur mobile
+        file_signature = "_".join(words_list)
         
         dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
             "Page 1 : 🎨 Mots codés DYS",
@@ -636,10 +558,10 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown(f"<div style='background-color: #f4f6f9; padding: 20px; border-radius: 10px;'>{p1_content}</div>", unsafe_allow_html=True)
             
             p1_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 1</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Fiche de Révision - Mots</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p1_content}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Page 1 (HTML)", data=p1_export, file_name="page1_mots_codes.html", mime="text/html", key="dl_p1_v3")
+            st.download_button("📥 Télécharger / Imprimer la Page 1 (HTML)", data=p1_export, file_name=f"page1_{file_signature}.html", mime="text/html", key="dl_p1_final")
             
         # -----------------------------------------
-        # PAGE 2 : Étiquettes de mots à découper (Corrigé : alignement et maintien sur une seule ligne)
+        # PAGE 2 : Étiquettes de mots à découper (Sur une seule ligne)
         # -----------------------------------------
         with dic_tab2:
             st.markdown("### Page 2 : Étiquettes de lettres en carrés (à découper)")
@@ -652,7 +574,7 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown(f"<div style='background-color: #ffffff; padding: 20px; border: 1px dashed #ccc; border-radius: 10px;'>{p2_content}</div>", unsafe_allow_html=True)
             
             p2_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 2</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Étiquettes à découper</h1><hr><br>{p2_content}</body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name="page2_mots_a_decouper.html", mime="text/html", key="dl_p2_v3")
+            st.download_button("📥 Télécharger / Imprimer la Page 2 (HTML)", data=p2_export, file_name=f"page2_{file_signature}.html", mime="text/html", key="dl_p2_final")
             
         # -----------------------------------------
         # PAGE 3 : Dictée à trous (Mots isolés)
@@ -670,17 +592,16 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown(f"<div style='background-color: #f9f9f9; padding: 20px; border-radius: 10px;'>{p3_content}</div>", unsafe_allow_html=True)
             
             p3_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 3</title></head><body style='font-family: sans-serif; padding: 30px;'><h1 style='text-align: center;'>Dictée à trous - Mots isolés</h1><hr><br><div style='display: flex; flex-wrap: wrap; gap: 20px;'>{p3_content}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name="page3_dictee_a_trous.html", mime="text/html", key="dl_p3_v3")
+            st.download_button("📥 Télécharger / Imprimer la Page 3 (HTML)", data=p3_export, file_name=f"page3_{file_signature}.html", mime="text/html", key="dl_p3_final")
 
         # -----------------------------------------
-        # PAGE 4 : Phrase de dictée en contexte (Adaptée aux enfants)
+        # PAGE 4 : Phrase de dictée en contexte (IA adaptée aux enfants)
         # -----------------------------------------
         with dic_tab4:
-            st.markdown("### Page 4 : Phrase ou mini-histoire adaptée pour les enfants")
+            st.markdown("### Page 4 : Phrase de dictée en contexte")
             
-            current_signature = "_".join(words_list)
-            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != current_signature:
-                st.session_state['current_words_sig'] = current_signature
+            if 'current_words_sig' not in st.session_state or st.session_state['current_words_sig'] != file_signature:
+                st.session_state['current_words_sig'] = file_signature
                 st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous découvrons une histoire rigolote avec les mots : " + ", ".join(words_list) + "."
 
             if st.button("🤖 Générer une histoire adaptée avec l'IA", type="primary", key="btn_gen_ia_final"):
@@ -688,13 +609,11 @@ elif menu_selection == "🎤 Aide à la dictée":
                     if "GEMINI_API_KEY" in st.secrets:
                         genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                     
-                    # Consigne stricte pour cibler un contenu enfantin, simple et sans jargon
                     prompt_phrase = (
                         "Écris une phrase ou une mini-histoire très simple, rigolote et parfaitement "
                         "adaptée à des enfants (niveau école primaire), qui intègre obligatoirement "
                         f"TOUS les mots suivants : {', '.join(words_list)}. "
-                        "Donne uniquement le texte de l'histoire, sans aucun commentaire, sans mise en forme superflue "
-                        "et avec un vocabulaire très accessible."
+                        "Donne uniquement le texte de l'histoire, sans aucun commentaire ni mise en forme superflue."
                     )
                     
                     model = genai.GenerativeModel("gemini-1.5-flash")
@@ -703,7 +622,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                         st.session_state['phrase_ia_dictee'] = res.text.strip()
                 except Exception as err:
                     st.warning(f"Mode secours activé. Erreur: {err}")
-                    st.session_state['phrase_ia_dictee'] = f"Voici l'histoire du jour avec nos mots : " + ", ".join(words_list) + "."
+                    st.session_state['phrase_ia_dictee'] = f"Aujourd'hui, nous étudions avec application les mots : " + ", ".join(words_list) + "."
 
             phrase_base = st.session_state['phrase_ia_dictee']
             
@@ -716,4 +635,8 @@ elif menu_selection == "🎤 Aide à la dictée":
             st.markdown(f"<div style='background-color: #ffffff; padding: 25px; border: 1px solid #ddd; border-radius: 10px; font-size: 24px; line-height: 2.2;'>{phrase_trous}</div>", unsafe_allow_html=True)
             
             p4_export = f"<!DOCTYPE html><html lang='fr'><head><meta charset='UTF-8'><title>Page 4</title></head><body style='font-family: sans-serif; padding: 40px; font-size: 24px; line-height: 2.5;'><h1 style='text-align: center;'>Dictée de phrases en contexte</h1><hr><br><div style='padding: 20px;'>{phrase_trous}</div></body></html>"
-            st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name="page4_phrase_dictee_a_trous.html", mime="text/html", key="dl_p4_final")
+            st.download_button("📥 Télécharger / Imprimer la Page 4 (HTML)", data=p4_export, file_name=f"page4_{file_signature}.html", mime="text/html", key="dl_p4_final")
+    else:
+        st.info("💡 Veuillez saisir au moins un mot ci-dessus pour afficher et générer instantanément les 4 pages de travail.")
+        
+    
