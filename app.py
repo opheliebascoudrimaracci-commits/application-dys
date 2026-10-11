@@ -401,13 +401,18 @@ elif menu_selection == "🎤 Aide à la dictée":
         st.write("---")
         
         file_signature = "_".join(words_list)
-    
-            dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
+        
+        dic_tab1, dic_tab2, dic_tab3, dic_tab4 = st.tabs([
             "Page 1 : 🎨 Mots codés DYS",
             "Page 2 : ✂️ Mots découpés",
             "Page 3 : ✏️ Mots à trous",
             "Page 4 : 📝 Phrase contextuelle (IA)"
         ])
+        
+        # -----------------------------------------
+        # PAGE 1 : Mots codés DYS
+        # -----------------------------------------
+
         
         # -----------------------------------------
         # PAGE 1 : Mots codés DYS
