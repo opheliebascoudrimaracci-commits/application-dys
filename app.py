@@ -668,7 +668,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                             f"Renvoie uniquement le texte de la dictée, sans aucune introduction, sans guillemets et sans commentaires."
                         )
                         
-                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        model = genai.GenerativeModel("gemini-3.8-flash")
                         res = model.generate_content(prompt_phrase)
 
                         if res and res.text:
@@ -688,7 +688,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                             f"qui intègre impérativement TOUS ces mots : {', '.join(words_list)}. "
                             f"Renvoie uniquement le texte."
                         )
-                        model = genai.GenerativeModel("gemini-2.5-flash")
+                        model = genai.GenerativeModel("gemini-3.8-flash")
                         res = model.generate_content(prompt_phrase)
                         if res and res.text:
                             st.session_state['phrase_ia_dictee'] = res.text.strip()
