@@ -83,6 +83,8 @@ menu_selection = st.sidebar.radio(
         "📐 Grammaire Visuelle & Accords"
     ]
 )
+elif menu_selection == "📐 Grammaire Visuelle & Accords":
+    afficher_page_grammaire(interroger_ia)
 
 PLURAL_SUBJECTS = {
     "ils", "elles", "les", "des", "ces", "mes", "tes", "ses", "nos", "vos", "leurs",
