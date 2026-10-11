@@ -123,30 +123,38 @@ VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 @st.cache_data
 def analyser_syllabes_texte_ia(texte):
     """
-    Analyse les syllabes via l'IA avec cache de Streamlit (zéro crédit gaspillé sur les mots déjà vus).
+    Demande à l'IA de réécrire le texte en séparant les syllabes par des tirets.
+    Exemple : "Le petit chat" -> "Le pe-tit chat"
     """
-    words = list(set(texte.lower().strip().split()))
-    words_to_query = [w.strip(".,;:?!'\"«»") for w in words if len(w.strip(".,;:?!'\"«»")) > 1]
-    
-    if not words_to_query:
+    if not texte.strip():
         return {}
         
     prompt = f"""
-Voici une liste de mots en français : {words_to_query}
+Réécris le texte français ci-dessous en séparant les syllabes de CHAQUE mot par un tiret (-).
+Ne change pas les mots, ne rajoute rien d'autre, respecte strictement la ponctuation et les espaces entre les mots.
+Exemple : "Le petit chat mange." -> "Le pe-tit chat man-ge."
 
-Pour CHAQUE mot, découpe-le en syllabes orales exactes (ex: "petit" -> "pe-tit", "licorne" -> "li-corne").
-Renvoie EXCLUSIVEMENT un objet JSON valide au format exact suivant, sans aucun autre texte :
-{{
-  "petit": 2,
-  "licorne": 2,
-  "garçon": 2
-}}
+Texte à traiter :
+{texte}
 """
     try:
-        reponse = interroger_ia(prompt, temperature=0.0)
-        reponse_clean = reponse.replace("```json", "").replace("```", "").strip()
-        syllables_map = json.loads(reponse_clean)
-        return {k.lower(): int(v) for k, v in syllables_map.items()}
+        reponse = interroger_ia(prompt, temperature=0.0).strip()
+        # On nettoie d'éventuelles balises de code markdown si l'IA en a mis
+        reponse_clean = reponse.replace("```", "").strip()
+        
+        # On associe chaque mot d'origine à son nombre de syllabes calculé via les tirets
+        mots_originaux = texte.split()
+        mots_decoupes = reponse_clean.split()
+        
+        syllables_map = {}
+        for orig, decoupe in zip(mots_originaux, mots_decoupes):
+            clean_orig = orig.lower().strip(".,;:?!'\"«» ")
+            # Le nombre de syllabes = nombre de tirets + 1
+            nb = decoupe.count("-") + 1
+            if clean_orig:
+                syllables_map[clean_orig] = max(1, nb)
+                
+        return syllables_map
     except Exception:
         return {}
 
