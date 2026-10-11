@@ -305,59 +305,58 @@ style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border
 st.markdown("### 👁️ Aperçu adapté :")
 st.markdown(f"<div style='font-size: {size}px; line-height: {spacing}; font-family: {font_family}; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
     
-    html_export_adapte = f"""
-    <!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <title>Texte Adapté DYS</title>
-    <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
-    <style>
-        body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; font-size: {size}px; line-height: {spacing}; }}
-    </style>
-    </head>
-    <body>
-        <div>{full_content_adapted}</div>
-    </body>
-    </html>
-    """
-    st.download_button(
-        label="📥 Télécharger / Imprimer le texte adapté (avec couleurs et aides)",
-        data=html_export_adapte,
-        file_name="texte_adapte_dys.html",
-        mime="text/html",
-        key=f"dl_adapt_{export_key}"
-    )
+ html_export_adapte = f"""
+ <!DOCTYPE html>
+ <html>
+ <head>
+<meta charset="utf-8">
+ <title>Texte Adapté DYS</title>
+ <link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">
+<style>
+    body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; font-size: {size}px; line-height: {spacing}; }}
+</style>
+</head>
+<body>
+    <div>{full_content_adapted}</div>
+</body>
+</html>
+"""
+st.download_button(
+    label="📥 Télécharger / Imprimer le texte adapté (avec couleurs et aides)",
+    data=html_export_adapte,
+    file_name="texte_adapte_dys.html",
+    mime="text/html",
+    key=f"dl_adapt_{export_key}"
+)
     
-    st.markdown("---")
-    st.markdown("### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
-    st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
-    st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #f0fdf4; padding: 15px; border: 3px solid #84cc16; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
+st.markdown("---")
+st.markdown("### 📝 Aperçu de la fiche d'entraînement (Vierge) :")
+st.markdown("<p style='font-weight: bold; text-decoration: underline;'>Consigne : Entoure ou surligne les sons complexes et les pièges.</p>", unsafe_allow_html=True)
+st.markdown(f"<div style='font-size: {size}px; line-height: 3.0; font-family: {font_family}; background-color: #f0fdf4; padding: 15px; border: 3px solid #84cc16; border-radius: 8px;'>{full_content_training}</div>", unsafe_allow_html=True)
     
-    html_fiche_vierge = (
-        "<!DOCTYPE html>\n<html>\n<head>\n"
-        '<meta charset="utf-8">\n'
-        "<title>Fiche d'entrainement DYS</title>\n"
-        '<link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">\n'
-        "<style>\n"
-        f"    body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; }}\n"
-        '    .consigne {{ margin-bottom: 25px; text-decoration: underline; font-weight: bold; font-size: 18px; }}\n'
-        f"    .cadre {{ font-size: {size}px; line-height: 3.0; padding: 20px; border: 3px solid #84cc16; border-radius: 8px; background-color: #f0fdf4; }}\n"
-        "</style>\n</head>\n<body>\n"
-        '    <div class="consigne">Consigne : Entoure ou surligne les sons complexes et les pièges.</div>\n'
-        f'    <div class="cadre">{full_content_training}</div>\n'
-        "</body>\n</html>"
-    )
+ html_fiche_vierge = (
+    "<!DOCTYPE html>\n<html>\n<head>\n"
+    '<meta charset="utf-8">\n'
+    "<title>Fiche d'entrainement DYS</title>\n"
+    '<link href="https://fonts.googleapis.com/css2?family=Open+Dyslexic&display=swap" rel="stylesheet">\n'
+    "<style>\n"
+    f"    body {{ font-family: {font_family}; padding: 30px; background-color: #FFFFFF; color: #000000; }}\n"
+    .consigne {{ margin-bottom: 25px; text-decoration: underline; font-weight: bold; font-size: 18px; }}\n'
+    f"    .cadre {{ font-size: {size}px; line-height: 3.0; padding: 20px; border: 3px solid #84cc16; border-radius: 8px; background-color: #f0fdf4; }}\n"
+    "</style>\n</head>\n<body>\n"
+    '    <div class="consigne">Consigne : Entoure ou surligne les sons complexes et les pièges.</div>\n'
+    f'    <div class="cadre">{full_content_training}</div>\n'
+    "</body>\n</html>"
+  )
 
-    st.download_button(
-        label="📥 Télécharger la fiche d'entraînement vierge (Prête à imprimer)",
-        data=html_fiche_vierge,
-        file_name="fiche_entrainement_dys.html",
-        mime="text/html",
-        key=f"dl_vierge_{export_key}"
+st.download_button(
+    label="📥 Télécharger la fiche d'entraînement vierge (Prête à imprimer)",
+    data=html_fiche_vierge,
+    file_name="fiche_entrainement_dys.html",
+    mime="text/html",
+    key=f"dl_vierge_{export_key}"
     )
     st.caption("💡 Astuce : Ouvrez le fichier téléchargé sur votre téléphone pour l'imprimer directement via le menu de votre navigateur.")
-
 def show_color_legend():
     with st.expander("📖 Légende et Code Couleur Pédagogique"):
         st.markdown("### 🧠 Surlignage des sons complexes (Fond pastel soutenu)")
