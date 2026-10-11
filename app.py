@@ -495,7 +495,7 @@ elif menu_selection == "🎤 Aide à la dictée":
                 "📄 Page 4 : Jour 4 (Dictée Finale)"
             ])
 
-            # Helper pour convertir tout contenu (liste, dict, string) en texte sécurisé
+            # Helper pour convertir tout contenu en texte sécurisé
             def format_to_str(content):
                 if isinstance(content, list):
                     return "\n".join([format_to_str(item) for item in content])
@@ -527,4 +527,3 @@ elif menu_selection == "🎤 Aide à la dictée":
                 st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
                 dictee_finale = format_to_str(data.get("dictee_finale", ""))
                 render_full_dys_text(dictee_finale, key_suffix="j4_exo", **opts)
-                
