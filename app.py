@@ -7,67 +7,76 @@ import unicodedata
 import random
 import hashlib
 import json
-import google.generativeai as genai
 import streamlit as st
 from openai import OpenAI
+import google.generativeai as genai
 
 def interroger_ia(prompt_texte, temperature=0.8):
     """
-    Fonction centralisée utilisant le client OpenAI pointant vers l'API Groq
-    avec le modèle GPT-OSS 20B.
+    Fonction centralisée : 
+    1. Priorité à Groq (via SDK OpenAI standard, modèles rapides).
+    2. Secours automatique sur Gemini (gemini-3.8-flash) en cas de besoin.
     """
-    groq_key = st.secrets.get("GROQ_API_KEY")
-    if not groq_key:
-        return "Erreur IA -> Groq: Clé absente des secrets"
-
-    try:
-        # Initialisation du client configuré pour l'endpoint Groq
-        client = OpenAI(
-            api_key=groq_key.strip(),
-            base_url="https://api.groq.com/openai/v1",
-        )
-
-        # Appel via l'API Responses/Completions de Groq
-        response = client.responses.create(
-            input=prompt_texte,
-            model="openai/gpt-oss-20b",
-        )
-        
-        if response and hasattr(response, "output_text"):
-            return response.output_text.strip()
-            
-    except Exception as e:
-        return f"Erreur IA -> Groq (GPT-OSS): {e}"
-
-    return "Erreur : Impossible de récupérer la réponse de l'IA."
+    erreurs = []
 
     # -------------------------------------------------------------
-    # 2. SECOURS AVEC GOOGLE GEMINI
+    # 1. TENTATIVE AVEC GROQ (via SDK OpenAI)
+    # -------------------------------------------------------------
+    groq_key = st.secrets.get("GROQ_API_KEY")
+    if groq_key:
+        try:
+            client = OpenAI(
+                api_key=groq_key.strip(),
+                base_url="https://api.groq.com/openai/v1",
+            )
+            # Liste des modèles Groq à tester
+            groq_models = [
+                "llama-3.1-8b-instant",
+                "mixtral-8x7b-32768",
+                "llama3-8b-8192"
+            ]
+            
+            for g_model in groq_models:
+                try:
+                    response = client.chat.completions.create(
+                        model=g_model,
+                        messages=[{"role": "user", "content": prompt_texte}],
+                        temperature=temperature,
+                    )
+                    if response.choices and response.choices[0].message.content:
+                        return response.choices[0].message.content.strip()
+                except Exception as e_inner:
+                    erreurs.append(f"Groq ({g_model}): {e_inner}")
+
+        except Exception as e:
+            erreurs.append(f"Groq Init: {e}")
+    else:
+        erreurs.append("Groq: Clé 'GROQ_API_KEY' absente des secrets")
+
+    # -------------------------------------------------------------
+    # 2. SECOURS AUTOMATIQUE AVEC GOOGLE GEMINI
     # -------------------------------------------------------------
     gemini_key = st.secrets.get("GEMINI_API_KEY")
     if gemini_key:
         try:
-            genai.configure(api_key=gemini_key)
-            # Liste des modèles Gemini à tester
-            gemini_models = ["gemini-2.0-flash", "gemini-1.5-flash"]
+            genai.configure(api_key=gemini_key.strip())
             generation_config = {"temperature": temperature}
             
-            for gem_model in gemini_models:
-                try:
-                    model = genai.GenerativeModel(gem_model)
-                    res = model.generate_content(prompt_texte, generation_config=generation_config)
-                    if res and res.text:
-                        return res.text.strip()
-                except Exception as e_inner:
-                    erreurs.append(f"Gemini ({gem_model}): {e_inner}")
+            # Utilisation du modèle actif Gemini
+            model = genai.GenerativeModel("gemini-3.8-flash")
+            res = model.generate_content(prompt_texte, generation_config=generation_config)
+            if res and res.text:
+                return res.text.strip()
         except Exception as e:
-            erreurs.append(f"Gemini (config): {e}")
+            erreurs.append(f"Gemini: {e}")
     else:
-        erreurs.append("Gemini: Clé 'GEMINI_API_KEY' non trouvée dans st.secrets")
+        erreurs.append("Gemini: Clé 'GEMINI_API_KEY' absente des secrets")
 
-    # En cas d'échec global, retour du détail des erreurs
+    # Si les deux services échouent, on retourne le bilan des erreurs
     return f"Erreur IA -> " + " | ".join(erreurs)
     
+
+
 # 1. Configuration unique de la page
 st.set_page_config(
     page_title="Ophélie Bascou Drimaracci",
