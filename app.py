@@ -83,8 +83,6 @@ menu_selection = st.sidebar.radio(
         "📐 Grammaire Visuelle & Accords"
     ]
 )
-elif menu_selection == "📐 Grammaire Visuelle & Accords":
-    afficher_page_grammaire(interroger_ia)
 
 PLURAL_SUBJECTS = {
     "ils", "elles", "les", "des", "ces", "mes", "tes", "ses", "nos", "vos", "leurs",
@@ -643,6 +641,9 @@ elif menu_selection == "🎤 Aide à la dictée":
                 "📄 Page 4 : Jour 4 (Dictée Finale)"
             ])
 
+elif menu_selection == "📐 Grammaire Visuelle & Accords":
+    afficher_page_grammaire(interroger_ia)
+    
             def format_to_str(content):
                 if isinstance(content, list):
                     return "\n".join([format_to_str(item) for item in content])
