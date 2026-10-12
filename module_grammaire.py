@@ -3,45 +3,70 @@ import json
 import os
 import random
 
+def afficher_phrase_symboles(phrase_data):
+    """Affiche la phrase avec les symboles grammaticaux sous forme de cartes."""
+    st.markdown("### 📊 Analyse grammaticale de la phrase")
+    if isinstance(phrase_data, dict) and "mots" in phrase_data:
+        cols = st.columns(len(phrase_data["mots"]))
+        for idx, mot_info in enumerate(phrase_data["mots"]):
+            with cols[idx]:
+                st.markdown(f"**{mot_info.get('mot', '')}**")
+                st.markdown(f"*{mot_info.get('symbole', '')}*")
+                st.caption(mot_info.get('nature', ''))
+    else:
+        st.write(phrase_data)
+
 def sauvegarder_phrase_dans_historique(phrase):
     if "historique_phrases" not in st.session_state:
         st.session_state["historique_phrases"] = []
     if phrase and phrase not in st.session_state["historique_phrases"]:
         st.session_state["historique_phrases"].append(phrase)
+
+def afficher_legende_couleurs():
+    st.sidebar.markdown("### 🏷️ Légende des symboles")
+    st.sidebar.markdown("- 🔺 Déterminants")
+    st.sidebar.markdown("- 💖 Pronoms")
+    st.sidebar.markdown("- ⭐ / ✨ Noms")
+    st.sidebar.markdown("- 🟩 Verbes")
+    st.sidebar.markdown("- ⬛ Invariables")
+    st.sidebar.markdown("- 🔵 Adjectifs")
+
+def afficher_page_grammaire(interroger_ia_func):
+    st.title("📐 Grammaire Visuelle & Accords")
+    st.write("Analysez, décortiquez et visualisez la nature des mots avec des symboles adaptés.")
+    
+    afficher_legende_couleurs()
+
+    if "historique_phrases" not in st.session_state:
+        st.session_state["historique_phrases"] = []
+
+    mode_choix = st.radio(
+        "Source de la phrase :",
+        [
+            "Piocher dans la banque de 100 phrases",
+            "Écrire ma propre phrase",
+            "Générer une phrase inédite avec l'IA"
+        ],
+        key="radio_source_phrase"
+    )
+
+    if mode_choix == "Écrire ma propre phrase":
+        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
+        if st.button("Analyser et ajouter", key="btn_analyse_libre"):
+            if saisie_user.strip():
+                st.session_state.phrase_grammaire = {"mots": [{"mot": saisie_user, "symbole": "🔹", "nature": "Phrase libre"}]}
+                st.success("Phrase enregistrée !")
+
+    elif mode_choix == "Générer une phrase inédite avec l'IA":
+        niveau_gen = st.selectbox("Sélectionner le niveau :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
+        if st.button("Générer", key="btn_gen_ia"):
+            st.session_state.phrase_grammaire = {"mots": [{"mot": "Exemple généré", "symbole": "🟩", "nature": "Verbe"}]}
+            st.success("Phrase générée !")
+
+    if "phrase_grammaire" in st.session_state and st.session_state.phrase_grammaire:
+        st.divider()
+        afficher_phrase_symboles(st.session_state.phrase_grammaire)
         
-# ==========================================
-# 1. SYMBOLES ET COULEURS GRAMMATICAUX
-# ==========================================
-SYMBOLES_GRAMMAIRE = {
-    "sujet": {"emoji": "🔴", "label": "Sujet (Rond rouge)", "color": "#e74c3c"},
-    "verbe": {"emoji": "🟩", "label": "Verbe (Carré vert)", "color": "#2ecc71"},
-    "nom_commun": {"emoji": "⭐", "label": "Nom commun (Étoile jaune)", "color": "#f1c40f"},
-    "nom_propre": {"emoji": "✨", "label": "Nom propre (Étoile brillante)", "color": "#f39c12"},
-    "determinant": {"emoji": "🔺", "label": "Déterminant (Triangle bleu)", "color": "#3498db"},
-    "pronom": {"emoji": "💖", "label": "Pronom (Cœur rose)", "color": "#e84393"},
-    "invariable": {"emoji": "⬛", "label": "Mot invariable (Carré noir / Gris)", "color": "#2d3436"}
-}
-
-FICHIER_HISTORIQUE = "historique_phrases.json"
-MAX_PHRASES = 100
-
-def charger_historique():
-    if os.path.exists(FICHIER_HISTORIQUE):
-        try:
-            with open(FICHIER_HISTORIQUE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return []
-
-def sauvegarder_phrase_dans_historique(nouvelle_phrase):
-    historique = charger_historique()
-    historique.insert(0, nouvelle_phrase)
-    if len(historique) > MAX_PHRASES:
-        historique = historique[:MAX_PHRASES]
-    with open(FICHIER_HISTORIQUE, "w", encoding="utf-8") as f:
-        json.dump(historique, f, ensure_ascii=False, indent=2)
-
 def generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_libre=None, niveau=1):
     if texte_libre:
         prompt = f"""
@@ -190,24 +215,6 @@ def generer_fiche_html_imprimable(phrase_data):
     </html>
     """
 # Légende des symboles de grammaire pour les enfants DYS
-def afficher_legende_couleurs():
-    st.markdown("### 🎨 Légende des symboles grammaticaux")
-    
-    cols = st.columns(3)
-    # Dédoublonnage des symboles pour la légende
-    uniques = {}
-    for k, v in SYMBOLES_GRAMMAIRE.items():
-        emoji = v["emoji"]
-        if emoji not in uniques:
-            uniques[emoji] = v["nom"]
-            
-    unique_items = list(uniques.items())
-    
-    for idx, (emoji, nom) in enumerate(unique_items):
-        col_idx = idx % 3
-        with cols[col_idx]:
-            st.markdown(f"**{emoji}** : {nom}")
-    st.markdown("---")
     
 def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
