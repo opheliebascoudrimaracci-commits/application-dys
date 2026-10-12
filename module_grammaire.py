@@ -22,7 +22,7 @@ def afficher_page_grammaire(interroger_ia_func):
     st.title("📐 Grammaire Visuelle & Accords")
     st.write("Analysez, décortiquez et visualisez la nature des mots avec des symboles adaptés.")
     
-    # Légende intégrée directement (aucun risque de fonction manquante)
+    # Légende intégrée directement
     st.sidebar.markdown("### 🏷️ Légende des symboles")
     st.sidebar.markdown("- 🔺 Déterminants")
     st.sidebar.markdown("- 💖 Pronoms")
@@ -31,36 +31,39 @@ def afficher_page_grammaire(interroger_ia_func):
     st.sidebar.markdown("- ⬛ Invariables")
     st.sidebar.markdown("- 🔵 Adjectifs")
 
-    if "historique_phrases" not in st.session_state:
-        st.session_state["historique_phrases"] = []
+    # Initialisation de la session
+    if "phrase_grammaire" not in st.session_state:
+        st.session_state.phrase_grammaire = ""
 
+    # Choix du mode
     mode_choix = st.radio(
         "Source de la phrase :",
         [
-            "Piocher dans la banque de 100 phrases",
             "Écrire ma propre phrase",
             "Générer une phrase inédite avec l'IA"
         ],
-        key="radio_source_phrase"
+        key="radio_source_phrase_unique"
     )
 
+    # Gestion de la saisie
     if mode_choix == "Écrire ma propre phrase":
-        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
-        if st.button("Analyser et ajouter", key="btn_analyse_libre"):
+        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre_unique")
+        if st.button("Analyser et ajouter", key="btn_analyse_libre_unique"):
             if saisie_user.strip():
-                st.session_state.phrase_grammaire = {"mots": [{"mot": saisie_user, "symbole": "🔹", "nature": "Phrase libre"}]}
+                st.session_state.phrase_grammaire = saisie_user
                 st.success("Phrase enregistrée !")
 
     elif mode_choix == "Générer une phrase inédite avec l'IA":
-        niveau_gen = st.selectbox("Sélectionner le niveau :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
-        if st.button("Générer", key="btn_gen_ia"):
-            st.session_state.phrase_grammaire = {"mots": [{"mot": "Exemple généré", "symbole": "🟩", "nature": "Verbe"}]}
+        niveau_gen = st.selectbox("Sélectionner le niveau :", ["CP", "CE1", "CE2"], key="select_niveau_gen_unique")
+        if st.button("Générer", key="btn_gen_ia_unique"):
+            st.session_state.phrase_grammaire = "Le chat noir mange une souris."
             st.success("Phrase générée !")
 
-    if "phrase_grammaire" in st.session_state and st.session_state.phrase_grammaire:
+    # Affichage sécurisé
+    if st.session_state.phrase_grammaire:
         st.divider()
-        afficher_phrase_symboles(st.session_state.phrase_grammaire)
-        
+        st.markdown("### 📊 Analyse de la phrase :")
+        st.write(st.session_state.phrase_grammaire)
 
 def sauvegarder_phrase_dans_historique(phrase):
     if "historique_phrases" not in st.session_state:
