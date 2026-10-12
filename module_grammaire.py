@@ -3,6 +3,8 @@ import json
 import os
 import random
 
+import streamlit as st
+
 def afficher_phrase_symboles(phrase_data):
     """Affiche la phrase avec les symboles grammaticaux sous forme de cartes."""
     st.markdown("### 📊 Analyse grammaticale de la phrase")
@@ -16,13 +18,11 @@ def afficher_phrase_symboles(phrase_data):
     else:
         st.write(phrase_data)
 
-def sauvegarder_phrase_dans_historique(phrase):
-    if "historique_phrases" not in st.session_state:
-        st.session_state["historique_phrases"] = []
-    if phrase and phrase not in st.session_state["historique_phrases"]:
-        st.session_state["historique_phrases"].append(phrase)
-
-def afficher_legende_couleurs():
+def afficher_page_grammaire(interroger_ia_func):
+    st.title("📐 Grammaire Visuelle & Accords")
+    st.write("Analysez, décortiquez et visualisez la nature des mots avec des symboles adaptés.")
+    
+    # Légende intégrée directement (aucun risque de fonction manquante)
     st.sidebar.markdown("### 🏷️ Légende des symboles")
     st.sidebar.markdown("- 🔺 Déterminants")
     st.sidebar.markdown("- 💖 Pronoms")
@@ -30,12 +30,6 @@ def afficher_legende_couleurs():
     st.sidebar.markdown("- 🟩 Verbes")
     st.sidebar.markdown("- ⬛ Invariables")
     st.sidebar.markdown("- 🔵 Adjectifs")
-
-def afficher_page_grammaire(interroger_ia_func):
-    st.title("📐 Grammaire Visuelle & Accords")
-    st.write("Analysez, décortiquez et visualisez la nature des mots avec des symboles adaptés.")
-    
-    afficher_legende_couleurs()
 
     if "historique_phrases" not in st.session_state:
         st.session_state["historique_phrases"] = []
@@ -67,6 +61,22 @@ def afficher_page_grammaire(interroger_ia_func):
         st.divider()
         afficher_phrase_symboles(st.session_state.phrase_grammaire)
         
+
+def sauvegarder_phrase_dans_historique(phrase):
+    if "historique_phrases" not in st.session_state:
+        st.session_state["historique_phrases"] = []
+    if phrase and phrase not in st.session_state["historique_phrases"]:
+        st.session_state["historique_phrases"].append(phrase)
+
+def afficher_legende_couleurs():
+    st.sidebar.markdown("### 🏷️ Légende des symboles")
+    st.sidebar.markdown("- 🔺 Déterminants")
+    st.sidebar.markdown("- 💖 Pronoms")
+    st.sidebar.markdown("- ⭐ / ✨ Noms")
+    st.sidebar.markdown("- 🟩 Verbes")
+    st.sidebar.markdown("- ⬛ Invariables")
+    st.sidebar.markdown("- 🔵 Adjectifs")
+
 def generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_libre=None, niveau=1):
     if texte_libre:
         prompt = f"""
