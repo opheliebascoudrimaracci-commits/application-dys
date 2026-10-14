@@ -1001,95 +1001,6 @@ def generer_fiche_html_imprimable(phrase_data):
     """
 # Légende des symboles de grammaire pour les enfants DYS
     
-def afficher_page_grammaire(fonction_appel_ia):
-    st.header("📐 Module Grammaire Visuelle & Accords")
-    
-    mode_choix = st.radio(
-        "Source de la phrase :",
-        ["Piocher dans la banque de 100 phrases", "Écrire ma propre phrase", "Générer une phrase inédite avec l'IA"],
-        horizontal=True,
-        key="mode_grammaire_radio"
-    )
-
-    historique = charger_historique()
-
-    if mode_choix == "Piocher dans la banque de 100 phrases":
-        niveau_sel = st.selectbox("Sélectionner le niveau :", [1, 2, 3], format_func=lambda x: f"Niveau {x}", key="niv_sel_gram")
-        phrases_dispos = [p for p in historique if p.get("niveau") == niveau_sel]
-        
-        if phrases_dispos:
-            st.session_state.phrase_grammaire = random.choice(phrases_dispos)
-        else:
-            st.info("Génération d'une nouvelle phrase...")
-            nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, niveau=niveau_sel)
-            sauvegarder_phrase_dans_historique(nouvelle)
-            st.session_state.phrase_grammaire = nouvelle
-
-    # Choix du mode
-    mode_choix = st.radio(
-        "Source de la phrase :",
-        [
-            "Écrire ma propre phrase",
-            "Générer une phrase inédite avec l'IA"
-        ],
-        key="radio_source_phrase_unique"
-    )
-
-    # Gestion de la saisie
-    if mode_choix == "Écrire ma propre phrase":
-        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre_unique")
-        if st.button("Analyser et ajouter", key="btn_analyse_libre_unique"):
-            if saisie_user.strip():
-                st.session_state.phrase_grammaire = saisie_user
-                st.success("Phrase enregistrée !")
-
-    if mode_choix == "Générer une phrase inédite avec l'IA":
-        niveau_gen = st.selectbox("Sélectionner le niveau :", ["CP", "CE1", "CE2"], key="select_niveau_gen_unique")
-        if st.button("Générer", key="btn_gen_ia_unique"):
-            st.session_state.phrase_grammaire = "Le chat noir mange une souris."
-            st.success("Phrase générée !")
-
-    # Affichage sécurisé
-    if st.session_state.phrase_grammaire:
-        st.divider()
-        st.markdown("### 📊 Analyse de la phrase :")
-        st.write(st.session_state.phrase_grammaire)
-
-
-    # --- SOUS-ONGLETS DE GRAMMAIRE ---
-    tab_ex, tab_exo, tab_acc = st.tabs(["📖 Exemple", "✏️ Exercice (Symboles)", "✍️ Accords"])
-
-    with tab_ex:
-        st.subheader("Analyse de la phrase")
-        afficher_legende_couleurs()
-        afficher_phrase_symboles(phrase)
-
-    with tab_exo:
-        st.subheader("Identifie le symbole de chaque mot")
-        with st.expander("ℹ️ Rappel du code couleur"):
-            afficher_legende_couleurs()
-            
-        mots = phrase["mots"]
-        cols = st.columns(len(mots))
-        choix_eleve = {}
-        
-        for idx, m in enumerate(mots):
-            with cols[idx]:
-                st.markdown(f"<h4 style='text-align: center;'>{m['mot']}</h4>", unsafe_allow_html=True)
-                choix_eleve[idx] = st.selectbox(
-                    f"Symb {idx}",
-                    ["-- Choisir --"] + [s["label"] for s in SYMBOLES_GRAMMAIRE.values()],
-                    key=f"symb_sel_gram_{idx}",
-                    label_visibility="collapsed"
-                )
-
-        if st.button("Valider mes symboles", key="valider_symb_gram"):
-            exact = True
-            for idx, m in enumerate(mots):
-                label_attendu = SYMBOLES_GRAMMAIRE.get(m["type"], {}).get("label", "")
-                if choix_eleve[idx] != label_attendu:
-                    exact = False
-            if exact:
                 st.balloons()
                 st.success("Bravo ! Tout est correct ! 🎉")
             else:
@@ -1114,14 +1025,156 @@ def afficher_page_grammaire(fonction_appel_ia):
             else:
                 st.error(f"Attention, la bonne réponse était : '{accord.get('reponse')}'")
 
-    st.divider()
-    html_fiche = generer_fiche_html_imprimable(phrase)
-    st.download_button(
-        label="📥 Télécharger la fiche d'exercice",
-        data=html_fiche,
-        file_name=f"fiche_grammaire_niveau_{phrase.get('niveau', 1)}.html",
-        mime="text/html",
-        type="primary",
-        key="download_fiche_gram"
-    )
+def afficher_page_grammaire(fonction_appel_ia):
+    st.header("📐 Module Grammaire Visuelle & Accords")
     
+    # 1. Choix unique de la source
+    mode_choix = st.radio(
+        "Source de la phrase :",
+        [
+            "Piocher dans la banque de 100 phrases",
+            "Écrire ma propre phrase",
+            "Générer une phrase inédite avec l'IA"
+        ],
+        horizontal=True,
+        key="mode_grammaire_radio_unique"
+    )
+
+    historique = charger_historique()
+
+    # Initialisation de la session si besoin
+    if "phrase_grammaire" not in st.session_state:
+        st.session_state.phrase_grammaire = None
+
+    if mode_choix == "Piocher dans la banque de 100 phrases":
+        niveau_sel = st.selectbox("Sélectionner le niveau :", [1, 2, 3], format_func=lambda x: f"Niveau {x}", key="niv_sel_gram")
+        phrases_dispos = [p for p in historique if p.get("niveau") == niveau_sel]
+        
+        if phrases_dispos:
+            st.session_state.phrase_grammaire = random.choice(phrases_dispos)
+        else:
+            st.info("Génération d'une nouvelle phrase...")
+            nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, niveau=niveau_sel)
+            sauvegarder_phrase_dans_historique(nouvelle)
+            st.session_state.phrase_grammaire = nouvelle
+
+    elif mode_choix == "Écrire ma propre phrase":
+        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre_ unique")
+        if st.button("Valider la phrase", key="btn_valider_libre"):
+            if saisie_user.strip():
+                # On structure sous forme de dictionnaire pour éviter les bugs d'affichage
+                st.session_state.phrase_grammaire = {
+                    "texte": saisie_user,
+                    "niveau": 1,
+                    "mots": [{"mot": m, "type": "autre"} for m in saisie_user.split()],
+                    "accord": {"phrase_trou": saisie_user, "options": ["s", "e", "ent"], "reponse": ""}
+                }
+                st.success("Phrase enregistrée !")
+
+    elif mode_choix == "Générer une phrase inédite avec l'IA":
+        niveau_gen = st.selectbox("Sélectionner le niveau :", ["CP", "CE1", "CE2"], key="select_niveau_gen_unique")
+        if st.button("Générer", key="btn_gen_ia_unique"):
+            # Appel de l'IA (ou structure par défaut en attendant)
+            texte_gen = "Le chat noir mange une souris."
+            st.session_state.phrase_grammaire = {
+                "texte": texte_gen,
+                "niveau": 1,
+                "mots": [{"mot": m, "type": "autre"} for m in texte_gen.split()],
+                "accord": {"phrase_trou": texte_gen, "options": ["s", "e", "ent"], "reponse": "s"}
+            }
+            st.success("Phrase générée !")
+
+    # Récupération sécurisée de la phrase courante
+    phrase = st.session_state.get("phrase_grammaire")
+
+    if not phrase:
+        st.info("Veuillez sélectionner, écrire ou générer une phrase pour commencer.")
+        return
+
+    # Si la phrase est juste une chaîne de texte simple, on la convertit en dictionnaire pour les onglets
+    if isinstance(phrase, str):
+        phrase = {
+            "texte": phrase,
+            "niveau": 1,
+            "mots": [{"mot": m, "type": "autre"} for m in phrase.split()],
+            "accord": {"phrase_trou": phrase, "options": ["s", "e", "ent"], "reponse": ""}
+        }
+
+    st.divider()
+    st.markdown(f"### 📊 Analyse de la phrase : {phrase.get('texte', '')}")
+
+    # --- SOUS-ONGLETS DE GRAMMAIRE ---
+    tab_ex, tab_exo, tab_acc = st.tabs(["📖 Exemple", "✏️ Exercice (Symboles)", "✍️ Accords"])
+
+    with tab_ex:
+        st.subheader("Analyse de la phrase")
+        if 'afficher_legende_couleurs' in globals():
+            afficher_legende_couleurs()
+        if 'afficher_phrase_symboles' in globals():
+            afficher_phrase_symboles(phrase)
+        else:
+            st.write(phrase.get("texte", ""))
+
+    with tab_exo:
+        st.subheader("Identifie le symbole de chaque mot")
+        if 'afficher_legende_couleurs' in globals():
+            with st.expander("ℹ️ Rappel du code couleur"):
+                afficher_legende_couleurs()
+            
+        mots = phrase.get("mots", [])
+        if mots:
+            cols = st.columns(len(mots) if len(mots) > 0 else 1)
+            choix_eleve = {}
+            
+            for idx, m in enumerate(mots):
+                with cols[idx]:
+                    st.markdown(f"<h4 style='text-align: center;'>{m.get('mot', '')}</h4>", unsafe_allow_html=True)
+                    choix_eleve[idx] = st.selectbox(
+                        f"Symb {idx}",
+                        ["-- Choisir --"] + [s.get("label", "") for s in SYMBOLES_GRAMMAIRE.values()] if 'SYMBOLES_GRAMMAIRE' in globals() else ["-- Choisir --"],
+                        key=f"symb_sel_gram_{idx}",
+                        label_visibility="collapsed"
+                    )
+
+            if st.button("Valider mes symboles", key="valider_symb_gram"):
+                exact = True
+                for idx, m in enumerate(mots):
+                    label_attendu = SYMBOLES_GRAMMAIRE.get(m.get("type"), {}).get("label", "") if 'SYMBOLES_GRAMMAIRE' in globals() else ""
+                    if choix_eleve[idx] != label_attendu:
+                        exact = False
+                if exact:
+                    st.balloons()
+                    st.success("Bravo ! Tout est correct ! 🎉")
+                else:
+                    st.warning("Il y a des erreurs, vérifie l'onglet Exemple.")
+
+    with tab_acc:
+        st.subheader("Exercice d'accord")
+        accord = phrase.get("accord", {})
+        st.markdown(f"### {accord.get('phrase_trou', phrase.get('texte', ''))}")
+        
+        choix_accord = st.radio(
+            "Sélectionne la réponse correcte :",
+            options=accord.get("options", ["Rien (pas d'accord)", "s", "e", "ent"]),
+            horizontal=True,
+            key="radio_accord_gram"
+        )
+        
+        if st.button("Vérifier l'accord", key="btn_verif_accord"):
+            if choix_accord == accord.get("reponse"):
+                st.balloons()
+                st.success("Excellente réponse ! 🌟")
+            else:
+                st.error(f"Attention, la bonne réponse était : '{accord.get('reponse')}'")
+
+    st.divider()
+    if 'generer_fiche_html_imprimable' in globals():
+        html_fiche = generer_fiche_html_imprimable(phrase)
+        st.download_button(
+            label="📥 Télécharger la fiche d'exercice",
+            data=html_fiche,
+            file_name=f"fiche_grammaire_niveau_{phrase.get('niveau', 1)}.html",
+            mime="text/html",
+            type="primary",
+            key="download_fiche_gram"
+        )
