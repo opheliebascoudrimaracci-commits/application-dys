@@ -1138,7 +1138,6 @@ elif mode_choix == "Générer une phrase inédite avec l'IA":
             horizontal=True,
             key="radio_accord_gram"
         )
-        
         if st.button("Vérifier l'accord", key="btn_verif_accord"):
             if choix_accord == accord.get("reponse"):
                 st.balloons()
