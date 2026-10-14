@@ -973,58 +973,34 @@ def afficher_phrase_symboles(phrase_data):
 
 def generer_fiche_html_imprimable(phrase_data):
     mots_html = []
-    for m in phrase_data["mots"]:
-        t = m["type"]
-        info_symb = SYMBOLES_GRAMMAIRE.get(t, {"emoji": ""})
-        emoji_display = info_symb["emoji"]
+    for m in phrase_data.get("mots", []):
+        t = m.get("type", "autre")
+        info_symb = SYMBOLES_GRAMMAIRE.get(t, {"emoji": ""}) if 'SYMBOLES_GRAMMAIRE' in globals() else {"emoji": ""}
+        emoji_display = info_symb.get("emoji", "")
         if m.get("is_sujet") and t != "sujet":
-            emoji_display = f"🔴 {info_symb['emoji']}"
+            emoji_display = f"🔴 {emoji_display}"
             
         mots_html.append(f"""
         <div style="display: inline-block; text-align: center; margin: 15px 20px; vertical-align: top;">
-            <div style="font-size: 28px; font-weight: bold; font-family: Arial, sans-serif; color: #2c3e50; margin-bottom: 8px;">{m['mot']}</div>
+            <div style="font-size: 28px; font-weight: bold; font-family: Arial, sans-serif; color: #2c3e50; margin-bottom: 8px;">{m.get('mot', '')}</div>
             <div style="font-size: 26px;">{emoji_display}</div>
         </div>
         """)
 
     accord = phrase_data.get("accord", {})
-    return f"""
+    html_fiche = f"""
     <!DOCTYPE html>
     <html lang="fr">
     <head><meta charset="UTF-8"><title>Fiche Grammaire</title></head>
     <body style="font-family: sans-serif; padding: 40px;">
         <h1>📐 Fiche d'Exercice Grammaire & Accords</h1>
         <div style="display: flex; flex-wrap: wrap; justify-content: center; padding: 20px;">{''.join(mots_html)}</div>
-        <p style="font-size: 22px; font-weight: bold;">{accord.get('phrase_trou', phrase_data['texte'])}</p>
+        <p style="font-size: 22px; font-weight: bold;">{accord.get('phrase_trou', phrase_data.get('texte', ''))}</p>
     </body>
     </html>
     """
-# Légende des symboles de grammaire pour les enfants DYS
-    
-                st.balloons()
-                st.success("Bravo ! Tout est correct ! 🎉")
-            else:
-                st.warning("Il y a des erreurs, vérifie l'onglet Exemple.")
-
-    with tab_acc:
-        st.subheader("Exercice d'accord")
-        accord = phrase.get("accord", {})
-        st.markdown(f"### {accord.get('phrase_trou', phrase['texte'])}")
-        
-        choix_accord = st.radio(
-            "Sélectionne la réponse correcte :",
-            options=accord.get("options", ["Rien (pas d'accord)", "s", "e", "ent"]),
-            horizontal=True,
-            key="radio_accord_gram"
-        )
-        
-        if st.button("Vérifier l'accord", key="btn_verif_accord"):
-            if choix_accord == accord.get("reponse"):
-                st.balloons()
-                st.success("Excellente réponse ! 🌟")
-            else:
-                st.error(f"Attention, la bonne réponse était : '{accord.get('reponse')}'")
     return html_fiche
+    
 
 def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
