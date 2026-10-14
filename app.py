@@ -253,20 +253,20 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False,
         matched_complex = False
         if sounds_dict:
             for length in [4, 3, 2]:
-                if i + length <= n:
-                    sub = w_lower[i:i+length]
-                    if sub in sounds_dict:
-                        rule = sounds_dict[sub]
-                        blocks.append({
-                            'text': word[i:i+length], 
-                            'is_muted': False, 
-                            'render_type': 'color_text', 
-                            'color': rule[0], 
-                            'phoneme': rule[1]
-                        })
-                        i += length
-                        matched_complex = True
-                        break
+            if i + length <= n:
+                sub = w_lower[i:i+length]
+                if sub in sounds_dict:
+                     rule = sounds_dict[sub]
+                     blocks.append({
+                          'text': word[i:i+length], 
+                          'is_muted': False, 
+                          'render_type': 'color_text', 
+                           'color': rule[0], 
+                        'phoneme': rule[1]
+                      })
+                      i += length
+                      matched_complex = True
+                      break
         if matched_complex:
             continue
 
