@@ -1130,7 +1130,7 @@ elif mode_choix == "Générer une phrase inédite avec l'IA":
     with tab_acc:
         st.subheader("Exercice d'accord")
         accord = phrase.get("accord", {})
-        st.markdown(f"### {accord.get('phrase_trou', phrase['texte'])}")
+        st.markdown(f"### {accord.get('phrase_trou', phrase.get('texte', ''))}")
         
         choix_accord = st.radio(
             "Sélectionne la réponse correcte :",
