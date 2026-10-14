@@ -692,9 +692,8 @@ elif menu_selection == "🎤 Aide à la dictée":
                 "📄 Page 4 : Jour 4 (Dictée Finale)"
             ])
 
-elif menu_selection == "Grammaire Visuelle":  # Gardez le texte exact de votre menu
-     afficher_page_grammaire()
-            
+elif menu_selection == "📐 Grammaire Visuelle & Accords":
+    afficher_page_grammaire(interroger_ia)         
 
 # Placez cette fonction tout en haut, alignée tout à gauche :
 def format_to_str(content):
