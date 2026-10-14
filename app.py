@@ -692,13 +692,10 @@ elif menu_selection == "🎤 Aide à la dictée":
                 "📄 Page 4 : Jour 4 (Dictée Finale)"
             ])
 
-elif menu_selection == "📐 Grammaire Visuelle & Accords":
-    try:
-        from module_grammaire import afficher_page_grammaire
-        afficher_page_grammaire(interroger_ia)
-    except Exception as e:
-        st.error(f"Erreur lors du chargement du module de grammaire : {e}")
-    
+elif menu_selection == "Grammaire Visuelle":  # Gardez le texte exact de votre menu
+     afficher_page_grammaire()
+            
+
 # Placez cette fonction tout en haut, alignée tout à gauche :
 def format_to_str(content):
     if isinstance(content, list):
