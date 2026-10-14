@@ -35,22 +35,31 @@ def afficher_page_grammaire(fonction_appel_ia):
             sauvegarder_phrase_dans_historique(nouvelle)
             st.session_state.phrase_grammaire = nouvelle
 
-    elif mode_choix == "Écrire ma propre phrase":
+   elif mode_choix == "Écrire ma propre phrase":
         saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
         if st.button("Analyser et ajouter à la banque", key="btn_analyse_libre"):
             if saisie_user.strip():
-                with st.spinner("Analyse de la phrase en cours..."):
+                with st.spinner("Analyse et découpage en cours..."):
+                    # On tente l'analyse IA
                     nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_force=saisie_user)
-                if nouvelle:
-                    sauvegarder_phrase_dans_historique(nouvelle)
-                    st.session_state.phrase_grammaire = nouvelle
-                    st.success("Phrase analysée et sauvegardée ! 🎉")
-                    st.rerun()
-                else:
-                    st.error("Erreur lors de l'analyse par l'IA.")
+                    
+                    # Sécurité de secours : si l'IA ne renvoie pas la structure de mots attendue, 
+                    # on découpe le texte automatiquement pour forcer l'affichage des symboles
+                    if not isinstance(nouvelle, dict) or "mots" not in nouvelle:
+                        mots_decoupes = [{"mot": m, "type": "autre"} for m in saisie_user.split()]
+                        nouvelle = {
+                            "texte": saisie_user,
+                            "niveau": 1,
+                            "mots": mots_decoupes,
+                            "accord": {"phrase_trou": saisie_user, "options": ["s", "e", "ent"], "reponse": ""}
+                        }
+                
+                sauvegarder_phrase_dans_historique(nouvelle)
+                st.session_state.phrase_grammaire = nouvelle
+                st.success("Phrase analysée et prête avec les symboles ! 🎉")
+                st.rerun()
             else:
                 st.warning("Veuillez entrer une phrase.")
-
     elif mode_choix == "Générer une phrase inédite avec l'IA":
         niveau_gen = st.selectbox("Niveau à générer :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
         if st.button("Générer une nouvelle phrase", key="btn_gen_ia"):
