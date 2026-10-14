@@ -35,7 +35,7 @@ def afficher_page_grammaire(fonction_appel_ia):
             sauvegarder_phrase_dans_historique(nouvelle)
             st.session_state.phrase_grammaire = nouvelle
 
-   elif mode_choix == "Écrire ma propre phrase":
+    elif mode_choix == "Écrire ma propre phrase":
         saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
         if st.button("Analyser et ajouter à la banque", key="btn_analyse_libre"):
             if saisie_user.strip():
