@@ -229,45 +229,45 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False,
         char = word[i]
         c_lower = char.lower()
 
-        # 2. CAS DE LA FIN DE MOT EN "-et" (ex: poulet, complet, bonnet)
-        # On vérifie si "et" est exactement à la fin du mot
-        if i == n - 2 and w_lower[i:i+2] == 'et' and n > 2:
-            blocks.append({
-                'text': word[i:i+2], 
-                'is_muted': False, 
-                'render_type': 'color_text', 
-                'color': '#8E44AD', 
-                'phoneme': 'é'
-            })
-            i += 2
-            continue
+    # 2. CAS DE LA FIN DE MOT EN "-et" (ex: poulet, complet, bonnet)
+    # On vérifie si "et" est exactement à la fin du mot
+    if i == n - 2 and w_lower[i:i+2] == 'et' and n > 2:
+         blocks.append({
+            'text': word[i:i+2], 
+            'is_muted': False, 
+            'render_type': 'color_text', 
+            'color': '#8E44AD', 
+            'phoneme': 'é'
+         })
+          i += 2
+          continue
 
-        # 3. Gestion du "th" (le t se prononce, le h est muet)
-        if i < n - 1 and w_lower[i:i+2] == 'th':
-            blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
-            blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
-            i += 2
-            continue
+    # 3. Gestion du "th" (le t se prononce, le h est muet)
+    if i < n - 1 and w_lower[i:i+2] == 'th':
+        blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
+        blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+        i += 2
+        continue
 
-        # 4. Sons complexes généraux du dictionnaire
-        matched_complex = False
-        if sounds_dict:
-            for length in [4, 3, 2]:
+    # 4. Sons complexes généraux du dictionnaire
+    matched_complex = False
+    if sounds_dict:
+        for length in [4, 3, 2]:
             if i + length <= n:
                 sub = w_lower[i:i+length]
                 if sub in sounds_dict:
-                     rule = sounds_dict[sub]
-                     blocks.append({
-                          'text': word[i:i+length], 
-                          'is_muted': False, 
-                          'render_type': 'color_text', 
-                           'color': rule[0], 
+                    rule = sounds_dict[sub]
+                    blocks.append({
+                        'text': word[i:i+length],
+                        'is_muted': False,
+                        'render_type': 'color_text',
+                        'color': rule[0],
                         'phoneme': rule[1]
-                      })
-                      i += length
-                      matched_complex = True
-                      break
-        if matched_complex:
+                    })
+                    i += length
+                    matched_complex = True
+                    break
+
             continue
 
         # 5. Gestion des lettres muettes et terminaisons ordinaires
