@@ -239,8 +239,8 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False,
             'color': '#8E44AD', 
             'phoneme': 'é'
          })
-          i += 2
-          continue
+        i += 2
+        continue
 
     # 3. Gestion du "th" (le t se prononce, le h est muet)
     if i < n - 1 and w_lower[i:i+2] == 'th':
