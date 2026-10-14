@@ -1024,6 +1024,7 @@ def generer_fiche_html_imprimable(phrase_data):
                 st.success("Excellente réponse ! 🌟")
             else:
                 st.error(f"Attention, la bonne réponse était : '{accord.get('reponse')}'")
+    return html_fiche
 
 def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
