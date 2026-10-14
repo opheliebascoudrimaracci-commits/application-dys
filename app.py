@@ -11,6 +11,7 @@ from openai import OpenAI
 import google.generativeai as genai
 from module_grammaire import afficher_page_grammaire
 
+
 # ==========================================
 # UTILITAIRE IA CENTRALISÉ (Groq / Gemini)
 # ==========================================
