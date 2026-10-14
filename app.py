@@ -1038,44 +1038,31 @@ def afficher_page_grammaire(fonction_appel_ia):
             sauvegarder_phrase_dans_historique(nouvelle)
             st.session_state.phrase_grammaire = nouvelle
 
-elif mode_choix == "Écrire ma propre phrase":
-    saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
-    if st.button("Analyser et ajouter à la banque", key="btn_analyse_libre"):
-        if saisie_user.strip():
-            # Initialisation de la variable 'nouvelle'
-            nouvelle = generer_ou_analyser_phrase_ia(interroger_ia, texte_force=saisie_user)
+    elif mode_choix == "Écrire ma propre phrase":
+        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
+        if st.button("Analyser et ajouter à la banque", key="btn_analyse_libre"):
+            if saisie_user.strip():
+                nouvelle = generer_ou_analyser_phrase_ia(interroger_ia, texte_force=saisie_user)
+                if nouvelle:
+                    sauvegarder_phrase_dans_historique(nouvelle)
+                    st.session_state.phrase_grammaire = nouvelle
+                    st.success("Phrase analysée et sauvegardée !")
+                else:
+                    st.error("Erreur lors de l'analyse.")
+            else:
+                st.warning("Veuillez entrer une phrase.")
+
+    elif mode_choix == "Générer une phrase inédite avec l'IA":
+        niveau_gen = st.selectbox("Niveau à générer :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
+        if st.button("Générer une nouvelle phrase", key="btn_gen_ia"):
+            with st.spinner("Génération en cours..."):
+                nouvelle = generer_ou_analyser_phrase_ia(interroger_ia, niveau=niveau_gen)
             if nouvelle:
                 sauvegarder_phrase_dans_historique(nouvelle)
                 st.session_state.phrase_grammaire = nouvelle
-                st.success("Phrase analysée et sauvegardée !")
+                st.success("Phrase générée et sauvegardée !")
             else:
-                st.error("Erreur lors de l'analyse.")
-        else:
-            st.warning("Veuillez entrer une phrase.")
-
-elif mode_choix == "Générer une phrase inédite avec l'IA":
-    niveau_gen = st.selectbox("Niveau à générer :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
-    if st.button("Générer une nouvelle phrase", key="btn_gen_ia"):
-        # Initialisation de la variable 'nouvelle' ici aussi
-        nouvelle = generer_ou_analyser_phrase_ia(interroger_ia, niveau=niveau_gen)
-        if nouvelle:
-            sauvegarder_phrase_dans_historique(nouvelle)
-            st.session_state.phrase_grammaire = nouvelle
-            st.success("Phrase générée et sauvegardée !")
-        else:
-            st.error("Erreur lors de la génération.")
-            
-    elif mode_choix == "Générer une phrase inédite avec l'IA":
-       niveau_gen = st.selectbox("Niveau à générer :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
-       if st.button("Générer une nouvelle phrase", key="btn_gen_ia"):
-          with st.spinner("Génération en cours..."):
-            nouvelle = generer_ou_analyser_phrase_ia(interroger_ia, niveau=niveau_gen)
-          if nouvelle:
-            sauvegarder_phrase_dans_historique(nouvelle)
-            st.session_state.phrase_grammaire = nouvelle
-            st.success("Phrase générée et sauvegardée !")
-          else:
-            st.error("Erreur lors de la génération par l'IA.")
+                st.error("Erreur lors de la génération par l'IA.")
 
     if "phrase_grammaire" not in st.session_state:
         if historique:
