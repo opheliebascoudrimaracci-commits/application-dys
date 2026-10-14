@@ -204,73 +204,126 @@ def count_syllables_approx(word):
     return max(1, count)
 
 # Fonction de découpage avec application garantie du dictionnaire de couleurs
-def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False, is_end_of_sentence=False):
+def parse_word_to_blocks(word, sounds_dict=None, is_plural_verb=False, keep_final_consonant=False, is_end_of_sentence=False):
+    """Découpe un mot en blocs pour l'affichage visuel et orthographique (adapté DYS)."""
     blocks = []
     clean_word = word.strip(".,;:?!'\"«» ")
     w_lower = clean_word.lower()
     n = len(word)
     i = 0
+    VOWELS = "aeiouyàâäéèêëîïôöùûüÿœæ"
     
     # 1. CAS DU MOT-OUTIL ISOLÉ "et"
     if w_lower == "et":
         if is_end_of_sentence:
-            # En fin de phrase -> Exclusion (pas de couleur ni phonème)
             for char in word:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
             return blocks
         else:
-            # En milieu de phrase -> Son é (#8E44AD)
             blocks.append({'text': word, 'is_muted': False, 'render_type': 'color_text', 'color': '#8E44AD', 'phoneme': 'é'})
             return blocks
 
-    sounds_dict = EXACT_COMPLEX_SOUNDS
+    if not sounds_dict:
+        sounds_dict = EXACT_COMPLEX_SOUNDS if 'EXACT_COMPLEX_SOUNDS' in globals() else {}
 
     while i < n:
         char = word[i]
         c_lower = char.lower()
 
-    # 2. CAS DE LA FIN DE MOT EN "-et" (ex: poulet, complet, bonnet)
-    # On vérifie si "et" est exactement à la fin du mot
-    if i == n - 2 and w_lower[i:i+2] == 'et' and n > 2:
-         blocks.append({
-            'text': word[i:i+2], 
-            'is_muted': False, 
-            'render_type': 'color_text', 
-            'color': '#8E44AD', 
-            'phoneme': 'é'
-         })
-        i += 2
-        continue
-
-    # 3. Gestion du "th" (le t se prononce, le h est muet)
-    if i < n - 1 and w_lower[i:i+2] == 'th':
-        blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
-        blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
-        i += 2
-        continue
-
-    # 4. Sons complexes généraux du dictionnaire
-    matched_complex = False
-    if sounds_dict:
-        for length in [4, 3, 2]:
-            if i + length <= n:
-                sub = w_lower[i:i+length]
-                if sub in sounds_dict:
-                    rule = sounds_dict[sub]
-                    blocks.append({
-                        'text': word[i:i+length],
-                        'is_muted': False,
-                        'render_type': 'color_text',
-                        'color': rule[0],
-                        'phoneme': rule[1]
-                    })
-                    i += length
-                    matched_complex = True
-                    break
-
+        # 2. CAS DE LA FIN DE MOT EN "-et" (ex: poulet, complet, bonnet)
+        if i == n - 2 and w_lower[i:i+2] == 'et' and n > 2:
+            blocks.append({
+                'text': word[i:i+2], 
+                'is_muted': False, 
+                'render_type': 'color_text', 
+                'color': '#8E44AD', 
+                'phoneme': 'é'
+            })
+            i += 2
             continue
 
-        # 5. Gestion des lettres muettes et terminaisons ordinaires
+        # 3. Gestion du "th" (le t se prononce, le h est muet)
+        if i < n - 1 and w_lower[i:i+2] == 'th':
+            blocks.append({'text': word[i], 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': 't'})
+            blocks.append({'text': word[i+1], 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+            i += 2
+            continue
+
+        # 4. Digrammes et trigrammes courants (eau, ch, ph, ou, an, in, oi...)
+        special_sounds = {
+            'eau': ('#D35400', 'o'),
+            'ch': ('#2980B9', 'ʃ'),
+            'ph': ('#8E44AD', 'f'),
+            'ou': ('#D35400', 'u'),
+            'on': ('#16A085', 'ɔ̃'),
+            'an': ('#27AE60', 'ɑ̃'),
+            'en': ('#27AE60', 'ɑ̃'),
+            'in': ('#8E44AD', 'ɛ̃'),
+            'un': ('#8E44AD', 'œ̃'),
+            'oi': ('#C0392B', 'wa'),
+            'gn': ('#7F8C8D', 'ɲ'),
+            'ui': ('#2980B9', 'ɥi'),
+            'eu': ('#D35400', 'ø'),
+            'au': ('#D35400', 'o')
+        }
+        
+        matched_special = False
+        # Trigrammes (3 lettres)
+        if i + 3 <= n and w_lower[i:i+3] in special_sounds:
+            sub3 = w_lower[i:i+3]
+            color, phoneme = special_sounds[sub3]
+            blocks.append({
+                'text': word[i:i+3],
+                'is_muted': False,
+                'render_type': 'color_text',
+                'color': color,
+                'phoneme': phoneme
+            })
+            i += 3
+            matched_special = True
+            continue
+
+        # Digrammes (2 lettres)
+        if i + 2 <= n and w_lower[i:i+2] in special_sounds:
+            sub2 = w_lower[i:i+2]
+            color, phoneme = special_sounds[sub2]
+            blocks.append({
+                'text': word[i:i+2],
+                'is_muted': False,
+                'render_type': 'color_text',
+                'color': color,
+                'phoneme': phoneme
+            })
+            i += 2
+            matched_special = True
+            continue
+
+        if matched_special:
+            continue
+
+        # 5. Sons complexes généraux du dictionnaire additionnel
+        matched_complex = False
+        if sounds_dict:
+            for length in [4, 3, 2]:
+                if i + length <= n:
+                    sub = w_lower[i:i+length]
+                    if sub in sounds_dict:
+                        rule = sounds_dict[sub]
+                        blocks.append({
+                            'text': word[i:i+length],
+                            'is_muted': False,
+                            'render_type': 'color_text',
+                            'color': rule[0],
+                            'phoneme': rule[1]
+                        })
+                        i += length
+                        matched_complex = True
+                        break
+
+        if matched_complex:
+            continue
+
+        # 6. Gestion des lettres muettes et terminaisons ordinaires
         if is_plural_verb and i >= n - 3:
             blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
             i += 1
@@ -298,10 +351,12 @@ def parse_word_to_blocks(word, is_plural_verb=False, keep_final_consonant=False,
             i += 1
             continue
 
+        # Caractère standard par défaut
         blocks.append({'text': char, 'is_muted': False, 'render_type': 'normal', 'color': None, 'phoneme': None})
         i += 1
         
     return blocks
+    
 
 def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word="", is_end_of_sentence=False, nb_syllables_override=None):
     clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
