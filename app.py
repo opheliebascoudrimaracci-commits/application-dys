@@ -714,145 +714,6 @@ def build_controls(key_prefix):
         "spacing": spacing,
         "font_choice": font_choice
     }
-
-# ==========================================
-# GESTION DES PAGES DU MENU LATÉRAL
-# ==========================================
-
-if menu_selection == "🏠 Présentation":
-    st.title("✏️ Application Pédagogique & Adaptation DYS")
-    st.subheader("Ophélie Bascou Drimaracci")
-    st.write("---")
-    st.markdown("""
-    Bienvenue sur cette application pédagogique conçue pour faciliter l'accès à la lecture 
-    et accompagner les enfants et élèves présentant des troubles **DYS** (dyslexie, dyspraxie).
-    
-    ### 🌟 Ce que propose l'application :
-    * **📄 Aide à la lecture de texte** : Saisissez ou collez n'importe quel texte pour l'adapter instantanément.
-    * **📷 Importation OCR** : Prenez en photo un livre ou une feuille pour en extraire le texte et l'adapter.
-    * **✨ Générateur d'histoires magiques** : Créez des histoires personnalisées selon différents niveaux de difficulté.
-    * **🎤 Aide à la dictée (Propulsée par l'IA)** : Analyse phonétique intelligente, découpage syllabique et génération de dictées contextuelles.
-    * **📐 Grammaire Visuelle & Accords** : Analyse syntaxique par symboles colorés, exercices interactifs d'accords et fiches d'exercices téléchargeables avec code couleur.
-    """)
-
-elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
-    st.title("📄 Aide à la lecture & OCR")
-    st.subheader("Ophélie Bascou Drimaracci")
-    
-    tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
-    
-    with tab1:
-        st.write("### Saisir ou coller un texte")
-        txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
-        if txt:
-            st.write("---")
-            opts = build_controls("histoire_t1")
-            render_full_dys_text(txt, **opts)
-
-    with tab2:
-        st.write("### 📷 Capturer ou importer une photo")
-        choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
-        file = st.camera_input("Cliquez pour prendre la photo du texte") if choix_source == "Prendre une photo en direct" else st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
-
-        if file:
-            img = Image.open(file)
-            st.image(img, caption="Image sélectionnée", use_container_width=True)
-            try:
-                extracted_text = pytesseract.image_to_string(img, lang='fra')
-                if extracted_text.strip():
-                    st.success("Texte extrait avec succès !")
-                    opts = build_controls("ocr_ctrl")
-                    render_full_dys_text(extracted_text, **opts)
-                else:
-                    st.warning("Aucun texte n'a pu être extrait de cette image.")
-            except Exception as e:
-                st.error(f"Erreur OCR : {e}")
-
-elif menu_selection == "✨ Générateur d'histoires":
-    st.title("✨ Générateur d'histoires d'apprentissage")
-    st.subheader("Ophélie Bascou Drimaracci")
-    
-    theme = st.text_input("Thème de l'histoire (ex: Un petit dragon courageux) :")
-    niveau = st.selectbox("Niveau scolaire :", ["CP", "CE1", "CE2", "CM1", "CM2"])
-    
-    if st.button("🪄 Générer l'histoire") and theme:
-        with st.spinner("L'IA invente une histoire..."):
-            prompt = f"Écris une courte histoire captivante pour un enfant de niveau {niveau} sur le thème : '{theme}'. Texte simple, positif, environ 100 mots."
-            histoire = interroger_ia(prompt, temperature=0.8)
-            st.session_state["histoire_generee"] = histoire
-
-    if "histoire_generee" in st.session_state:
-        st.write("---")
-        opts = build_controls("histoire_gen")
-        render_full_dys_text(
-            st.session_state["histoire_generee"], 
-            show_phonemes=opts["show_phonemes"], 
-            show_colors=opts["show_colors"], 
-            show_arcs=opts["show_arcs"], 
-            word_alt=opts["word_alt"], 
-            line_alt=opts["line_alt"], 
-            soft_bg=opts["soft_bg"], 
-            size=opts["size"], 
-            key_suffix="histoire_gen"
-        )
-
-
-elif menu_selection == "🎤 Aide à la dictée":
-    st.title("🎤 Préparation de la Dictée Personnalisée")
-    st.caption("Ophélie Bascou Drimaracci")
-    st.write("Saisissez vos mots de la semaine. L'IA va créer la séquence complète d'apprentissage sur 4 jours avec mots à trous et pièges !")
-
-    mots_input = st.text_area(
-        "Entrez vos mots (séparés par une virgule, un espace ou un retour à la ligne) :", 
-        height=100, 
-        placeholder="ex: chat, chien, Mathis, école, vacances..."
-    )
-    
-    if mots_input:
-        opts = build_controls("dictee_ctrl")
-        
-        if st.button("🪄 Générer la séquence de dictée sur 4 pages"):
-            with st.spinner("L'IA prépare les 4 étapes d'apprentissage..."):
-                prompt = f"""
-                À partir de cette liste de mots : {mots_input}
-                Génère un contenu pédagogique structuré en JSON pour un enfant DYS.
-                Le JSON doit contenir exactement ces clefs :
-                - "mots_cles": la liste nettoyée des mots.
-                - "jour1": une liste de courtes phrases simples présentant les mots.
-                - "jour2": une liste de phrases à trous où les mots clés ont des lettres manquantes (ex: m_this, éco_e, va_ances) pour faire travailler la mémoire orthographique.
-                - "jour3": une auto-dictée de 2-3 phrases simples.
-                - "dictee_finale": le texte complet de la dictée finale (3-4 phrases simples sous forme d'une seule chaîne de texte).
-                Réponds uniquement par le JSON valide.
-                """
-                res_ia = interroger_ia(prompt, temperature=0.7)
-                try:
-                    res_json_clean = re.sub(r'```json|```', '', res_ia).strip()
-                    st.session_state["data_dictee"] = json.loads(res_json_clean)
-                except Exception as e:
-                    mots_list = [m.strip() for m in re.split(r'[, \n]+', mots_input) if m.strip()]
-                    st.session_state["data_dictee"] = {
-                        "mots_cles": mots_list,
-                        "jour1": [f"Découverte du mot : {m}" for m in mots_list],
-                        "jour2": [f"Complète le mot : {m[:2]}_{m[3:] if len(m)>3 else ''}" for m in mots_list],
-                        "jour3": ["Auto-dictée : révise bien les mots appris."],
-                        "dictee_finale": f"Voici la dictée avec les mots : {', '.join(mots_list)}."
-                    }
-
-        if "data_dictee" in st.session_state:
-            data = st.session_state["data_dictee"]
-            st.write("---")
-            st.subheader("📚 Fiche de travail & Préparation en 4 Étapes")
-
-            tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs([
-                "📄 Page 1 : Jour 1 (Découverte & Sons)", 
-                "📄 Page 2 : Jour 2 (Mots à trous & Pièges)", 
-                "📄 Page 3 : Jour 3 (Auto-dictée)", 
-                "📄 Page 4 : Jour 4 (Dictée Finale)"
-            ])
-
-elif menu_selection == "📐 Grammaire Visuelle & Accords":
-    afficher_page_grammaire(interroger_ia)         
-
 # Placez cette fonction tout en haut, alignée tout à gauche :
 def format_to_str(content):
     if isinstance(content, list):
@@ -1141,3 +1002,140 @@ def afficher_phrase_symboles(phrase_data):
         unsafe_allow_html=True
     )
 
+# ==========================================
+# GESTION DES PAGES DU MENU LATÉRAL
+# ==========================================
+
+if menu_selection == "🏠 Présentation":
+    st.title("✏️ Application Pédagogique & Adaptation DYS")
+    st.subheader("Ophélie Bascou Drimaracci")
+    st.write("---")
+    st.markdown("""
+    Bienvenue sur cette application pédagogique conçue pour faciliter l'accès à la lecture 
+    et accompagner les enfants et élèves présentant des troubles **DYS** (dyslexie, dyspraxie).
+    
+    ### 🌟 Ce que propose l'application :
+    * **📄 Aide à la lecture de texte** : Saisissez ou collez n'importe quel texte pour l'adapter instantanément.
+    * **📷 Importation OCR** : Prenez en photo un livre ou une feuille pour en extraire le texte et l'adapter.
+    * **✨ Générateur d'histoires magiques** : Créez des histoires personnalisées selon différents niveaux de difficulté.
+    * **🎤 Aide à la dictée (Propulsée par l'IA)** : Analyse phonétique intelligente, découpage syllabique et génération de dictées contextuelles.
+    * **📐 Grammaire Visuelle & Accords** : Analyse syntaxique par symboles colorés, exercices interactifs d'accords et fiches d'exercices téléchargeables avec code couleur.
+    """)
+
+elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
+    st.title("📄 Aide à la lecture & OCR")
+    st.subheader("Ophélie Bascou Drimaracci")
+    
+    tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
+    
+    with tab1:
+        st.write("### Saisir ou coller un texte")
+        txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
+        if txt:
+            st.write("---")
+            opts = build_controls("histoire_t1")
+            render_full_dys_text(txt, **opts)
+
+    with tab2:
+        st.write("### 📷 Capturer ou importer une photo")
+        choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
+        file = st.camera_input("Cliquez pour prendre la photo du texte") if choix_source == "Prendre une photo en direct" else st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
+
+        if file:
+            img = Image.open(file)
+            st.image(img, caption="Image sélectionnée", use_container_width=True)
+            try:
+                extracted_text = pytesseract.image_to_string(img, lang='fra')
+                if extracted_text.strip():
+                    st.success("Texte extrait avec succès !")
+                    opts = build_controls("ocr_ctrl")
+                    render_full_dys_text(extracted_text, **opts)
+                else:
+                    st.warning("Aucun texte n'a pu être extrait de cette image.")
+            except Exception as e:
+                st.error(f"Erreur OCR : {e}")
+
+elif menu_selection == "✨ Générateur d'histoires":
+    st.title("✨ Générateur d'histoires d'apprentissage")
+    st.subheader("Ophélie Bascou Drimaracci")
+    
+    theme = st.text_input("Thème de l'histoire (ex: Un petit dragon courageux) :")
+    niveau = st.selectbox("Niveau scolaire :", ["CP", "CE1", "CE2", "CM1", "CM2"])
+    
+    if st.button("🪄 Générer l'histoire") and theme:
+        with st.spinner("L'IA invente une histoire..."):
+            prompt = f"Écris une courte histoire captivante pour un enfant de niveau {niveau} sur le thème : '{theme}'. Texte simple, positif, environ 100 mots."
+            histoire = interroger_ia(prompt, temperature=0.8)
+            st.session_state["histoire_generee"] = histoire
+
+    if "histoire_generee" in st.session_state:
+        st.write("---")
+        opts = build_controls("histoire_gen")
+        render_full_dys_text(
+            st.session_state["histoire_generee"], 
+            show_phonemes=opts["show_phonemes"], 
+            show_colors=opts["show_colors"], 
+            show_arcs=opts["show_arcs"], 
+            word_alt=opts["word_alt"], 
+            line_alt=opts["line_alt"], 
+            soft_bg=opts["soft_bg"], 
+            size=opts["size"], 
+            key_suffix="histoire_gen"
+        )
+
+
+elif menu_selection == "🎤 Aide à la dictée":
+    st.title("🎤 Préparation de la Dictée Personnalisée")
+    st.caption("Ophélie Bascou Drimaracci")
+    st.write("Saisissez vos mots de la semaine. L'IA va créer la séquence complète d'apprentissage sur 4 jours avec mots à trous et pièges !")
+
+    mots_input = st.text_area(
+        "Entrez vos mots (séparés par une virgule, un espace ou un retour à la ligne) :", 
+        height=100, 
+        placeholder="ex: chat, chien, Mathis, école, vacances..."
+    )
+    
+    if mots_input:
+        opts = build_controls("dictee_ctrl")
+        
+        if st.button("🪄 Générer la séquence de dictée sur 4 pages"):
+            with st.spinner("L'IA prépare les 4 étapes d'apprentissage..."):
+                prompt = f"""
+                À partir de cette liste de mots : {mots_input}
+                Génère un contenu pédagogique structuré en JSON pour un enfant DYS.
+                Le JSON doit contenir exactement ces clefs :
+                - "mots_cles": la liste nettoyée des mots.
+                - "jour1": une liste de courtes phrases simples présentant les mots.
+                - "jour2": une liste de phrases à trous où les mots clés ont des lettres manquantes (ex: m_this, éco_e, va_ances) pour faire travailler la mémoire orthographique.
+                - "jour3": une auto-dictée de 2-3 phrases simples.
+                - "dictee_finale": le texte complet de la dictée finale (3-4 phrases simples sous forme d'une seule chaîne de texte).
+                Réponds uniquement par le JSON valide.
+                """
+                res_ia = interroger_ia(prompt, temperature=0.7)
+                try:
+                    res_json_clean = re.sub(r'```json|```', '', res_ia).strip()
+                    st.session_state["data_dictee"] = json.loads(res_json_clean)
+                except Exception as e:
+                    mots_list = [m.strip() for m in re.split(r'[, \n]+', mots_input) if m.strip()]
+                    st.session_state["data_dictee"] = {
+                        "mots_cles": mots_list,
+                        "jour1": [f"Découverte du mot : {m}" for m in mots_list],
+                        "jour2": [f"Complète le mot : {m[:2]}_{m[3:] if len(m)>3 else ''}" for m in mots_list],
+                        "jour3": ["Auto-dictée : révise bien les mots appris."],
+                        "dictee_finale": f"Voici la dictée avec les mots : {', '.join(mots_list)}."
+                    }
+
+        if "data_dictee" in st.session_state:
+            data = st.session_state["data_dictee"]
+            st.write("---")
+            st.subheader("📚 Fiche de travail & Préparation en 4 Étapes")
+
+            tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs([
+                "📄 Page 1 : Jour 1 (Découverte & Sons)", 
+                "📄 Page 2 : Jour 2 (Mots à trous & Pièges)", 
+                "📄 Page 3 : Jour 3 (Auto-dictée)", 
+                "📄 Page 4 : Jour 4 (Dictée Finale)"
+            ])
+
+elif menu_selection == "📐 Grammaire Visuelle & Accords":
+    afficher_page_grammaire(interroger_ia)         
