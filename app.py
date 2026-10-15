@@ -658,7 +658,7 @@ def afficher_page_grammaire(fonction_appel_ia):
             sauvegarder_phrase_dans_historique(nouvelle)
             st.session_state.phrase_grammaire = nouvelle
 
-        phrase = st.session_state.phrase_grammaire
+    phrase = st.session_state.phrase_grammaire
     st.divider()
     
     tab_ex, tab_exo, tab_acc = st.tabs(["📖 Analyse", "✏️ Symboles", "✍️ Accords"])
