@@ -869,6 +869,32 @@ def afficher_textes_personnalises(eleve, niveau):
             st.rerun()
 
 
+# Polices locales facultatives : déposer les fichiers .ttf dans le dossier fonts/.
+# Sans fichier, le navigateur utilise une police de remplacement lisible.
+POLICES_DYS = {"Luciole": ("Luciole-Regular.ttf", "Arial, sans-serif"),
+               "OpenDyslexic": ("OpenDyslexic-Regular.otf", "Verdana, sans-serif"),
+               "Verdana": (None, "Verdana, sans-serif"),
+               "Arial": (None, "Arial, sans-serif")}
+
+def css_police_dys(nom=None):
+    nom = nom or st.session_state.get("police_dys_active", "Verdana")
+    fichier, secours = POLICES_DYS.get(nom, POLICES_DYS["Verdana"])
+    famille = f'"{nom}", {secours}' if fichier else secours
+    declaration = ""
+    if fichier:
+        chemin = Path(__file__).resolve().parent / "fonts" / fichier
+        if chemin.is_file():
+            extension = "opentype" if chemin.suffix.lower() == ".otf" else "truetype"
+            data = base64.b64encode(chemin.read_bytes()).decode("ascii")
+            declaration = (f"@font-face{{font-family:'{nom}';src:url(data:font/{'otf' if extension == 'opentype' else 'ttf'};base64,{data}) format('{extension}');font-display:swap;}}")
+    return declaration, famille
+
+def appliquer_police_dys():
+    nom = st.session_state.get("police_dys_active", "Verdana")
+    css, famille = css_police_dys(nom)
+    st.markdown(f"<style>{css}html,body,[data-testid='stAppViewContainer'],[data-testid='stSidebar'], .stMarkdown, .stMarkdown *, .stTextInput, .stTextArea, .stSelectbox, .stButton button, .stRadio, .stCheckbox {{font-family:{famille}!important;}} .mathis-lecture, .mathis-lecture * {{font-family:{famille}!important;}}</style>", unsafe_allow_html=True)
+
+
 initialiser_db()
 initialiser_extensions()
 
@@ -1383,31 +1409,6 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
     _, famille = css_police_dys(kwargs.get("font_choice"))
     interligne = float(kwargs.get("spacing", 2.0))
     st.markdown(f"<div class='mathis-lecture' style='font-family:{famille};font-size:{size}px;line-height:{interligne};{style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
-
-# Polices locales facultatives : déposer les fichiers .ttf dans le dossier fonts/.
-# Sans fichier, le navigateur utilise une police de remplacement lisible.
-POLICES_DYS = {"Luciole": ("Luciole-Regular.ttf", "Arial, sans-serif"),
-               "OpenDyslexic": ("OpenDyslexic-Regular.otf", "Verdana, sans-serif"),
-               "Verdana": (None, "Verdana, sans-serif"),
-               "Arial": (None, "Arial, sans-serif")}
-
-def css_police_dys(nom=None):
-    nom = nom or st.session_state.get("police_dys_active", "Verdana")
-    fichier, secours = POLICES_DYS.get(nom, POLICES_DYS["Verdana"])
-    famille = f'"{nom}", {secours}' if fichier else secours
-    declaration = ""
-    if fichier:
-        chemin = Path(__file__).resolve().parent / "fonts" / fichier
-        if chemin.is_file():
-            extension = "opentype" if chemin.suffix.lower() == ".otf" else "truetype"
-            data = base64.b64encode(chemin.read_bytes()).decode("ascii")
-            declaration = (f"@font-face{{font-family:'{nom}';src:url(data:font/{'otf' if extension == 'opentype' else 'ttf'};base64,{data}) format('{extension}');font-display:swap;}}")
-    return declaration, famille
-
-def appliquer_police_dys():
-    nom = st.session_state.get("police_dys_active", "Verdana")
-    css, famille = css_police_dys(nom)
-    st.markdown(f"<style>{css}html,body,[data-testid='stAppViewContainer'],[data-testid='stSidebar'], .stMarkdown, .stMarkdown *, .stTextInput, .stTextArea, .stSelectbox, .stButton button, .stRadio, .stCheckbox {{font-family:{famille}!important;}} .mathis-lecture, .mathis-lecture * {{font-family:{famille}!important;}}</style>", unsafe_allow_html=True)
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d’adaptation DYS (Cumulables)")
@@ -2063,13 +2064,6 @@ def afficher_page_grammaire(fonction_appel_ia):
         type="primary",
         key="download_fiche_gram"
 )
-st.sidebar.selectbox("🔤 Police de lecture", list(POLICES_DYS), key="police_dys_active")
-appliquer_police_dys()
-if st.session_state.get("police_dys_active") in ("Luciole", "OpenDyslexic"):
-    fichier_police = POLICES_DYS[st.session_state["police_dys_active"]][0]
-    if not (Path(__file__).resolve().parent / "fonts" / fichier_police).is_file():
-        st.sidebar.caption(f"⚠️ Fichier de police manquant : fonts/{fichier_police}. Police de remplacement utilisée.")
-
 # ==========================================
 # GESTION DES PAGES DU MENU LATÉRAL
 # ==========================================
