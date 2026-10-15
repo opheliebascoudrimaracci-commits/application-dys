@@ -597,40 +597,31 @@ def afficher_page_grammaire(fonction_appel_ia):
         horizontal=True,
         key="mode_grammaire_radio"
     )
-
+    
     historique = charger_historique()
-
+    
     if mode_choix == "Piocher dans la banque de 100 phrases":
-        niveau_sel = st.selectbox("Sélectionner le niveau :", [1, 2, 3], format_func=lambda x: f"Niveau {x}", key="niv_sel_gram")
-        phrases_dispos = [p for p in historique if p.get("niveau") == niveau_sel]
-        if phrases_dispos:
-            st.session_state.phrase_grammaire = random.choice(phrases_dispos)
-        else:
-            nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, niveau=niveau_sel)
-            sauvegarder_phrase_dans_historique(nouvelle)
-            st.session_state.phrase_grammaire = nouvelle
-
+        phrase_choisie = st.selectbox(
+            "Choisissez une phrase dans la banque :",
+            historique,
+            format_func=lambda x: x.get("texte", ""),
+            key="select_phrase_banque"
+        )
+        if phrase_choisie:
+            st.session_state.phrase_grammaire = phrase_choisie
+            
     elif mode_choix == "Écrire ma propre phrase":
-        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
-        if st.button("Analyser et ajouter à la banque", key="btn_analyse_libre"):
-            if saisie_user.strip():
-                with st.spinner("Analyse et découpage en cours..."):
-                    nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_force=saisie_user)
-                    if not isinstance(nouvelle, dict) or "mots" not in nouvelle:
-                        mots_decoupes = [{"mot": m, "type": "autre"} for m in saisie_user.split()]
-                        nouvelle = {
-                            "texte": saisie_user,
-                            "niveau": 1,
-                            "mots": mots_decoupes,
-                            "accord": {"phrase_trou": saisie_user, "options": ["s", "e", "ent"], "reponse": ""}
-                        }
-                sauvegarder_phrase_dans_historique(nouvelle)
-                st.session_state.phrase_grammaire = nouvelle
-                st.success("Phrase analysée et prête avec les symboles ! 🎉")
-                st.rerun()
-            else:
-                st.warning("Veuillez entrer une phrase.")
-
+        texte_libre = st.text_input("Écrivez votre phrase ici :", key="input_phrase_libre")
+        if st.button("Valider et analyser ma phrase", key="btn_valider_libre"):
+            if texte_libre.strip():
+                with st.spinner("Analyse de votre phrase..."):
+                    nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_sur_mesure=texte_libre)
+                if nouvelle:
+                    sauvegarder_phrase_dans_historique(nouvelle)
+                    st.session_state.phrase_grammaire = nouvelle
+                    st.success("Phrase enregistrée et analysée !")
+                    st.rerun()
+                    
     elif mode_choix == "Générer une phrase inédite avec l'IA":
         niveau_gen = st.selectbox("Niveau à générer :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
         if st.button("Générer une nouvelle phrase", key="btn_gen_ia"):
@@ -691,7 +682,7 @@ def afficher_page_grammaire(fonction_appel_ia):
                 st.success("Bravo ! Tout est correct ! 🎉")
             else:
                 st.warning("Il y a des erreurs, vérifie l'onglet Exemple.")
-                
+                      
     with tab_acc:
         st.subheader("Exercice d'accord")
         accord = phrase.get("accord", {})
