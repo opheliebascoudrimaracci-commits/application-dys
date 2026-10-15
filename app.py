@@ -1701,6 +1701,57 @@ def fiche_fonctions_pdf(texte, analyse, correction=False):
                "Pour le code complet des formes et couleurs, télécharger aussi le mémo de grammaire."]
     return generer_pdf_imprimable("Grammaire : je cherche les fonctions", "\n".join(lignes), "adulte" if correction else "enfant", taille=17, interligne=1.6)
 
+def afficher_phrase_fonctions_et_natures(texte, analyse=None):
+    """Affichage combiné : nature sous chaque mot et fonction en surlignage."""
+    from html import escape as html_escape
+    tokens = list(re.finditer(r"[^\W_]+(?:['’][^\W_]+)*", texte, flags=re.UNICODE))
+    if not tokens:
+        return
+    # Dictionnaire pédagogique prudent : ne pas attribuer une nature inventée.
+    connus = {
+        'le':'determinant','la':'determinant','les':'determinant','un':'determinant','une':'determinant',
+        'des':'determinant','du':'determinant','mon':'determinant','ma':'determinant','mes':'determinant',
+        'petit':'adjectif','petite':'adjectif','noir':'adjectif','noire':'adjectif',
+        'chat':'nom','chien':'nom','pomme':'nom','tapis':'nom','médecin':'nom','patient':'nom',
+        'sœur':'nom','hôpital':'nom','lina':'nom_propre','paul':'nom_propre','mathis':'nom_propre',
+        'dort':'verbe','mange':'verbe','parle':'verbe','soigne':'verbe','donne':'verbe',
+        'sur':'preposition','à':'preposition','dans':'preposition','avec':'preposition',
+        'et':'conjonction','mais':'conjonction','ou':'conjonction',
+        'il':'pronom','elle':'pronom','nous':'pronom','je':'pronom',
+    }
+    spans=[]
+    for fonction, segment in (analyse or {}).items():
+        if fonction not in COULEURS_FONCTIONS or not segment: continue
+        match=re.search(re.escape(segment),texte,flags=re.IGNORECASE)
+        if match: spans.append((match.start(),match.end(),fonction))
+    cartes=[]; inconnus=[]
+    for m in tokens:
+        mot=m.group(); nature=connus.get(mot.lower().strip('’'))
+        # Les verbes déjà validés par l'adulte / l'analyse sont identifiables.
+        if any(k=='verbe' and a<=m.start() and m.end()<=b for a,b,k in spans): nature='verbe'
+        fonction=next((k for a,b,k in spans if a<=m.start() and m.end()<=b),None)
+        couleur=COULEURS_FONCTIONS.get(fonction)
+        style=(f'background:{couleur}22;border-bottom:4px solid {couleur};' if couleur else '')
+        if nature:
+            symbole=symbole_nature_html(nature,30)
+            libelle=SYMBOLES_GRAMMAIRE[nature]['label']
+        else:
+            symbole='<span style="font-size:24px;color:#666">?</span>'
+            libelle='Nature à vérifier'
+            inconnus.append(mot)
+        cartes.append(f'<div style="display:inline-flex;flex-direction:column;align-items:center;'
+                      f'gap:5px;padding:9px 11px;margin:4px;border:1px solid #ddd;'
+                      f'border-radius:9px;background:white;color:#222;min-width:68px">'
+                      f'<span style="font-size:20px;font-weight:700;{style}">{html_escape(mot)}</span>'
+                      f'{symbole}<span style="font-size:11px">{html_escape(libelle)}</span></div>')
+    st.markdown('<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;'
+                'padding:12px;border-radius:12px;background:#f6f8fa">'+''.join(cartes)+'</div>',
+                unsafe_allow_html=True)
+    if inconnus:
+        st.caption('Le symbole « ? » signifie que la nature reste à vérifier ; '
+                   'elle n’est pas devinée automatiquement.')
+    st.caption('Forme et couleur sous le mot = nature. Surlignage = fonction grammaticale.')
+
 def afficher_atelier_fonctions(appel_ia):
     st.subheader("🔎 Fonctions de la phrase : deux pages")
     afficher_memo_fonctions()
@@ -1725,6 +1776,7 @@ def afficher_atelier_fonctions(appel_ia):
             analyse = st.session_state["fonctions_analyse"]
             for cle, couleur in COULEURS_FONCTIONS.items():
                 st.markdown(f"<span style='color:{couleur};font-weight:700'>{cle.upper()} : {escape(analyse.get(cle) or '—')}</span>", unsafe_allow_html=True)
+            afficher_phrase_fonctions_et_natures(st.session_state["fonctions_texte"], analyse)
             with st.expander("🔐 Adulte : vérifier ou corriger l'analyse", expanded=st.session_state.get("fonctions_revision", False)):
                 with st.form("fonctions_correction_adulte"):
                     modif = {k:st.text_input(k.upper(), value=analyse.get(k, ""), key=f"fonctions_edit_{k}") for k in COULEURS_FONCTIONS}
@@ -1738,8 +1790,14 @@ def afficher_atelier_fonctions(appel_ia):
                             st.success("Correction enregistrée pour cet exercice.")
             if not st.session_state.get("fonctions_revision", False):
                 st.info("Passe à la page 2 : l'enfant pourra répondre sans voir la correction de cette page.")
-                st.download_button("📄 PDF enfant", fiche_fonctions_pdf(st.session_state["fonctions_texte"], st.session_state["fonctions_analyse"]), file_name="grammaire_enfant.pdf", mime="application/pdf", key="pdf_fonctions_enfant")
-                st.download_button("🔐 PDF corrigé adulte", fiche_fonctions_pdf(st.session_state["fonctions_texte"], st.session_state["fonctions_analyse"], True), file_name="grammaire_adulte.pdf", mime="application/pdf", key="pdf_fonctions_adulte")
+                try:
+                    pdf_enfant = fiche_fonctions_pdf(st.session_state["fonctions_texte"], st.session_state["fonctions_analyse"])
+                    pdf_adulte = fiche_fonctions_pdf(st.session_state["fonctions_texte"], st.session_state["fonctions_analyse"], True)
+                except ImportError:
+                    st.warning('Pour télécharger les PDF, ajoute « reportlab » dans requirements.txt sur GitHub.')
+                else:
+                    st.download_button("📄 PDF enfant", pdf_enfant, file_name="grammaire_enfant.pdf", mime="application/pdf", key="pdf_fonctions_enfant")
+                    st.download_button("🔐 PDF corrigé adulte", pdf_adulte, file_name="grammaire_adulte.pdf", mime="application/pdf", key="pdf_fonctions_adulte")
     with tab_jeu:
         if "fonctions_analyse" not in st.session_state or st.session_state.get("fonctions_revision"):
             st.info("L'adulte doit d'abord analyser et vérifier une phrase sur la page 1.")
@@ -1747,7 +1805,7 @@ def afficher_atelier_fonctions(appel_ia):
             texte = st.session_state["fonctions_texte"]
             analyse = st.session_state["fonctions_analyse"]
             st.markdown("**Lis la phrase et cherche les groupes de mots :**")
-            st.markdown(f"<div class='mathis-lecture' style='font-size:24px;padding:12px;border:1px solid #ddd;border-radius:8px'>{escape(texte)}</div>", unsafe_allow_html=True)
+            afficher_phrase_fonctions_et_natures(texte)
             st.caption('Nature = symbole sous le mot ; fonction = surlignage du groupe. Les deux sont indépendants.')
             # Sélection par mot ; plusieurs mots contigus peuvent former une réponse.
             tokens = re.findall(r"[^\W_]+(?:['’][^\W_]+)*", texte, flags=re.UNICODE)
@@ -1938,9 +1996,14 @@ def afficher_page_grammaire(fonction_appel_ia):
 
     # Mémo commun à l'écran et au PDF : nature (formes) ≠ fonction (surlignage).
     afficher_memo_grammaire_complet()
-    st.download_button('📥 Télécharger le mémo complet en PDF',
-                       data=pdf_memo_grammaire_complet(), file_name='memo_grammaire_mathis.pdf',
-                       mime='application/pdf', key='pdf_memo_complet')
+    try:
+        pdf_memo = pdf_memo_grammaire_complet()
+    except ImportError:
+        st.warning('Pour activer les PDF, ajoute « reportlab » dans requirements.txt sur GitHub.')
+    else:
+        st.download_button('📥 Télécharger le mémo complet en PDF',
+                           data=pdf_memo, file_name='memo_grammaire_mathis.pdf',
+                           mime='application/pdf', key='pdf_memo_complet')
     afficher_accords_guides()
     st.divider()
     
