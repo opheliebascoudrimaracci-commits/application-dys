@@ -1495,24 +1495,52 @@ def sauvegarder_phrase_dans_historique(phrase):
     if phrase and phrase not in st.session_state["historique_phrases"]:
         st.session_state["historique_phrases"].append(phrase)
 
-def afficher_legende_couleurs():
-    st.sidebar.markdown("### 🏷️ Légende des symboles")
-    st.sidebar.markdown("- 🔺 Déterminants")
-    st.sidebar.markdown("- 💖 Pronoms")
-    st.sidebar.markdown("- ⭐ / ✨ Noms")
-    st.sidebar.markdown("- 🟩 Verbes")
-    st.sidebar.markdown("- ⬛ Invariables")
-    st.sidebar.markdown("- 🔵 Adjectifs")
-
+# Les symboles représentent les NATURES, jamais les fonctions.
+# Les six premières catégories conservent le code historique de Mathis.
 SYMBOLES_GRAMMAIRE = {
-    "determinant": {"label": "Déterminant", "emoji": "🔺", "couleur": "#e74c3c"},
-    "det": {"label": "Déterminant", "emoji": "🔺", "couleur": "#e74c3c"},
-    "pronom": {"label": "Pronom", "emoji": "💖", "couleur": "#9b59b6"},
-    "nom": {"label": "Nom", "emoji": "⭐", "couleur": "#f39c12"},
-    "verbe": {"label": "Verbe", "emoji": "🟩", "couleur": "#2ecc71"},
-    "adjectif": {"label": "Adjectif", "emoji": "🔵", "couleur": "#3498db"},
-    "invariable": {"label": "Mot invariable", "emoji": "⬛", "couleur": "#7f8c8d"}
+    "determinant": {"label":"Déterminant", "emoji":"▲", "couleur":"#e74c3c", "forme":"triangle"},
+    "det": {"label":"Déterminant", "emoji":"▲", "couleur":"#e74c3c", "forme":"triangle"},
+    "pronom": {"label":"Pronom", "emoji":"♥", "couleur":"#9b59b6", "forme":"coeur"},
+    "nom": {"label":"Nom", "emoji":"★", "couleur":"#f39c12", "forme":"etoile"},
+    "nom_propre": {"label":"Nom propre", "emoji":"★", "couleur":"#f39c12", "forme":"etoile"},
+    "verbe": {"label":"Verbe", "emoji":"■", "couleur":"#2ecc71", "forme":"carre"},
+    "adjectif": {"label":"Adjectif", "emoji":"●", "couleur":"#3498db", "forme":"cercle"},
+    "invariable": {"label":"Mot invariable", "emoji":"■", "couleur":"#7f8c8d", "forme":"carre"},
+    "preposition": {"label":"Préposition", "emoji":"⬡", "couleur":"#e68a2e", "forme":"hexagone"},
+    "adverbe": {"label":"Adverbe", "emoji":"⬟", "couleur":"#16a6b6", "forme":"pentagone"},
+    "conjonction": {"label":"Conjonction", "emoji":"♥", "couleur":"#d94c54", "forme":"coeur"},
+    "conjonction_coordination": {"label":"Conjonction", "emoji":"♥", "couleur":"#d94c54", "forme":"coeur"},
+    "conjonction_subordination": {"label":"Conjonction", "emoji":"♥", "couleur":"#d94c54", "forme":"coeur"},
+    "interjection": {"label":"Interjection", "emoji":"ϟ", "couleur":"#b77b22", "forme":"eclair"},
 }
+
+def symbole_nature_html(nature, taille=32):
+    """Forme SVG réelle, sans glyphe emoji dépendant des polices installées."""
+    from html import escape as echapper
+    info = SYMBOLES_GRAMMAIRE.get(str(nature).lower(), SYMBOLES_GRAMMAIRE['invariable'])
+    formes = {
+        'triangle':'<polygon points="20,3 37,36 3,36"/>',
+        'etoile':'<polygon points="20,2 25,14 38,15 28,24 31,38 20,30 9,38 12,24 2,15 15,14"/>',
+        'carre':'<rect x="5" y="5" width="30" height="30" rx="2"/>',
+        'cercle':'<circle cx="20" cy="20" r="17"/>',
+        'coeur':'<path d="M20 36 L5 22 C-3 10 12 -1 20 10 C28 -1 43 10 35 22 Z"/>',
+        'hexagone':'<polygon points="11,4 29,4 38,20 29,36 11,36 2,20"/>',
+        'pentagone':'<polygon points="20,2 38,16 31,37 9,37 2,16"/>',
+        'eclair':'<polygon points="23,1 7,23 18,23 14,39 34,15 22,15"/>',
+    }
+    dessin = formes[info['forme']]
+    return (f'<svg width="{int(taille)}" height="{int(taille)}" viewBox="0 0 40 40" '
+            f'role="img" aria-label="{echapper(info["label"])}" xmlns="http://www.w3.org/2000/svg">'
+            f'<g fill="{info["couleur"]}" stroke="#333" stroke-width="0.8">{dessin}</g></svg>')
+
+def afficher_legende_couleurs():
+    st.sidebar.markdown('### 🏷️ Natures des mots')
+    deja = set()
+    for info in SYMBOLES_GRAMMAIRE.values():
+        if info['label'] not in deja:
+            deja.add(info['label'])
+            st.sidebar.markdown(f"{symbole_nature_html(next(k for k,v in SYMBOLES_GRAMMAIRE.items() if v is info), 18)} {info['label']}", unsafe_allow_html=True)
+
 def afficher_phrase_symboles(phrase_data):
     mots = phrase_data.get("mots", [])
     if not mots:
@@ -1522,7 +1550,7 @@ def afficher_phrase_symboles(phrase_data):
     for m in mots:
         type_mot = m.get("type", "").lower()
         info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": "❓", "label": "Autre"})
-        emoji_display = info_symb.get("emoji", "❓")
+        emoji_display = symbole_nature_html(type_mot, 30)
         mot_texte = m.get('mot', '')
         html_mots.append(
             f"<div style='display:inline-block; text-align:center; margin:8px 10px; padding:10px 12px; background:#ffffff; border-radius:8px; border:1px solid #dcdde1; vertical-align:top;'>"
@@ -1572,8 +1600,9 @@ def generer_fiche_html_imprimable(phrase):
     for m in mots:
         mots_html += f"""
         <div style="text-align: center; border: 1px solid #ddd; padding: 4px; border-radius: 4px; min-width: 50px; background: #fdfdfd;">
-            <div style="font-size: 9pt; color: #666; margin-bottom: 2px;">{m.get('type', '')}</div>
-            <div style="font-weight: bold; font-size: 11pt;">{m.get('mot', '')}</div>
+            <div style="font-weight: bold; font-size: 11pt;">{escape(str(m.get('mot', '')))}</div>
+            <div>{symbole_nature_html(m.get('type', 'invariable'), 25)}</div>
+            <div style="font-size: 9pt; color: #666;">{escape(SYMBOLES_GRAMMAIRE.get(m.get('type', ''), SYMBOLES_GRAMMAIRE['invariable'])['label'])}</div>
         </div>
         """
     html_content = f"""
@@ -1663,6 +1692,12 @@ def fiche_fonctions_pdf(texte, analyse, correction=False):
                    "Verbe : " + (analyse.get("verbe") or "aucun"),
                    "COD : " + (analyse.get("cod") or "aucun"),
                    "COI : " + (analyse.get("coi") or "aucun")]
+    lignes += ["", "MÉTHODE : nature = forme et couleur sous le mot ; fonction = surlignage.",
+               "Sujet : qui est-ce qui ? / qu'est-ce qui ?", "COD : verbe + qui ? / quoi ? (sans préposition).",
+               "COI : verbe + à qui ? / à quoi ? / de qui ? / de quoi ?",
+               "Attention : un lieu (à l'école) n'est pas automatiquement un COI.",
+               "Si la fonction est absente, écrire : aucun.",
+               "Pour le code complet des formes et couleurs, télécharger aussi le mémo de grammaire."]
     return generer_pdf_imprimable("Grammaire : je cherche les fonctions", "\n".join(lignes), "adulte" if correction else "enfant", taille=17, interligne=1.6)
 
 def afficher_atelier_fonctions(appel_ia):
@@ -1712,6 +1747,7 @@ def afficher_atelier_fonctions(appel_ia):
             analyse = st.session_state["fonctions_analyse"]
             st.markdown("**Lis la phrase et cherche les groupes de mots :**")
             st.markdown(f"<div class='mathis-lecture' style='font-size:24px;padding:12px;border:1px solid #ddd;border-radius:8px'>{escape(texte)}</div>", unsafe_allow_html=True)
+            st.caption('Nature = symbole sous le mot ; fonction = surlignage du groupe. Les deux sont indépendants.')
             # Sélection par mot ; plusieurs mots contigus peuvent former une réponse.
             tokens = re.findall(r"[^\W_]+(?:['’][^\W_]+)*", texte, flags=re.UNICODE)
             options = [f"{i+1}. {mot}" for i,mot in enumerate(tokens)]
@@ -1734,61 +1770,177 @@ def afficher_atelier_fonctions(appel_ia):
                         st.error(f"{cle.upper()} : à revoir. Réponse : " + (attendu if attendu else "aucun complément de cette fonction"))
                 st.caption("Les corrections sont celles vérifiées par l'adulte ; une analyse IA non vérifiée peut comporter des erreurs.")
 
+
+# Fonctions supplémentaires, présentées à la demande sans les confondre avec la nature.
+FONCTIONS_AVANCEES = [
+    ('Complément circonstanciel de lieu', 'Où ?', 'Il joue [dans le jardin].'),
+    ('Complément circonstanciel de temps', 'Quand ?', 'Il part [demain].'),
+    ('Complément circonstanciel de manière', 'Comment ?', 'Elle avance [lentement].'),
+    ('Complément circonstanciel de cause', 'Pourquoi ?', 'Il reste [à cause de la pluie].'),
+    ('Épithète', 'Précise directement un nom', 'Un [grand] chien.'),
+    ('Attribut du sujet', 'Après un verbe attributif', 'Les filles sont [contentes].'),
+    ('Complément du nom', 'Précise un nom', 'Le vélo [de Mathis].'),
+    ('Complément d’agent', 'Dans une phrase passive', 'Le gâteau est préparé [par Lina].'),
+    ('Attribut du COD', 'Qualifie le COD', 'Je trouve ces histoires [intéressantes].'),
+    ('COS (terminologie traditionnelle)', 'COI avec un autre complément d’objet', 'Lina donne un livre [à Mathis].'),
+]
+
+def afficher_memo_grammaire_complet():
+    st.subheader('🎨 Mémo : nature, fonction et accords')
+    st.markdown('**1. Nature : une forme et une couleur sous chaque mot.**')
+    blocs=[]
+    deja=set()
+    for cle, info in SYMBOLES_GRAMMAIRE.items():
+        if info['label'] in deja: continue
+        deja.add(info['label'])
+        blocs.append(f'<div style="display:inline-flex;flex-direction:column;align-items:center;min-width:112px;gap:5px;padding:10px;border:1px solid #ddd;border-radius:9px;background:white;color:#222">{symbole_nature_html(cle,36)}<span style="font-size:13px">{escape(info["label"])}</span></div>')
+    st.markdown('<div style="display:flex;flex-wrap:wrap;gap:8px">'+''.join(blocs)+'</div>',unsafe_allow_html=True)
+    st.caption('Le carré gris « mot invariable » reste compatible avec les anciens exercices. Les prépositions, adverbes et conjonctions ont aussi leur symbole précis.')
+    st.markdown('**2. Fonction : un surlignage indépendant de la nature.**')
+    noms={'sujet':'Sujet','verbe':'Verbe (fonction dans la phrase)','cod':'COD','coi':'COI'}
+    st.markdown(' '.join(f'<span style="background:{couleur}24;border-bottom:4px solid {couleur};padding:7px 12px;color:inherit">{noms[k]}</span>' for k,couleur in COULEURS_FONCTIONS.items()),unsafe_allow_html=True)
+    with st.expander('📘 Autres fonctions grammaticales (niveau progressif)'):
+        st.caption('Pour éviter trop de couleurs : encadrement, soulignement ou étiquette avec le nom de la fonction.')
+        for nom, question, exemple in FONCTIONS_AVANCEES:
+            st.markdown(f'**{nom}** — {question} : {exemple}')
+    st.markdown('**3. Accords : les flèches indiquent le mot qui commande l’accord.**')
+    st.markdown('**Les filles → chantent** : le sujet pluriel commande **-ent**.  \n**Les grandes maisons** : le nom « maisons » commande les accords du déterminant et de l’adjectif.  \n**Les pommes que j’ai mangées** : avec « avoir », le participe passé s’accorde avec le COD placé avant.')
+
+def pdf_memo_grammaire_complet():
+    """PDF avec de véritables formes vectorielles ReportLab, sans emojis noirs."""
+    from io import BytesIO
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, KeepTogether
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.colors import HexColor
+    from reportlab.lib.enums import TA_LEFT
+    from reportlab.graphics.shapes import Drawing, Polygon, Circle, Rect, Wedge, String
+    from reportlab.lib.pagesizes import A4
+    import math
+    out=BytesIO()
+    doc=SimpleDocTemplate(out,pagesize=A4,leftMargin=35,rightMargin=35,topMargin=35,bottomMargin=35)
+    styles=getSampleStyleSheet()
+    # Utilise la police sélectionnée dans les PDF si ReportLab peut l'intégrer.
+    police_pdf = 'Helvetica'
+    choix_pdf = st.session_state.get('police_dys_active', 'Verdana')
+    fichier_pdf = POLICES_DYS.get(choix_pdf, (None, None))[0]
+    if fichier_pdf:
+        chemin_pdf = Path(__file__).resolve().parent / 'fonts' / fichier_pdf
+        if chemin_pdf.is_file():
+            try:
+                from reportlab.pdfbase import pdfmetrics
+                from reportlab.pdfbase.ttfonts import TTFont
+                pdfmetrics.registerFont(TTFont('MathisPolicePDF', str(chemin_pdf)))
+                police_pdf = 'MathisPolicePDF'
+            except Exception:
+                pass  # Certains OTF ne sont pas intégrables par ReportLab.
+    styles.add(ParagraphStyle(name='Mathis',parent=styles['Normal'],fontName=police_pdf,fontSize=10.5,leading=16,spaceAfter=7))
+    styles.add(ParagraphStyle(name='MathisTitre',parent=styles['Heading2'],spaceBefore=12,spaceAfter=9))
+    story=[Paragraph('Grammaire visuelle : mémo complet',styles['Title']),Spacer(1,8),
+           Paragraph('1. NATURE : forme et couleur sous chaque mot',styles['MathisTitre'])]
+    def dessin_forme(info):
+        d=Drawing(42,40)
+        couleur=HexColor(info['couleur']); f=info['forme']
+        if f=='cercle': d.add(Circle(21,20,16,fillColor=couleur,strokeColor=HexColor('#333333')))
+        elif f=='carre': d.add(Rect(6,5,30,30,fillColor=couleur,strokeColor=HexColor('#333333')))
+        elif f=='triangle': d.add(Polygon([21,36,38,4,4,4],fillColor=couleur,strokeColor=HexColor('#333333')))
+        elif f=='etoile':
+            pts=[]
+            for j in range(10):
+                angle=math.pi/2+j*math.pi/5; r=18 if j%2==0 else 8
+                pts.extend([21+r*math.cos(angle),20+r*math.sin(angle)])
+            d.add(Polygon(pts,fillColor=couleur,strokeColor=HexColor('#333333')))
+        elif f in ('hexagone','pentagone'):
+            n=6 if f=='hexagone' else 5; pts=[]
+            for j in range(n):
+                angle=math.pi/2+2*j*math.pi/n
+                pts.extend([21+17*math.cos(angle),20+17*math.sin(angle)])
+            d.add(Polygon(pts,fillColor=couleur,strokeColor=HexColor('#333333')))
+        elif f=='coeur':
+            # cœur vectoriel formé de deux disques et d'un losange
+            d.add(Circle(14,25,9,fillColor=couleur,strokeColor=None))
+            d.add(Circle(28,25,9,fillColor=couleur,strokeColor=None))
+            d.add(Polygon([5,25,37,25,21,4],fillColor=couleur,strokeColor=None))
+        else: d.add(Polygon([24,39,8,17,19,17,14,1,35,25,23,25],fillColor=couleur,strokeColor=HexColor('#333333')))
+        return d
+    deja=set(); lignes=[]
+    for cle,info in SYMBOLES_GRAMMAIRE.items():
+        if info['label'] in deja: continue
+        deja.add(info['label'])
+        lignes.append([dessin_forme(info),Paragraph(info['label'],styles['Mathis'])])
+    t=Table(lignes,colWidths=[55,420],hAlign='LEFT')
+    t.setStyle(TableStyle([('VALIGN',(0,0),(-1,-1),'MIDDLE'),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
+    story.extend([t,Spacer(1,8),Paragraph('2. FONCTIONS : surlignage distinct des formes',styles['MathisTitre'])])
+    for k,nom in [('sujet','Sujet : bleu'),('verbe','Verbe : rouge'),('cod','COD : vert'),('coi','COI : violet')]:
+        story.append(Paragraph(nom,styles['Mathis']))
+    story.append(Paragraph('Autres fonctions : encadré, soulignement ou étiquette, pour éviter une surcharge de couleurs.',styles['Mathis']))
+    for nom,question,exemple in FONCTIONS_AVANCEES:
+        story.append(Paragraph(f'<b>{escape(nom)}</b> : {escape(question)} — {escape(exemple)}',styles['Mathis']))
+    story.append(Paragraph('COMMENT TROUVER LA NATURE DANS LE TEXTE ?',styles['MathisTitre']))
+    methodes = [
+        'Nom : désigne une personne, un animal, un objet ou une idée. On peut souvent placer un déterminant devant : le chat.',
+        'Déterminant : accompagne un nom : le, une, des, mon, cette.',
+        'Adjectif : précise le nom : un petit chat. Il peut souvent changer de genre ou de nombre.',
+        'Verbe : exprime une action ou un état. On peut changer le temps : dort / dormait.',
+        'Pronom : remplace ou désigne une personne ou une chose : il, elle, nous, celui-ci.',
+        'Préposition : introduit un groupe : à, de, dans, sur, avec, pour.',
+        'Adverbe : précise souvent un verbe, un adjectif ou la phrase : vite, très, demain.',
+        'Conjonction : relie des mots ou des propositions : et, mais, parce que, quand.',
+        'Interjection : exprime une réaction : aïe ! oh ! ouf !',
+        'Mot invariable : catégorie générale ; chercher sa nature précise lorsque cela est possible.'
+    ]
+    for m in methodes: story.append(Paragraph(escape(m),styles['Mathis']))
+    story.append(Paragraph('COMMENT TROUVER LA FONCTION DANS LE TEXTE ?',styles['MathisTitre']))
+    for m in [
+        '1. Repérer le verbe conjugué ; demander « qui est-ce qui ? » ou « qu’est-ce qui ? » pour chercher le sujet.',
+        '2. COD : poser « verbe + qui ? » ou « verbe + quoi ? », sans préposition : Lina mange une pomme.',
+        '3. COI : poser « verbe + à qui ? », « à quoi ? », « de qui ? » ou « de quoi ? » : Lina parle à Mathis.',
+        '4. Vérifier le sens : « à l’école » dans « Lina travaille à l’école » indique un lieu, pas un COI.',
+        '5. Les compléments circonstanciels précisent notamment où, quand, comment ou pourquoi.',
+        '6. Épithète : adjectif directement lié au nom. Attribut du sujet : souvent après être, sembler, devenir.',
+        '7. Certaines phrases ne contiennent ni COD ni COI : il faut pouvoir répondre « aucun ».',
+        'Les formes sous les mots montrent leur NATURE ; le surlignage montre leur FONCTION. Ne pas les confondre.'
+    ]: story.append(Paragraph(escape(m),styles['Mathis']))
+    story.append(Paragraph('3. ACCORDS : je cherche le mot qui commande',styles['MathisTitre']))
+    for txt in ['Les filles → chantent : le sujet commande la terminaison -ent.',
+                'Les grandes maisons : le nom commande les accords du déterminant et de l’adjectif.',
+                'Les pommes que j’ai mangées : COD placé avant le participe passé avec avoir.',
+                'Le groupe d’enfants joue : le noyau du sujet est « groupe », au singulier.']:
+        story.append(Paragraph(escape(txt),styles['Mathis']))
+    doc.build(story)
+    return out.getvalue()
+
+EXERCICES_ACCORDS = [
+    ('Les filles ___ dans la cour.', ['joue','jouent'], 'jouent', 'Le sujet « les filles » est pluriel : le verbe prend -ent.'),
+    ('Les ___ maisons sont jolies.', ['grand','grandes'], 'grandes', '« maisons » est féminin pluriel : l’adjectif s’accorde.'),
+    ('Le groupe d’enfants ___.', ['joue','jouent'], 'joue', 'Le noyau du sujet est « groupe », singulier.'),
+    ('Les pommes que j’ai ___.', ['mangé','mangées'], 'mangées', 'Avec avoir, le COD « les pommes » est placé avant le participe passé.'),
+]
+
+def afficher_accords_guides():
+    with st.expander('🔗 Atelier : je trouve le mot qui commande l’accord'):
+        numero=st.selectbox('Exercice',range(len(EXERCICES_ACCORDS)),format_func=lambda i:f'Exercice {i+1}',key='accords_guides_numero')
+        phrase,options,reponse,explication=EXERCICES_ACCORDS[numero]
+        st.markdown(f'### {phrase}')
+        choix=st.radio('Choisis la bonne terminaison / forme',options,index=None,key=f'accords_guides_choix_{numero}')
+        if st.button('✅ Valider cet accord',key='accords_guides_valider'):
+            if choix is None: st.warning('Choisis une réponse avant de valider.')
+            elif choix==reponse: st.success('Bravo ! '+explication)
+            else: st.error('Essaie encore. '+explication)
+
 def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
 
-    # Mémo toujours visible sur la page Grammaire
-    st.subheader("🎨 Code couleur et règles des accords")
-    st.markdown(
-        """
-        **Code couleur des natures de mots**
+    st.info("🆕 NOUVEAU : Sujet, Verbe, COD et COI — deux activités disponibles juste ci-dessous.")
+    afficher_atelier_fonctions(fonction_appel_ia)
+    st.divider()
+    st.subheader("📚 Grammaire visuelle et accords — activités existantes")
 
-        <span style="background-color:#e74c3c;color:white;padding:4px 8px;border-radius:5px;">🔺 Déterminant</span> &nbsp;
-        <span style="background-color:#9b59b6;color:white;padding:4px 8px;border-radius:5px;">💖 Pronom</span> &nbsp;
-        <span style="background-color:#f39c12;color:#222;padding:4px 8px;border-radius:5px;">⭐ Nom</span> &nbsp;
-        <span style="background-color:#2ecc71;color:#102010;padding:4px 8px;border-radius:5px;">🟩 Verbe</span> &nbsp;
-        <span style="background-color:#3498db;color:white;padding:4px 8px;border-radius:5px;">🔵 Adjectif</span> &nbsp;
-        <span style="background-color:#7f8c8d;color:white;padding:4px 8px;border-radius:5px;">⬛ Mot invariable</span>
-
-        **Règles d’accord avec les couleurs associées**
-
-        <div style="border-left:6px solid #e74c3c;padding:8px 12px;margin:8px 0;background:#fff5f5;">
-        <span style="background:#e74c3c;color:white;padding:3px 6px;border-radius:4px;">🔺 DÉTERMINANT</span>
-        + <span style="background:#f39c12;color:#222;padding:3px 6px;border-radius:4px;">⭐ NOM</span><br/>
-        Le déterminant accompagne le nom. Ils s’accordent en <b>genre</b> et en <b>nombre</b>.
-        Exemple : <i>le chat / les chats</i> ; <i>une chatte</i>.
-        </div>
-
-        <div style="border-left:6px solid #3498db;padding:8px 12px;margin:8px 0;background:#f2f8ff;">
-        <span style="background:#3498db;color:white;padding:3px 6px;border-radius:4px;">🔵 ADJECTIF</span>
-        + <span style="background:#f39c12;color:#222;padding:3px 6px;border-radius:4px;">⭐ NOM</span><br/>
-        L’adjectif s’accorde avec le nom qu’il précise, en <b>genre</b> et en <b>nombre</b>.
-        Exemple : <i>un petit chien / une petite chienne / des petites chiennes</i>.
-        </div>
-
-        <div style="border-left:6px solid #2ecc71;padding:8px 12px;margin:8px 0;background:#f2fff5;">
-        <span style="background:#9b59b6;color:white;padding:3px 6px;border-radius:4px;">💖 PRONOM</span>
-        ou <span style="background:#f39c12;color:#222;padding:3px 6px;border-radius:4px;">⭐ GROUPE NOMINAL</span>
-        = <b>SUJET</b> → <span style="background:#2ecc71;color:#102010;padding:3px 6px;border-radius:4px;">🟩 VERBE</span><br/>
-        Le verbe s’accorde avec son sujet. Pour trouver le sujet, demande :
-        <b>« Qui est-ce qui… ? »</b> ou <b>« Qu’est-ce qui… ? »</b>.
-        Exemple : <i>Le garçon joue / Les garçons jouent</i> ; <i>Elle chante / Elles chantent</i>.
-        </div>
-
-        **Méthode en 4 étapes :** 1. Je repère le nom ou le sujet. 2. Je cherche les mots qui vont avec.
-        3. Je vérifie le genre, le nombre ou la personne. 4. Je relis les terminaisons.
-
-        *Astuce : les symboles accompagnent les couleurs pour que le mémo reste utile même en impression noir et blanc.*
-        """,
-        unsafe_allow_html=True,
-    )
-    st.download_button(
-        label="📥 Télécharger le code couleur et les règles d’accords (PDF imprimable)",
-        data=telecharger_pdf_code_couleur(),
-        file_name="code_couleur_et_regles_accords.pdf",
-        mime="application/pdf",
-        key="download_code_couleur_pdf",
-    )
+    # Mémo commun à l'écran et au PDF : nature (formes) ≠ fonction (surlignage).
+    afficher_memo_grammaire_complet()
+    st.download_button('📥 Télécharger le mémo complet en PDF',
+                       data=pdf_memo_grammaire_complet(), file_name='memo_grammaire_mathis.pdf',
+                       mime='application/pdf', key='pdf_memo_complet')
+    afficher_accords_guides()
     st.divider()
     
     mode_choix = st.radio(
@@ -1844,8 +1996,6 @@ def afficher_page_grammaire(fonction_appel_ia):
     phrase = st.session_state.phrase_grammaire
     st.divider()
     
-    afficher_atelier_fonctions(fonction_appel_ia)
-    st.divider()
     st.subheader("Autres activités de grammaire conservées")
     tab_ex, tab_exo, tab_acc = st.tabs(["📖 Analyse", "✏️ Symboles", "✍️ Accords"])
     
