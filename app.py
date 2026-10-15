@@ -667,35 +667,38 @@ def afficher_page_grammaire(fonction_appel_ia):
         st.subheader("Analyse de la phrase")
         afficher_legende_couleurs()
         afficher_phrase_symboles(phrase)
-
     with tab_exo:
         st.subheader("Identifie le symbole de chaque mot")
         with st.expander("ℹ️ Rappel du code couleur"):
             afficher_legende_couleurs()
         mots = phrase.get("mots", [])
         cols = st.columns(max(1, len(mots)))
-                    choix_eleve[idx] = st.selectbox(
-                        f"Symb {idx}",
-                        ["-- Choisir --"] + [s["label"] for s in SYMBOLES_GRAMMAIRE.values()],
-                        key=f"symb_sel_gram_{idx}",
-                        label_visibility="collapsed"
-                    )
+        choix_eleve = {}
+        for idx, m in enumerate(mots):
+            with cols[idx]:
+                st.markdown(f"<h4 style='text-align: center;'>{m['mot']}</h4>", unsafe_allow_html=True)
+                choix_eleve[idx] = st.selectbox(
+                    f"Symb {idx}",
+                    ["-- Choisir --"] + [s["label"] for s in SYMBOLES_GRAMMAIRE.values()],
+                    key=f"symb_sel_gram_{idx}",
+                    label_visibility="collapsed"
+                )
 
-            if st.button("Valider mes symboles", key="valider_symb_gram"):
-                exact = True
-                for idx, m in enumerate(mots):
-                    type_mot = m.get("type", "")
-                    infos_symbole = SYMBOLES_GRAMMAIRE.get(type_mot, {})
-                    label_attendu = infos_symbole.get("label", "")
-                    
-                    if choix_eleve[idx] != label_attendu:
-                        exact = False
-                if exact:
-                    st.balloons()
-                    st.success("Bravo ! Tout est correct ! 🎉")
-                else:
-                    st.warning("Il y a des erreurs, vérifie l'onglet Exemple.")
-
+        if st.button("Valider mes symboles", key="valider_symb_gram"):
+            exact = True
+            for idx, m in enumerate(mots):
+                type_mot = m.get("type", "")
+                infos_symbole = SYMBOLES_GRAMMAIRE.get(type_mot, {})
+                label_attendu = infos_symbole.get("label", "")
+                
+                if choix_eleve[idx] != label_attendu:
+                    exact = False
+            if exact:
+                st.balloons()
+                st.success("Bravo ! Tout est correct ! 🎉")
+            else:
+                st.warning("Il y a des erreurs, vérifie l'onglet Exemple.")
+                
     with tab_acc:
         st.subheader("Exercice d'accord")
         accord = phrase.get("accord", {})
