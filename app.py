@@ -11,6 +11,79 @@ from openai import OpenAI
 import google.generativeai as genai
 import os
 
+def generer_fiche_compacte_module(donnees_module):
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {{
+                size: A4 portrait;
+                margin: 10mm;
+            }}
+            body {{
+                font-family: Arial, sans-serif;
+                font-size: 11pt;
+                color: #333;
+                line-height: 1.3;
+            }}
+            h1 {{
+                font-size: 14pt;
+                text-align: center;
+                color: #2c3e50;
+                margin-bottom: 5px;
+                border-bottom: 2px solid #3498db;
+                padding-bottom: 5px;
+            }}
+            .container {{
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }}
+            .etape-box {{
+                border: 1px solid #bdc3c7;
+                border-radius: 5px;
+                padding: 8px;
+                background-color: #f9f9f9;
+            }}
+            .etape-title {{
+                font-weight: bold;
+                color: #2980b9;
+                font-size: 12pt;
+                margin-bottom: 5px;
+            }}
+            /* Style compact pour les symboles ou listes */
+            .inline-list {{
+                display: flex;
+                gap: 15px;
+                flex-wrap: wrap;
+            }}
+        </style>
+    </head>
+    <body>
+        <h1>Fiche Récapitulative - Module Pédagogique</h1>
+        <div class="container">
+            <div class="etape-box">
+                <div class="etape-title">1. Découverte & Analyse</div>
+                <p>{donnees_module.get('texte', '')}</p>
+            </div>
+            
+            <div class="etape-box">
+                <div class="etape-title">2. Étapes de travail & Exercices</div>
+                <p>Espace réservé aux consignes condensées et aux exercices d'application directe.</p>
+            </div>
+            
+            <div class="etape-box">
+                <div class="etape-title">3. Trace écrite / Mémo</div>
+                <p>Rappel des règles essentielles à retenir sur une seule ligne.</p>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+    
 def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
     
