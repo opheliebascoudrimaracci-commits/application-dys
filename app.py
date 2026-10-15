@@ -684,7 +684,10 @@ def afficher_page_grammaire(fonction_appel_ia):
             if st.button("Valider mes symboles", key="valider_symb_gram"):
                 exact = True
                 for idx, m in enumerate(mots):
-                    label_attendu = SYMBOLES_GRAMMAIRE.get(m["type"], {}).get("label", "")
+                    type_mot = m.get("type", "")
+                    infos_symbole = SYMBOLES_GRAMMAIRE.get(type_mot, {})
+                    label_attendu = infos_symbole.get("label", "")
+                    
                     if choix_eleve[idx] != label_attendu:
                         exact = False
                 if exact:
@@ -692,7 +695,7 @@ def afficher_page_grammaire(fonction_appel_ia):
                     st.success("Bravo ! Tout est correct ! 🎉")
                 else:
                     st.warning("Il y a des erreurs, vérifie l'onglet Exemple.")
-                    
+
     with tab_acc:
         st.subheader("Exercice d'accord")
         accord = phrase.get("accord", {})
