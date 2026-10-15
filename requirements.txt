@@ -1,7 +1,9 @@
 streamlit
 pytesseract
 Pillow
-streamlit
 groq
 google-generativeai
 openai
+reportlab
+python-docx
+pypdf
