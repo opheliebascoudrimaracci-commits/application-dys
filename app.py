@@ -667,6 +667,7 @@ def afficher_page_grammaire(fonction_appel_ia):
         st.subheader("Analyse de la phrase")
         afficher_legende_couleurs()
         afficher_phrase_symboles(phrase)
+
     with tab_exo:
         st.subheader("Identifie le symbole de chaque mot")
         with st.expander("ℹ️ Rappel du code couleur"):
