@@ -730,17 +730,15 @@ elif menu_selection == "🏠 Présentation":
     st.title("✏️ Application Pédagogique & Adaptation DYS")
     st.subheader("Ophélie Bascou Drimaracci")
     st.write("---")
-    st.markdown("""
-    Bienvenue sur cette application pédagogique conçue pour faciliter l'accès à la lecture 
-    et accompagner les enfants et élèves présentant des troubles **DYS** (dyslexie, dyspraxie).
+    st.write("Bienvenue sur cette application pédagogique conçue pour faciliter l'accès à la lecture et accompagner les enfants et élèves présentant des troubles **DYS** (dyslexie, dyspraxie).")
     
-    ### 🌟 Ce que propose l'application :
-    * **📄 Aide à la lecture de texte** : Saisissez ou collez n'importe quel texte pour l'adapter instantanément.
-    * **📷 Importation OCR** : Prenez en photo un livre ou une feuille pour en extraire le texte et l'adapter.
-    * **✨ Générateur d'histoires magiques** : Créez des histoires personnalisées selon différents niveaux de difficulté.
-    * **🎤 Aide à la dictée (Propulsée par l'IA)** : Analyse phonétique intelligente, découpage syllabique et génération de dictées contextuelles.
-    * **📐 Grammaire Visuelle & Accords** : Analyse syntaxique par symboles colorés, exercices interactifs d'accords et fiches d'exercices téléchargeables avec code couleur.
-    """)
+    st.markdown("### 🌟 Ce que propose l'application :")
+    st.markdown("* **📄 Aide à la lecture de texte** : Saisissez ou collez n'importe quel texte pour l'adapter instantanément.")
+    st.markdown("* **📷 Importation OCR** : Prenez en photo un livre ou une feuille pour en extraire le texte et l'adapter.")
+    st.markdown("* **✨ Générateur d'histoires magiques** : Créez des histoires personnalisées selon différents niveaux de difficulté.")
+    st.markdown("* **🎤 Aide à la dictée (Propulsée par l'IA)** : Analyse phonétique intelligente, découpage syllabique et génération de dictées contextuelles.")
+    st.markdown("* **📐 Grammaire Visuelle & Accords** : Analyse syntaxique par symboles colorés, exercices interactifs d'accords et fiches d'exercices téléchargeables avec code couleur.")
+
 
 elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
     st.title("📄 Aide à la lecture & OCR")
