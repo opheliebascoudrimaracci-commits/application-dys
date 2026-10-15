@@ -1157,9 +1157,31 @@ def parse_word_to_blocks(word, sounds_dict=None, is_plural_verb=False, keep_fina
     if not sounds_dict:
         sounds_dict = EXACT_COMPLEX_SOUNDS
         
+    # Traitement prioritaire du graphème « ien » lorsqu'il représente le son /jɛ̃/.
+    # Le i reste noir, « en » est vert sapin, et le groupe entier est souligné
+    # d'un seul trait par le moteur de rendu. Les mots où « ien » ne porte pas
+    # ce son sont exclus pour éviter les faux positifs.
+    ien_exclusions = ("client", "clients", "patience", "patient", "patiente", "patients", "patientes",
+                      "science", "sciences", "conscience", "consciences", "quotient", "quotients",
+                      "orient", "orientation", "orienter", "expérience", "expériences")
+    ien_cible = "ien" in w_lower and not any(ex in w_lower for ex in ien_exclusions)
+
     while i < n:
         char = word[i]
         c_lower = char.lower()
+        # La terminaison verbale -ent de « ils/elles parlent » est muette :
+        # la traiter avant la recherche des graphèmes nasaux « en ».
+        if is_plural_verb and i >= n - 3:
+            blocks.append({'text': char, 'is_muted': True, 'render_type': 'muted', 'color': None, 'phoneme': None})
+            i += 1
+            continue
+        if ien_cible and i + 3 <= n and w_lower[i:i+3] == "ien":
+            blocks.append({
+                'text': word[i:i+3], 'is_muted': False,
+                'render_type': 'ien_group', 'color': '#0E6636', 'phoneme': 'ien'
+            })
+            i += 3
+            continue
         if i == n - 2 and w_lower[i:i+2] == 'et' and n > 2:
             blocks.append({'text': word[i:i+2], 'is_muted': False, 'render_type': 'color_text', 'color': '#8E44AD', 'phoneme': 'é'})
             i += 2
@@ -1174,7 +1196,6 @@ def parse_word_to_blocks(word, sounds_dict=None, is_plural_verb=False, keep_fina
         # couleur de référence. Le dictionnaire EXACT_COMPLEX_SOUNDS est prioritaire.
         sons_secours = {
             'ch': ('#2980B9', 'ch'),
-            'ui': ('#2980B9', 'ui'),
         }
         special_sounds = {son: regle for son, regle in sons_secours.items() if son not in sounds_dict}
 
@@ -1264,6 +1285,13 @@ def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs
                 txt_styled = f"<span style='color: {color}; font-weight: bold;'>{text}</span>"
             elif render_type == 'color_text':
                 txt_styled = f"<span style='color: {color};'>{text}</span>"
+            elif render_type == 'ien_group':
+                # Un seul soulignement continu sur « ien » ; i noir, en vert sapin.
+                safe_i = escape(text[:1])
+                safe_en = escape(text[1:])
+                txt_styled = ("<span style='text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 3px;'>"
+                              f"<span style='color:#000000'>{safe_i}</span>"
+                              f"<span style='color:#0E6636'>{safe_en}</span></span>")
             elif render_type == 'muted':
                 txt_styled = f"<span style='color: #a0a0a0; text-decoration: line-through;'>{text}</span>"
             else:
