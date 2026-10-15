@@ -411,45 +411,83 @@ def proposer_histoire(eleve, titre, contenu, source, niveau, sons="", interets="
 
 
 def sons_couleurs_html(texte, activer=True):
-    """Coloration indicative par graphèmes, avec priorité aux graphèmes longs.
-    Les graphèmes ambigus sont signalés comme aide visuelle, pas comme analyse phonétique infaillible.
+    """Colorie les graphèmes connus sans confondre les terminaisons verbales muettes.
+
+    Règle contextuelle importante : dans « ils/elles parlent », la terminaison
+    verbale -ent est muette et ne doit pas être colorée comme le son nasal /ɑ̃/.
+    La suite « ui » n'est pas ajoutée à la liste des graphèmes colorés : elle
+    reste donc dans la couleur du texte, au lieu d'être assimilée à « eu ».
     """
     if not activer:
         return escape(texte).replace("\n", "<br>")
+
     couleurs = {
-        "eau":lire_preference("couleur_o/au/eau", "#D4AC0D"),
-        "ain":lire_preference("couleur_in/ain/ein", "#239B56"),
-        "ein":lire_preference("couleur_in/ain/ein", "#239B56"),
-        "oi":lire_preference("couleur_oi", "#222222"),
-        "on":lire_preference("couleur_on", "#784212"),
-        "un":lire_preference("couleur_un", "#922B21"),
-        "ou":lire_preference("couleur_ou", "#E60000"),
-        "an":lire_preference("couleur_an/en nasal", "#E67E22"),
-        "en":lire_preference("couleur_an/en nasal", "#E67E22"),
-        "au":lire_preference("couleur_o/au/eau", "#D4AC0D"),
-        "ai":lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
-        "ei":lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
-        "et":lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
-        "ez":lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
-        "er":lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
-        "eu":lire_preference("couleur_eu/œu", "#5DADE2"),
-        "œu":lire_preference("couleur_eu/œu", "#5DADE2"),
-        "ch":lire_preference("couleur_ch", "#CD8B62"),
-        "qu":"#34495E",
-        "in":lire_preference("couleur_in/ain/ein", "#239B56")
+        "eau": lire_preference("couleur_o/au/eau", "#D4AC0D"),
+        "ain": lire_preference("couleur_in/ain/ein", "#239B56"),
+        "ein": lire_preference("couleur_in/ain/ein", "#239B56"),
+        "oi": lire_preference("couleur_oi", "#222222"),
+        "on": lire_preference("couleur_on", "#784212"),
+        "un": lire_preference("couleur_un", "#922B21"),
+        "ou": lire_preference("couleur_ou", "#E60000"),
+        "an": lire_preference("couleur_an/en nasal", "#E67E22"),
+        "en": lire_preference("couleur_an/en nasal", "#E67E22"),
+        "au": lire_preference("couleur_o/au/eau", "#D4AC0D"),
+        "ai": lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
+        "ei": lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
+        "et": lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
+        "ez": lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
+        "er": lire_preference("couleur_et/ez/er/ai/ei", "#7D3C98"),
+        "eu": lire_preference("couleur_eu/œu", "#5DADE2"),
+        "œu": lire_preference("couleur_eu/œu", "#5DADE2"),
+        "ch": lire_preference("couleur_ch", "#CD8B62"),
+        "qu": "#34495E",
+        "in": lire_preference("couleur_in/ain/ein", "#239B56"),
     }
-    # Segmentation prudente : la règle "an/en" ne s'applique pas devant une voyelle,
-    # pour éviter par exemple de colorer le an de « ananas » comme nasal.
+
+    # Repère les mots et leur contexte pour ne pas colorier -ent verbal.
+    mots = list(re.finditer(r"[A-Za-zÀ-ÖØ-öø-ÿŒœÆæ]+(?:['’][A-Za-zÀ-ÖØ-öø-ÿŒœÆæ]+)*", texte))
+    terminaisons_ent_muettes = set()
+    pronoms_sujets = {"ils", "elles"}
+    verbes_frequents_ent = {
+        "parlent", "mangent", "chantent", "jouent", "regardent", "écoutent",
+        "marchent", "dansent", "aiment", "adorent", "arrivent", "partent",
+        "restent", "tombent", "passent", "travaillent", "finissent",
+        "choisissent", "grandissent", "prennent", "viennent", "font",
+        "vont", "peuvent", "veulent", "doivent", "disent", "lisent",
+        "écrivent", "courent", "dorment", "ouvrent", "offrent",
+    }
+    for idx, wm in enumerate(mots):
+        mot = wm.group(0).lower()
+        precedent = mots[idx - 1].group(0).lower() if idx > 0 else ""
+        if mot.endswith("ent") and (
+            precedent in pronoms_sujets or mot in verbes_frequents_ent
+        ):
+            terminaisons_ent_muettes.add((wm.start(), wm.end() - 3, wm.end()))
+
     pat = re.compile(r"eau|ain|ein|œu|ou|on|un|oi|an|en|au|ai|ei|et|ez|er|eu|ch|qu|in", re.I)
     out, pos = [], 0
     for m in pat.finditer(texte):
         token = m.group(0)
-        if token.lower() in {"an", "en"} and m.end() < len(texte) and texte[m.end()].lower() in "aeiouyàâäéèêëïîôöùûü":
+        token_lower = token.lower()
+
+        # Si le graphème « en » appartient à la terminaison verbale muette -ent,
+        # on le laisse en couleur normale.
+        if token_lower == "en" and any(
+            start_ent <= m.start() and m.end() <= end_ent
+            for _, start_ent, end_ent in terminaisons_ent_muettes
+        ):
             continue
+
+        # « an/en » devant une voyelle correspond généralement à une suite de
+        # voyelles prononcées séparément plutôt qu'au son nasal.
+        if token_lower in {"an", "en"} and m.end() < len(texte) and texte[m.end()].lower() in "aeiouyàâäéèêëïîôöùûü":
+            continue
+
         out.append(escape(texte[pos:m.start()]))
-        color = couleurs.get(token.lower(), "#222")
+        color = couleurs.get(token_lower, "#222222")
         out.append(f'<span style="color:{color};font-weight:700">{escape(token)}</span>')
         pos = m.end()
+
     out.append(escape(texte[pos:]))
     return "".join(out).replace("\n", "<br>")
 
