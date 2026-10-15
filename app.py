@@ -481,4 +481,390 @@ def afficher_legende_couleurs():
 SYMBOLES_GRAMMAIRE = {
     "determinant": {"label": "Déterminant", "emoji": "🔺", "couleur": "#e74c3c"},
     "det": {"label": "Déterminant", "emoji": "🔺", "couleur": "#e74c3c"},
-    "pronom": {"label": "Pronom", "emoji": "💖", "couleur": "#9b
+    "pronom": {"label": "Pronom", "emoji": "💖", "couleur": "#9b59b6"},
+    "pron": {"label": "Pronom", "emoji": "💖", "couleur": "#9b59b6"},
+    "nom": {"label": "Nom commun", "emoji": "⭐", "couleur": "#f1c40f"},
+    "nom_commun": {"label": "Nom commun", "emoji": "⭐", "couleur": "#f1c40f"},
+    "nom_propre": {"label": "Nom propre", "emoji": "✨", "couleur": "#f1c40f"},
+    "verbe": {"label": "Verbe", "emoji": "🟩", "couleur": "#2ecc71"},
+    "v": {"label": "Verbe", "emoji": "🟩", "couleur": "#2ecc71"},
+    "invariable": {"label": "Mot invariable", "emoji": "⬛", "couleur": "#34495e"},
+    "mot_invariable": {"label": "Mot invariable", "emoji": "⬛", "couleur": "#34495e"},
+    "adjectif": {"label": "Adjectif", "emoji": "🔵", "couleur": "#3498db"},
+    "adj": {"label": "Adjectif", "emoji": "🔵", "couleur": "#3498db"},
+    "autre": {"label": "Autre", "emoji": "❓", "couleur": "#95a5a6"}
+}
+
+def afficher_phrase_symboles(phrase_data):
+    mots = phrase_data.get("mots", [])
+    if not mots:
+        st.warning("Aucune phrase à afficher.")
+        return
+    html_mots = []
+    for m in mots:
+        type_mot = m.get("type", "").lower()
+        info_symb = SYMBOLES_GRAMMAIRE.get(type_mot, {"emoji": "❓", "label": "Autre"})
+        emoji_display = info_symb.get("emoji", "❓")
+        mot_texte = m.get('mot', '')
+        html_mots.append(
+            f"<div style='display:inline-block; text-align:center; margin:8px 10px; padding:10px 12px; background:#ffffff; border-radius:8px; border:1px solid #dcdde1; vertical-align:top;'>"
+            f"<div style='font-size:22px; font-weight:bold; color:#2c3e50; margin-bottom:6px;'>{mot_texte}</div>"
+            f"<div style='font-size:20px;'>{emoji_display}</div>"
+            f"<div style='font-size:8pt; color:#666;'>{info_symb.get('label','')}</div>"
+            f"</div>"
+        )
+    st.markdown(f"<div style='text-align:center; background:#f8f9fa; padding:15px; border-radius:12px; border:1px solid #e1e8ed;'>{''.join(html_mots)}</div>", unsafe_allow_html=True)
+
+def generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_force=None, niveau=1):
+    if texte_force:
+        mots_bruts = texte_force.split()
+        mots_list = [{"mot": m, "type": "nom" if i%2==0 else "determinant"} for i, m in enumerate(mots_bruts)]
+        return {
+            "texte": texte_force,
+            "niveau": niveau,
+            "mots": mots_list,
+            "accord": {
+                "phrase_trou": texte_force,
+                "options": ["s", "e", "ent", "rien"],
+                "reponse": "rien"
+            }
+        }
+    return {
+        "texte": "Les enfants jouent dans la cour.",
+        "niveau": niveau,
+        "mots": [
+            {"mot": "Les", "type": "determinant"},
+            {"mot": "enfants", "type": "nom"},
+            {"mot": "jouent", "type": "verbe"},
+            {"mot": "dans", "type": "invariable"},
+            {"mot": "la", "type": "determinant"},
+            {"mot": "cour", "type": "nom"}
+        ],
+        "accord": {
+            "phrase_trou": "Les enfant__ jouent dans la cour.",
+            "options": ["s", "x", "rien"],
+            "reponse": "s"
+        }
+    }
+
+def generer_fiche_html_imprimable(phrase):
+    mots = phrase.get("mots", [])
+    accord = phrase.get("accord", {})
+    mots_html = ""
+    for m in mots:
+        mots_html += f"""
+        <div style="text-align: center; border: 1px solid #ddd; padding: 4px; border-radius: 4px; min-width: 50px; background: #fdfdfd;">
+            <div style="font-size: 9pt; color: #666; margin-bottom: 2px;">{m.get('type', '')}</div>
+            <div style="font-weight: bold; font-size: 11pt;">{m.get('mot', '')}</div>
+        </div>
+        """
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {{ size: A4 portrait; margin: 8mm; }}
+            body {{ font-family: Arial, sans-serif; font-size: 10pt; color: #2c3e50; line-height: 1.25; margin: 0; padding: 0; }}
+            .header {{ text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 4px; margin-bottom: 10px; }}
+            .header h1 {{ font-size: 13pt; margin: 0 0 3px 0; color: #2c3e50; }}
+            .section {{ border: 1px solid #bdc3c7; border-radius: 4px; padding: 6px 10px; margin-bottom: 8px; background-color: #fafafa; }}
+            .section-title {{ font-weight: bold; color: #2980b9; font-size: 10pt; margin-bottom: 5px; border-bottom: 1px dashed #ddd; padding-bottom: 2px; }}
+            .mots-container {{ display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; margin-top: 5px; }}
+            .footer {{ text-align: center; font-size: 8pt; color: #888; margin-top: 10px; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Fiche Mémo & Exercices : Grammaire Visuelle</h1>
+            <p>Niveau {phrase.get('niveau', 1)} | Application Pédagogique DYS</p>
+        </div>
+        <div class="section">
+            <div class="section-title">1. Découverte & Analyse de la phrase</div>
+            <p style="text-align: center; font-size: 11pt; font-weight: bold; margin: 5px 0;">"{phrase.get('texte', '')}"</p>
+            <div class="mots-container">{mots_html}</div>
+        </div>
+        <div class="section">
+            <div class="section-title">2. Exercice : Associer chaque mot à sa nature</div>
+        </div>
+        <div class="section">
+            <div class="section-title">3. Exercice d'Accords</div>
+            <p style="margin: 4px 0;"><b>Phrase à compléter :</b> {accord.get('phrase_trou', phrase.get('texte', ''))}</p>
+        </div>
+        <div class="footer">Document généré pour un usage pédagogique individualisé.</div>
+    </body>
+    </html>
+    """
+    return html_content
+    def afficher_page_grammaire(fonction_appel_ia):
+    st.header("📐 Module Grammaire Visuelle & Accords")
+    
+    mode_choix = st.radio(
+        "Source de la phrase :",
+        ["Piocher dans la banque de 100 phrases", "Écrire ma propre phrase", "Générer une phrase inédite avec l'IA"],
+        horizontal=True,
+        key="mode_grammaire_radio"
+    )
+
+    historique = charger_historique()
+
+    if mode_choix == "Piocher dans la banque de 100 phrases":
+        niveau_sel = st.selectbox("Sélectionner le niveau :", [1, 2, 3], format_func=lambda x: f"Niveau {x}", key="niv_sel_gram")
+        phrases_dispos = [p for p in historique if p.get("niveau") == niveau_sel]
+        if phrases_dispos:
+            st.session_state.phrase_grammaire = random.choice(phrases_dispos)
+        else:
+            nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, niveau=niveau_sel)
+            sauvegarder_phrase_dans_historique(nouvelle)
+            st.session_state.phrase_grammaire = nouvelle
+
+    elif mode_choix == "Écrire ma propre phrase":
+        saisie_user = st.text_input("Saisissez votre phrase :", key="input_saisie_libre")
+        if st.button("Analyser et ajouter à la banque", key="btn_analyse_libre"):
+            if saisie_user.strip():
+                with st.spinner("Analyse et découpage en cours..."):
+                    nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_force=saisie_user)
+                    if not isinstance(nouvelle, dict) or "mots" not in nouvelle:
+                        mots_decoupes = [{"mot": m, "type": "autre"} for m in saisie_user.split()]
+                        nouvelle = {
+                            "texte": saisie_user,
+                            "niveau": 1,
+                            "mots": mots_decoupes,
+                            "accord": {"phrase_trou": saisie_user, "options": ["s", "e", "ent"], "reponse": ""}
+                        }
+                sauvegarder_phrase_dans_historique(nouvelle)
+                st.session_state.phrase_grammaire = nouvelle
+                st.success("Phrase analysée et prête avec les symboles ! 🎉")
+                st.rerun()
+            else:
+                st.warning("Veuillez entrer une phrase.")
+
+    elif mode_choix == "Générer une phrase inédite avec l'IA":
+        niveau_gen = st.selectbox("Niveau à générer :", ["CP", "CE1", "CE2"], key="select_niveau_gen")
+        if st.button("Générer une nouvelle phrase", key="btn_gen_ia"):
+            with st.spinner("Génération en cours..."):
+                nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, niveau=1)
+            if nouvelle:
+                sauvegarder_phrase_dans_historique(nouvelle)
+                st.session_state.phrase_grammaire = nouvelle
+                st.success("Phrase générée et sauvegardée !")
+                st.rerun()
+
+    if "phrase_grammaire" not in st.session_state:
+        if historique:
+            st.session_state.phrase_grammaire = historique[0]
+        else:
+            nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, niveau=1)
+            sauvegarder_phrase_dans_historique(nouvelle)
+            st.session_state.phrase_grammaire = nouvelle
+
+    phrase = st.session_state.phrase_grammaire
+    st.divider()
+
+    tab_ex, tab_exo, tab_acc = st.tabs(["📖 Exemple", "✏️ Exercice (Symboles)", "✍️ Accords"])
+
+    with tab_ex:
+        st.subheader("Analyse de la phrase")
+        afficher_legende_couleurs()
+        afficher_phrase_symboles(phrase)
+
+    with tab_exo:
+        st.subheader("Identifie le symbole de chaque mot")
+        with st.expander("ℹ️ Rappel du code couleur"):
+            afficher_legende_couleurs()
+        mots = phrase.get("mots", [])
+        cols = st.columns(max(1, len(mots)))
+        choix_eleve = {}
+        for idx, m in enumerate(mots):
+            with cols[idx]:
+                st.markdown(f"<h4 style='text-align: center;'>{m['mot']}</h4>", unsafe_allow_html=True)
+                choix_eleve[idx] = st.selectbox(
+                    f"Symb {idx}",
+                    ["-- Choisir --"] + [s["label"] for s in SYMBOLES_GRAMMAIRE.values()],
+                    key=f"symb_sel_gram_{idx}",
+                    label_visibility="collapsed"
+                )
+        if st.button("Valider mes symboles", key="valider_symb_gram"):
+            exact = True
+            for idx, m in enumerate(mots):
+                label_attendu = SYMBOLES_GRAMMAIRE.get(m["type"], {}).get("label", "")
+                if choix_eleve[idx] != label_attendu:
+                    exact = False
+            if exact:
+                st.balloons()
+                st.success("Bravo ! Tout est correct ! 🎉")
+            else:
+                st.warning("Il y a des erreurs, vérifie l'onglet Exemple.")
+
+    with tab_acc:
+        st.subheader("Exercice d'accord")
+        accord = phrase.get("accord", {})
+        st.markdown(f"### {accord.get('phrase_trou', phrase.get('texte', ''))}")
+        choix_accord = st.radio(
+            "Sélectionne la réponse correcte :",
+            options=accord.get("options", ["Rien (pas d'accord)", "s", "e", "ent"]),
+            horizontal=True,
+            key="radio_accord_gram"
+        )
+        if st.button("Vérifier l'accord", key="btn_verif_accord"):
+            if choix_accord == accord.get("reponse"):
+                st.balloons()
+                st.success("Excellente réponse ! 🌟")
+            else:
+                st.error(f"Attention, la bonne réponse était : '{accord.get('reponse')}'")
+
+    st.divider()
+    html_fiche = generer_fiche_html_imprimable(phrase)
+    st.download_button(
+        label="📥 Télécharger la fiche d'exercice",
+        data=html_fiche,
+        file_name=f"fiche_grammaire_niveau_{phrase.get('niveau', 1)}.html",
+        mime="text/html",
+        type="primary",
+        key="download_fiche_gram"
+)
+# ==========================================
+# GESTION DES PAGES DU MENU LATÉRAL
+# ==========================================
+
+if menu_selection == "🏠 Présentation":
+    st.title("✏️ Application Pédagogique & Adaptation DYS")
+    st.subheader("Ophélie Bascou Drimaracci")
+    st.write("---")
+    st.markdown("""
+    Bienvenue sur cette application pédagogique conçue pour faciliter l'accès à la lecture 
+    et accompagner les enfants et élèves présentant des troubles **DYS** (dyslexie, dyspraxie).
+    
+    ### 🌟 Ce que propose l'application :
+    * **📄 Aide à la lecture de texte** : Saisissez ou collez n'importe quel texte pour l'adapter instantanément.
+    * **📷 Importation OCR** : Prenez en photo un livre ou une feuille pour en extraire le texte et l'adapter.
+    * **✨ Générateur d'histoires magiques** : Créez des histoires personnalisées selon différents niveaux de difficulté.
+    * **🎤 Aide à la dictée (Propulsée par l'IA)** : Analyse phonétique intelligente, découpage syllabique et génération de dictées contextuelles.
+    * **📐 Grammaire Visuelle & Accords** : Analyse syntaxique par symboles colorés, exercices interactifs d'accords et fiches d'exercices téléchargeables avec code couleur.
+    """)
+
+elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
+    st.title("📄 Aide à la lecture & OCR")
+    st.subheader("Ophélie Bascou Drimaracci")
+    tab1, tab2 = st.tabs(["📄 Saisie / Coller du texte", "📷 Importer une image (OCR)"])
+    with tab1:
+        st.write("### Saisir ou coller un texte")
+        txt = st.text_area("Entrez votre texte ici :", height=140, placeholder="Tapez ou collez votre texte...")
+        if txt:
+            st.write("---")
+            opts = build_controls("histoire_t1")
+            render_full_dys_text(txt, **opts)
+    with tab2:
+        st.write("### 📷 Capturer ou importer une photo")
+        choix_source = st.radio("Méthode :", ["Prendre une photo en direct", "Importer depuis la galerie / un fichier"], key="source_ocr")
+        file = st.camera_input("Cliquez pour prendre la photo du texte") if choix_source == "Prendre une photo en direct" else st.file_uploader("Choisissez une image (PNG, JPG)", type=["png", "jpg", "jpeg"], key="file_ocr")
+        if file:
+            img = Image.open(file)
+            st.image(img, caption="Image sélectionnée", use_container_width=True)
+            try:
+                extracted_text = pytesseract.image_to_string(img, lang='fra')
+                if extracted_text.strip():
+                    st.success("Texte extrait avec succès !")
+                    opts = build_controls("ocr_ctrl")
+                    render_full_dys_text(extracted_text, **opts)
+                else:
+                    st.warning("Aucun texte n'a pu être extrait de cette image.")
+            except Exception as e:
+                st.error(f"Erreur OCR : {e}")
+
+elif menu_selection == "✨ Générateur d'histoires":
+    st.title("✨ Générateur d'histoires d'apprentissage")
+    st.subheader("Ophélie Bascou Drimaracci")
+    theme = st.text_input("Thème de l'histoire (ex: Un petit dragon courageux) :")
+    niveau = st.selectbox("Niveau scolaire :", ["CP", "CE1", "CE2", "CM1", "CM2"])
+    if st.button("🪄 Générer l'histoire") and theme:
+        with st.spinner("L'IA invente une histoire..."):
+            prompt = f"Écris une courte histoire captivante pour un enfant de niveau {niveau} sur le thème : '{theme}'. Texte simple, positif, environ 100 mots."
+            histoire = interroger_ia(prompt, temperature=0.8)
+            st.session_state["histoire_generee"] = histoire
+    if "histoire_generee" in st.session_state:
+        st.write("---")
+        opts = build_controls("histoire_gen")
+        render_full_dys_text(
+            st.session_state["histoire_generee"], 
+            show_phonemes=opts["show_phonemes"], 
+            show_colors=opts["show_colors"], 
+            show_arcs=opts["show_arcs"], 
+            word_alt=opts["word_alt"], 
+            line_alt=opts["line_alt"], 
+            soft_bg=opts["soft_bg"], 
+            size=opts["size"], 
+            key_suffix="histoire_gen"
+        )
+
+elif menu_selection == "🎤 Aide à la dictée":
+    st.title("🎤 Préparation de la Dictée Personnalisée")
+    st.caption("Ophélie Bascou Drimaracci")
+    st.write("Saisissez vos mots de la semaine. L'IA va créer la séquence complète d'apprentissage sur 4 jours avec mots à trous et pièges !")
+    mots_input = st.text_area(
+        "Entrez vos mots (séparés par une virgule, un espace ou un retour à la ligne) :", 
+        height=100, 
+        placeholder="ex: chat, chien, Mathis, école, vacances..."
+    )
+    if mots_input:
+        opts = build_controls("dictee_ctrl")
+        if st.button("🪄 Générer la séquence de dictée sur 4 pages"):
+            with st.spinner("L'IA prépare les 4 étapes d'apprentissage..."):
+                prompt = f"""
+                À partir de cette liste de mots : {mots_input}
+                Génère un contenu pédagogique structuré en JSON pour un enfant DYS.
+                Le JSON doit contenir exactement ces clefs :
+                - "mots_cles": la liste nettoyée des mots.
+                - "jour1": une liste de courtes phrases simples présentant les mots.
+                - "jour2": une liste de phrases à trous où les mots clés ont des lettres manquantes (ex: m_this, éco_e, va_ances) pour faire travailler la mémoire orthographique.
+                - "jour3": une auto-dictée de 2-3 phrases simples.
+                - "dictee_finale": le texte complet de la dictée finale (3-4 phrases simples sous forme d'une seule chaîne de texte).
+                Réponds uniquement par le JSON valide.
+                """
+                res_ia = interroger_ia(prompt, temperature=0.7)
+                try:
+                    res_json_clean = re.sub(r'```json|```', '', res_ia).strip()
+                    st.session_state["data_dictee"] = json.loads(res_json_clean)
+                except Exception as e:
+                    mots_list = [m.strip() for m in re.split(r'[, \n]+', mots_input) if m.strip()]
+                    st.session_state["data_dictee"] = {
+                        "mots_cles": mots_list,
+                        "jour1": [f"Découverte du mot : {m}" for m in mots_list],
+                        "jour2": [f"Complète le mot : {m[:2]}_{m[3:] if len(m)>3 else ''}" for m in mots_list],
+                        "jour3": ["Auto-dictée : révise bien les mots appris."],
+                        "dictee_finale": f"Voici la dictée avec les mots : {', '.join(mots_list)}."
+                    }
+        if "data_dictee" in st.session_state:
+            data = st.session_state["data_dictee"]
+            st.write("---")
+            st.subheader("📚 Fiche de travail & Préparation en 4 Étapes")
+            tab_j1, tab_j2, tab_j3, tab_j4 = st.tabs([
+                "📄 Page 1 : Jour 1 (Découverte & Sons)", 
+                "📄 Page 2 : Jour 2 (Mots à trous & Pièges)", 
+                "📄 Page 3 : Jour 3 (Auto-dictée)", 
+                "📄 Page 4 : Jour 4 (Dictée Finale)"
+            ])
+            with tab_j1:
+                st.markdown("### 🧩 Jour 1 : Découverte des sons & Mots de la semaine")
+                mots_texte = " • ".join(data.get("mots_cles", []))
+                if mots_texte:
+                    render_full_dys_text(mots_texte, key_suffix="j1_mots", **opts)
+                st.write("---")
+                st.write("**Phrases de découverte :**")
+                j1_content = format_to_str(data.get("jour1", ""))
+                render_full_dys_text(j1_content, key_suffix="j1_exo", **opts)
+            with tab_j2:
+                st.markdown("### ✏️ Jour 2 : Mots à trous (Lettres manquantes)")
+                j2_content = format_to_str(data.get("jour2", ""))
+                render_full_dys_text(j2_content, key_suffix="j2_exo", **opts)
+            with tab_j3:
+                st.markdown("### 🧠 Jour 3 : Auto-dictée & Mémorisation")
+                j3_content = format_to_str(data.get("jour3", ""))
+                render_full_dys_text(j3_content, key_suffix="j3_exo", **opts)
+            with tab_j4:
+                st.markdown("### 🏆 Jour 4 : Dictée Bilan Finale")
+                dictee_finale = format_to_str(data.get("dictee_finale", ""))
+                render_full_dys_text(dictee_finale, key_suffix="j4_exo", **opts)
+
+elif menu_selection == "📐 Grammaire Visuelle & Accords":
+    afficher_page_grammaire(interroger_ia)
