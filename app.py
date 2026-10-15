@@ -1,4 +1,8 @@
 import streamlit as st
+import traceback
 
-st.title("Test de mon application Mathis")
-st.success("Streamlit fonctionne !")
+try:
+    import application_mathis
+except Exception:
+    st.error("Une erreur empêche le chargement de Mathis.")
+    st.code(traceback.format_exc())
