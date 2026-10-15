@@ -948,74 +948,156 @@ VOWELS = "aeiouyàâäéèêëïîôöùûüÿ"
 
 @st.cache_data
 def analyser_syllabes_texte_ia_v3(texte):
+    """
+    Renvoie, pour chaque mot, un découpage syllabique (ex. « mai-son »).
+    Si l'IA ne répond pas correctement, utilise un comptage de secours au lieu
+    de traiter automatiquement chaque mot comme une seule syllabe.
+    """
+    import re
+    import unicodedata
+
     decoupages_fixes = {
         "bonjour": "bon-jour",
         "banane": "ba-na-ne",
         "j’aime": "j’ai-me",
+        "j'aime": "j'ai-me",
         "ecole": "é-co-le",
+        "école": "é-co-le",
         "vacances": "va-can-ces",
         "voiture": "voi-ture",
         "maison": "mai-son",
         "appelle": "ap-pel-le",
         "m’appelle": "m’ap-pel-le",
+        "m'appelle": "m'ap-pel-le",
         "connaissais": "con-nais-sais",
-        "parti": "par-ti"
+        "parti": "par-ti",
     }
-    
-    words = list(set(texte.lower().strip().split()))
-    words_clean = [w.strip(".,;:?!'\\«»' ") for w in words if len(w.strip(".,;:?!'\\«»' ")) > 0]
-    
+
+    def nettoyer_mot(mot):
+        mot = mot.strip(".,;:?!¡¿'’\\«»\"()[]{} ")
+        return mot.lower()
+
+    mots = []
+    for brut in texte.lower().split():
+        mot = nettoyer_mot(brut)
+        if mot and mot not in mots:
+            mots.append(mot)
+
     syllables_map = {}
     mots_a_analyser = []
-    
-    for w in words_clean:
-        if w in decoupages_fixes:
-            syllables_map[w] = decoupages_fixes[w]
+    for mot in mots:
+        if mot in decoupages_fixes:
+            syllables_map[mot] = decoupages_fixes[mot]
         else:
-            mots_a_analyser.append(w)
-            
+            mots_a_analyser.append(mot)
+
     if mots_a_analyser:
         prompt = f"""
-Pour chacun des mots suivants en français, réécris le mot en séparant ses syllabes orales par un tiret (-).
-Réponds UNIQUEMENT sous la forme "mot:mo-t-de-cou-pé", un par ligne. Exemple :
+Pour chacun des mots français ci-dessous, sépare les syllabes de lecture avec un tiret.
+Garde exactement le mot avant les deux-points et réponds avec une ligne par mot.
+N'ajoute aucune explication.
+Exemple :
 maison:mai-son
-Mots à analyser :
+banane:ba-na-ne
+Mots :
 {", ".join(mots_a_analyser)}
 """
         try:
-            reponse = interroger_ia(prompt, temperature=0.0).strip()
-            for ligne in reponse.split("\n"):
-                if ":" in ligne:
-                    parts = ligne.split(":")
-                    mot = parts[0].strip().lower()
-                    decoupe = parts[1].strip()
-                    syllables_map[mot] = decoupe
+            reponse = interroger_ia(prompt, temperature=0.0)
+            for ligne in (reponse or "").splitlines():
+                if ":" not in ligne:
+                    continue
+                mot_reponse, decoupe = ligne.split(":", 1)
+                mot_reponse = nettoyer_mot(mot_reponse)
+                decoupe = decoupe.strip().strip("`* ")
+                # N'accepter que les découpages contenant le mot et des segments non vides.
+                segments = [seg.strip() for seg in decoupe.split("-")]
+                if (mot_reponse in mots_a_analyser and len(segments) >= 2
+                        and all(segments)
+                        and "".join(segments).replace("’", "'").replace("'", "")
+                        == mot_reponse.replace("’", "'").replace("'", "")):
+                    syllables_map[mot_reponse] = "-".join(segments)
         except Exception:
+            # Le comptage de secours ci-dessous garde l'application fonctionnelle
+            # lorsque l'API n'est pas configurée ou indisponible.
             pass
-            
-    for w in words_clean:
-        if w not in syllables_map or "-" not in syllables_map[w]:
-            syllables_map[w] = w
-            
+
+    for mot in mots:
+        if mot not in syllables_map:
+            syllables_map[mot] = count_syllables_approx(mot)
+
     return syllables_map
 
+
 def count_syllables_approx(word):
-    clean_w = word.lower().strip(".,;:?!'\\«»' ")
+    """
+    Comptage de secours pour les arcs syllabiques.
+    Il compte les noyaux vocaliques et traite les groupes de voyelles français
+    comme un seul noyau. Ce n'est qu'une approximation : les syllabes de lecture
+    exactes sont préférablement fournies par le découpage IA ou le dictionnaire.
+    """
+    import re
+
+    clean_w = word.lower().strip(".,;:?!¡¿'’\\«»\"()[]{} ")
     if not clean_w:
         return 1
-    vowels = "aeiouyàâäéèêëïîôöùûüÿ"
-    if clean_w.endswith('e') and len(clean_w) > 3 and not clean_w.endswith(('ée', 'ie', 'ue', 'oe')):
-        clean_w = clean_w[:-1]
-    count = 0
-    in_vowel_group = False
-    for char in clean_w:
-        if char in vowels:
-            if not in_vowel_group:
-                count += 1
-                in_vowel_group = True
-        else:
-            in_vowel_group = False
-    return max(1, count)
+
+    # Les mots avec apostrophe sont comptés partie par partie : l'élision ne doit
+    # pas fusionner artificiellement les voyelles des deux côtés de l'apostrophe.
+    parties = [p for p in re.split(r"['’]", clean_w) if p]
+    if not parties:
+        return 1
+
+    groupes_voyelles = (
+        "eau", "oeu", "œu", "au", "ai", "ei", "eu", "ou", "oi", "ui",
+        "an", "am", "en", "em", "on", "om", "in", "im", "ain", "aim",
+        "ein", "ien", "oin", "un", "um", "é", "è", "ê"
+    )
+    voyelles = "aeiouyàâäéèêëïîôöùûüÿœæ"
+    total = 0
+
+    for partie in parties:
+        if not partie:
+            continue
+        # Retirer le e final muet uniquement si le mot contient déjà un autre
+        # noyau vocalique ; les mots connus comme « banane » sont traités plus
+        # précisément par le dictionnaire fixe ci-dessus.
+        p = partie
+        if len(p) > 2 and p.endswith("e") and not p.endswith(("ée", "ie", "ue", "oe", "ye")):
+            p = p[:-1]
+
+        i = 0
+        noyaux = 0
+        while i < len(p):
+            if p[i] not in voyelles:
+                i += 1
+                continue
+            trouve = None
+            for groupe in sorted(groupes_voyelles, key=len, reverse=True):
+                if p.startswith(groupe, i):
+                    trouve = groupe
+                    break
+            if trouve:
+                noyaux += 1
+                i += len(trouve)
+            else:
+                noyaux += 1
+                i += 1
+            # Consommer les voyelles adjacentes qui font partie du même noyau,
+            # par exemple dans « eau » ou « oi ».
+            while i < len(p) and p[i] in voyelles:
+                adjacent = next(
+                    (g for g in sorted(groupes_voyelles, key=len, reverse=True)
+                     if p.startswith(g, i)),
+                    None
+                )
+                if adjacent:
+                    i += len(adjacent)
+                else:
+                    break
+        total += max(1, noyaux)
+
+    return max(1, total)
 
 def parse_word_to_blocks(word, sounds_dict=None, is_plural_verb=False, keep_final_consonant=False, is_end_of_sentence=False):
     blocks = []
