@@ -855,15 +855,56 @@ menu_selection = st.sidebar.radio(
 )
 
 
-with st.sidebar.expander("👤 Profil de l’élève", expanded=True):
-    eleve_actif = st.text_input("Prénom ou pseudonyme", value=lire_preference("eleve_actif", "Élève"), max_chars=40, key="profil_eleve_input")
-    niveau_actif = st.selectbox("Niveau", ["CP", "CE1", "CE2", "CM1", "CM2", "Collège", "Adulte"], index=["CP", "CE1", "CE2", "CM1", "CM2", "Collège", "Adulte"].index(lire_preference("niveau_actif", "CE2")) if lire_preference("niveau_actif", "CE2") in ["CP", "CE1", "CE2", "CM1", "CM2", "Collège", "Adulte"] else 2, key="profil_niveau_input")
-    if st.button("💾 Enregistrer mon profil", use_container_width=True):
-        enregistrer_preference("eleve_actif", eleve_actif.strip() or "Élève")
+with st.sidebar.expander("👤 Profils des élèves", expanded=True):
+    niveaux_disponibles = ["CP", "CE1", "CE2", "CM1", "CM2", "Collège", "Adulte"]
+    with connexion_db() as conn:
+        profils_sidebar = [dict(r) for r in conn.execute("SELECT nom, niveau FROM profils ORDER BY nom COLLATE NOCASE").fetchall()]
+    if not profils_sidebar:
+        nom_initial = lire_preference("eleve_actif", "Élève").strip() or "Élève"
+        niveau_initial = lire_preference("niveau_actif", "CE1")
+        with connexion_db() as conn:
+            conn.execute("INSERT OR IGNORE INTO profils(nom,niveau,cree_le) VALUES(?,?,?)", (nom_initial, niveau_initial, datetime.now().astimezone().isoformat(timespec="seconds")))
+        profils_sidebar = [{"nom": nom_initial, "niveau": niveau_initial}]
+    noms_profils = [p["nom"] for p in profils_sidebar]
+    profil_memorise = lire_preference("eleve_actif", noms_profils[0])
+    if profil_memorise not in noms_profils:
+        profil_memorise = noms_profils[0]
+    index_profil = noms_profils.index(profil_memorise)
+    eleve_actif = st.selectbox("Profil actif", noms_profils, index=index_profil, key="profil_selection_actif")
+    profil_courant = next((p for p in profils_sidebar if p["nom"] == eleve_actif), profils_sidebar[0])
+    niveau_profil = profil_courant.get("niveau", "CE1")
+    if niveau_profil not in niveaux_disponibles:
+        niveau_profil = "CE1"
+    niveau_actif = st.selectbox("Niveau de ce profil", niveaux_disponibles,
+                                index=niveaux_disponibles.index(niveau_profil), key=f"profil_niveau_{eleve_actif}")
+    if st.button("💾 Enregistrer les réglages du profil actif", use_container_width=True, key="profil_sauvegarder_actif"):
+        with connexion_db() as conn:
+            conn.execute("UPDATE profils SET niveau=? WHERE nom=?", (niveau_actif, eleve_actif))
+        enregistrer_preference("eleve_actif", eleve_actif)
         enregistrer_preference("niveau_actif", niveau_actif)
-        st.session_state["profil_enregistre"] = True
-        st.success("Profil enregistré.")
-    eleve_actif = eleve_actif.strip() or "Élève"
+        st.success(f"Profil « {eleve_actif} » enregistré.")
+        st.rerun()
+    with st.form("form_creer_profil_sidebar", clear_on_submit=True):
+        st.markdown("**➕ Créer un autre profil**")
+        nouveau_profil_nom = st.text_input("Prénom ou pseudonyme", max_chars=40, key="nouveau_profil_nom_sidebar")
+        nouveau_profil_niveau = st.selectbox("Niveau initial", niveaux_disponibles, index=1, key="nouveau_profil_niveau_sidebar")
+        creer_profil = st.form_submit_button("Créer et enregistrer le profil", use_container_width=True)
+    if creer_profil:
+        nom_nettoye = nouveau_profil_nom.strip()
+        if not nom_nettoye:
+            st.warning("Saisis un prénom ou un pseudonyme pour créer le profil.")
+        elif nom_nettoye.casefold() in {n.casefold() for n in noms_profils}:
+            st.warning("Un profil porte déjà ce nom. Choisis un autre prénom ou pseudonyme.")
+        else:
+            with connexion_db() as conn:
+                conn.execute("INSERT INTO profils(nom,niveau,cree_le) VALUES(?,?,?)", (nom_nettoye, nouveau_profil_niveau, datetime.now().astimezone().isoformat(timespec="seconds")))
+            enregistrer_preference("eleve_actif", nom_nettoye)
+            enregistrer_preference("niveau_actif", nouveau_profil_niveau)
+            st.success(f"Profil « {nom_nettoye} » créé.")
+            st.rerun()
+    # Le changement de profil est mémorisé ; les résultats et l’historique d’histoires sont filtrés par nom.
+    enregistrer_preference("eleve_actif", eleve_actif)
+    enregistrer_preference("niveau_actif", niveau_actif)
 
 
 PLURAL_SUBJECTS = {
@@ -1618,30 +1659,90 @@ elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
             except Exception as e:
                 st.error(f"Erreur OCR : {e}")
 
-elif menu_selection == "✨ Générateur d'histoires":
-    st.title("✨ Générateur d'histoires d'apprentissage")
-    st.subheader("Ophélie Bascou Drimaracci")
-    theme = st.text_input("Thème de l'histoire (ex: Un petit dragon courageux) :")
-    niveau = st.selectbox("Niveau scolaire :", ["CP", "CE1", "CE2", "CM1", "CM2"])
-    if st.button("🪄 Générer l'histoire") and theme:
-        with st.spinner("L'IA invente une histoire..."):
-            prompt = f"Écris une courte histoire captivante pour un enfant de niveau {niveau} sur le thème : '{theme}'. Texte simple, positif, environ 100 mots."
-            histoire = interroger_ia(prompt, temperature=0.8)
-            st.session_state["histoire_generee"] = histoire
-    if "histoire_generee" in st.session_state:
-        st.write("---")
+elif menu_selection == "✨ Générateur d’histoires":
+    st.title("✨ Générateur d’histoires personnalisées")
+    st.caption(f"Profil actif : {eleve_actif} · Niveau du profil : {niveau_actif}")
+    st.write("Choisis le thème, les centres d’intérêt et les sons à travailler. L’histoire générée reste une proposition à vérifier par l’adulte avant d’être ajoutée à la bibliothèque.")
+    c1, c2 = st.columns(2)
+    with c1:
+        theme = st.text_input("Envie ou thème de l’histoire", placeholder="Ex. : un dragon qui joue au football", key="histoire_gen_theme")
+        niveau_options = ["CP", "CE1", "CE2", "CM1", "CM2"]
+        niveau_defaut = niveau_actif if niveau_actif in niveau_options else "CE1"
+        niveau_index = niveau_options.index(niveau_defaut)
+        niveau_histoire = st.selectbox("Niveau de lecture", niveau_options, index=niveau_index, key="histoire_gen_niveau")
+    with c2:
+        interets_histoire = st.text_input("Centres d’intérêt de l’enfant", placeholder="Ex. : dinosaures, chevaux, espace", key="histoire_gen_interets")
+        sons_histoire = st.text_input("Sons ou graphèmes à travailler", placeholder="Ex. : ou, on, ch, oi", key="histoire_gen_sons")
+    longueur_histoire = st.selectbox("Longueur", ["Très courte (80 à 120 mots)", "Courte (150 à 200 mots)", "Plus longue (250 à 350 mots)"], index=1, key="histoire_gen_longueur")
+    if st.button("🪄 Générer une histoire personnalisée", key="histoire_gen_bouton", type="primary"):
+        if not theme.strip():
+            st.warning("Indique d’abord le thème ou l’envie de l’enfant.")
+        else:
+            nombre_mots = {"Très courte (80 à 120 mots)": "80 à 120", "Courte (150 à 200 mots)": "150 à 200", "Plus longue (250 à 350 mots)": "250 à 350"}[longueur_histoire]
+            prompt = (
+                "Tu es un auteur jeunesse et tu aides un enfant qui apprend à lire en français. "
+                f"Écris une histoire originale de {nombre_mots} mots environ, adaptée au niveau {niveau_histoire}. "
+                f"Thème demandé : {theme.strip()}. Centres d’intérêt : {interets_histoire.strip() or 'aucun précisé'}. "
+                f"Graphèmes/sons à intégrer naturellement : {sons_histoire.strip() or 'aucun imposé'}. "
+                "Utilise des phrases claires, un vocabulaire adapté, une intrigue positive et une fin compréhensible. "
+                "Évite de prétendre qu’un graphème se prononce toujours de la même façon. "
+                "Réponds uniquement avec le titre sur la première ligne, puis le texte de l’histoire."
+            )
+            try:
+                with st.spinner("L’histoire est en cours de création…"):
+                    resultat_ia = interroger_ia(prompt, temperature=0.75)
+                if not resultat_ia or resultat_ia.startswith("Erreur IA"):
+                    st.error("La génération n’a pas abouti. Vérifie la configuration de la clé IA (GROQ_API_KEY ou GEMINI_API_KEY) et les dépendances, puis réessaie.")
+                    if resultat_ia:
+                        with st.expander("Détail technique pour l’adulte"):
+                            st.code(resultat_ia)
+                else:
+                    lignes_histoire = [ligne.strip() for ligne in resultat_ia.splitlines() if ligne.strip()]
+                    titre_histoire = lignes_histoire[0].lstrip("# ").strip()[:100] if lignes_histoire else theme.strip()
+                    texte_histoire = "\n".join(lignes_histoire[1:]).strip() if len(lignes_histoire) > 1 else resultat_ia.strip()
+                    if not texte_histoire:
+                        texte_histoire = resultat_ia.strip()
+                    st.session_state["histoire_generee"] = texte_histoire
+                    st.session_state["histoire_generee_titre"] = titre_histoire or theme.strip()
+                    st.session_state["histoire_generee_niveau"] = niveau_histoire
+                    st.session_state["histoire_generee_sons"] = sons_histoire.strip()
+                    st.session_state["histoire_generee_interets"] = interets_histoire.strip()
+                    st.success("Histoire générée. Relis-la avant de la proposer à l’enfant.")
+            except Exception as exc:
+                st.error("Une erreur inattendue a interrompu la génération. La page reste disponible : vérifie la configuration IA puis réessaie.")
+                with st.expander("Détail technique pour l’adulte"):
+                    st.code(f"{type(exc).__name__}: {exc}")
+    if st.session_state.get("histoire_generee"):
+        st.divider()
+        st.subheader(st.session_state.get("histoire_generee_titre", "Histoire générée"))
         opts = build_controls("histoire_gen")
-        render_full_dys_text(
-            st.session_state["histoire_generee"], 
-            show_phonemes=opts["show_phonemes"], 
-            show_colors=opts["show_colors"], 
-            show_arcs=opts["show_arcs"], 
-            word_alt=opts["word_alt"], 
-            line_alt=opts["line_alt"], 
-            soft_bg=opts["soft_bg"], 
-            size=opts["size"], 
-            key_suffix="histoire_gen"
-        )
+        try:
+            render_full_dys_text(
+                st.session_state["histoire_generee"],
+                show_phonemes=opts["show_phonemes"],
+                show_colors=opts["show_colors"],
+                show_arcs=opts["show_arcs"],
+                word_alt=opts["word_alt"],
+                line_alt=opts["line_alt"],
+                soft_bg=opts["soft_bg"],
+                size=opts["size"],
+                key_suffix="histoire_gen"
+            )
+        except Exception as exc:
+            st.warning("L’affichage adapté a rencontré un problème ; le texte brut reste disponible ci-dessous.")
+            st.text_area("Texte de l’histoire", value=st.session_state["histoire_generee"], height=240, key="histoire_gen_brut_secours")
+            with st.expander("Détail technique pour l’adulte"):
+                st.code(f"{type(exc).__name__}: {exc}")
+        if st.button("📚 Enregistrer comme proposition à valider par l’adulte", key="histoire_gen_enregistrer"):
+            titre_sauve = st.session_state.get("histoire_generee_titre", "Histoire personnalisée")
+            proposer_histoire(
+                eleve_actif, titre_sauve, st.session_state["histoire_generee"],
+                "Générée par IA", st.session_state.get("histoire_generee_niveau", niveau_actif),
+                st.session_state.get("histoire_generee_sons", ""),
+                st.session_state.get("histoire_generee_interets", ""), "a_valider"
+            )
+            st.success("Proposition enregistrée. L’adulte pourra la relire et l’approuver dans « Bibliothèque d’histoires ».")
+            st.rerun()
 
 elif menu_selection == "🎤 Aide à la dictée":
     st.title("🎤 Préparation de la Dictée Personnalisée")
