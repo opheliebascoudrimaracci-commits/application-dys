@@ -594,9 +594,9 @@ def generer_fiche_html_imprimable(phrase):
         <div class="footer">Document généré pour un usage pédagogique individualisé.</div>
     </body>
     </html>
-    """
     return html_content
-    def afficher_page_grammaire(fonction_appel_ia):
+
+def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
     
     mode_choix = st.radio(
