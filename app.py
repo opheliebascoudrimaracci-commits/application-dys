@@ -805,19 +805,21 @@ elif menu_selection == "🎤 Aide à la dictée":
     )
     if mots_input:
         opts = build_controls("dictee_ctrl")
-        if st.button("🪄 Générer la séquence de dictée sur 4 pages"):
-            with st.spinner("L'IA prépare les 4 étapes d'apprentissage..."):
-                prompt = f"""
-                À partir de cette liste de mots : {mots_input}
-                Génère un contenu pédagogique structuré en JSON pour un enfant DYS.
-                Le JSON doit contenir exactement ces clefs :
-                - "mots_cles": la liste nettoyée des mots.
-                - "jour1": une liste de courtes phrases simples présentant les mots.
-                - "jour2": une liste de phrases à trous où les mots clés ont des lettres manquantes (ex: m_this, éco_e, va_ances) pour faire travailler la mémoire orthographique.
-                - "jour3": une auto-dictée de 2-3 phrases simples.
-                - "dictee_finale": le texte complet de la dictée finale (3-4 phrases simples sous forme d'une seule chaîne de texte).
-                Réponds uniquement par le JSON valide.
-                """
+        if st.button("🪄 Générer la séquence"):
+            with st.spinner("L'IA prépare la séquence de dictée..."):
+                prompt = (
+                    "À partir de cette liste de mots : " + mots_input + "\n"
+                    "Génère un contenu pédagogique structuré pour une séquence de dictée de 4 jours.\n"
+                    "Le JSON doit contenir exactement cette structure :\n"
+                    "{\n"
+                    '    "mots_cles": [...],\n'
+                    '    "jour1": [...],\n'
+                    '    "jour2": [...],\n'
+                    '    "jour3": [...],\n'
+                    '    "dictee_finale": "..."\n'
+                    "}\n"
+                    "Réponds uniquement par le JSON brut, sans markdown."
+                )
                 res_ia = interroger_ia(prompt, temperature=0.7)
                 try:
                     res_json_clean = re.sub(r'```json|```', '', res_ia).strip()
