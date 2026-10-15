@@ -726,7 +726,6 @@ def afficher_page_grammaire(fonction_appel_ia):
 # ==========================================
 # GESTION DES PAGES DU MENU LATÉRAL
 # ==========================================
-
 elif menu_selection == "🏠 Présentation":
     st.title("✏️ Application Pédagogique & Adaptation DYS")
     st.subheader("Ophélie Bascou Drimaracci")
