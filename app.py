@@ -40,11 +40,11 @@ def interroger_ia(prompt_texte, temperature=0.8):
                     if response.choices and response.choices[0].message.content:
                         return response.choices[0].message.content.strip()
                 except Exception as e_inner:
-                    erreurs.append(f"Groq ({g_model}): {e_inner}")
+                    erreurs.append(f"Groq ({g_model}) : {e_inner}")
         except Exception as e:
-            erreurs.append(f"Groq Init: {e}")
+            erreurs.append(f"Groq Init : {e}")
     else:
-        erreurs.append("Groq: Clé 'GROQ_API_KEY' absente")
+        erreurs.append("Groq : Clé 'GROQ_API_KEY' absente")
 
     gemini_key = st.secrets.get("GEMINI_API_KEY") if hasattr(st, "secrets") else os.environ.get("GEMINI_API_KEY")
     if gemini_key:
@@ -55,9 +55,9 @@ def interroger_ia(prompt_texte, temperature=0.8):
             if res and res.text:
                 return res.text.strip()
         except Exception as e:
-            erreurs.append(f"Gemini: {e}")
+            erreurs.append(f"Gemini : {e}")
     else:
-        erreurs.append("Gemini: Clé 'GEMINI_API_KEY' absente")
+        erreurs.append("Gemini : Clé 'GEMINI_API_KEY' absente")
     return f"Erreur IA -> " + " | ".join(erreurs)
 
 # --- MENU LATÉRAL PRINCIPAL ---
@@ -67,7 +67,7 @@ menu_selection = st.sidebar.radio(
     [
         "🏠 Présentation",
         "📄 Aide à la lecture (Texte & OCR)",
-        "✨ Générateur d'histoires",
+        "✨ Générateur d’histoires",
         "🎤 Aide à la dictée",
         "📐 Grammaire Visuelle & Accords"
     ]
@@ -117,19 +117,19 @@ def analyser_syllabes_texte_ia_v3(texte):
     decoupages_fixes = {
         "bonjour": "bon-jour",
         "banane": "ba-na-ne",
-        "j'aime": "j'ai-me",
+        "j’aime": "j’ai-me",
         "ecole": "é-co-le",
         "vacances": "va-can-ces",
         "voiture": "voi-ture",
         "maison": "mai-son",
         "appelle": "ap-pel-le",
-        "m'appelle": "m'ap-pel-le",
+        "m’appelle": "m’ap-pel-le",
         "connaissais": "con-nais-sais",
         "parti": "par-ti"
     }
     
     words = list(set(texte.lower().strip().split()))
-    words_clean = [w.strip(".,;:?!'\"«»' ") for w in words if len(w.strip(".,;:?!'\"«»' ")) > 0]
+    words_clean = [w.strip(".,;:?!'\\«»' ") for w in words if len(w.strip(".,;:?!'\\«»' ")) > 0]
     
     syllables_map = {}
     mots_a_analyser = []
@@ -166,7 +166,7 @@ Mots à analyser :
     return syllables_map
 
 def count_syllables_approx(word):
-    clean_w = word.lower().strip(".,;:?!'\"«»' ")
+    clean_w = word.lower().strip(".,;:?!'\\«»' ")
     if not clean_w:
         return 1
     vowels = "aeiouyàâäéèêëïîôöùûüÿ"
@@ -185,11 +185,11 @@ def count_syllables_approx(word):
 
 def parse_word_to_blocks(word, sounds_dict=None, is_plural_verb=False, keep_final_consonant=False, is_end_of_sentence=False):
     blocks = []
-    clean_word = word.strip(".,;:?!'\"«» ")
+    clean_word = word.strip(".,;:?!'\\«» ")
     w_lower = clean_word.lower()
     n = len(word)
     i = 0
-    VOWELS = "aeiouyàâäéèêëîïôöùûüÿœæ"
+    vowels_set = "aeiouyàâäéèêëîïôöùûüÿœæ"
     
     if w_lower == "et":
         if is_end_of_sentence:
@@ -257,8 +257,8 @@ def parse_word_to_blocks(word, sounds_dict=None, is_plural_verb=False, keep_fina
             i += 1
             continue
         if c_lower == 's':
-            is_prev_vowel = (i > 0 and word[i-1].lower() in VOWELS)
-            is_next_vowel = (i + 1 < n and word[i+1].lower() in VOWELS)
+            is_prev_vowel = (i > 0 and word[i-1].lower() in vowels_set)
+            is_next_vowel = (i + 1 < n and word[i+1].lower() in vowels_set)
             is_final = (i == n - 1)
             if is_prev_vowel and is_next_vowel:
                 blocks.append({'text': char, 'is_muted': False, 'render_type': 'color_text', 'color': '#0d9488', 'phoneme': 'z'})
@@ -281,7 +281,7 @@ def parse_word_to_blocks(word, sounds_dict=None, is_plural_verb=False, keep_fina
     return blocks
 
 def render_word_multilevel(word, show_phonemes=True, show_colors=True, show_arcs=True, prev_word="", is_end_of_sentence=False, nb_syllables_override=None):
-    clean_word_lower = word.lower().strip(".,;:?!'\"«» ")
+    clean_word_lower = word.lower().strip(".,;:?!'\\«» ")
     prenoms_exclus = PRENOMS_CONSONNE_FINALE_PRONONCEE
     is_consonne_prononcee = clean_word_lower in prenoms_exclus
     clean_prev = prev_word.strip().lower() if prev_word else ""
@@ -365,7 +365,7 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
         rendered_words_adapted = []
         for idx, word in enumerate(words):
             prev_word = words[idx - 1] if idx > 0 else ""
-            clean_w = word.lower().strip(".,;:?!'\"«»' ")
+            clean_w = word.lower().strip(".,;:?!'\\«»' ")
             decoupe_ia = syllables_map.get(clean_w, word)
             word_html = render_word_multilevel(
                 word, 
@@ -393,7 +393,7 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
     st.markdown(f"<div style='font-size: {size}px; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
 
 def build_controls(key_prefix):
-    st.write("### 🎛️ Options d'adaptation DYS (Cumulables)")
+    st.write("### 🎛️ Options d’adaptation DYS (Cumulables)")
     c1, c2, c3 = st.columns(3)
     with c1:
         st.write("**Aides aux sons & syllabes :**")
@@ -408,7 +408,7 @@ def build_controls(key_prefix):
     with c3:
         st.write("**Typographie & Police DYS :**")
         font_choice = st.selectbox(
-            "Police d'écriture :",
+            "Police d’écriture :",
             [
                 "OpenDyslexic (Police DYS spécialisée)",
                 "Comic Sans MS / Lexie Readable (Anti-confusion b/d)",
@@ -435,7 +435,7 @@ def format_to_str(content):
     if isinstance(content, list):
         return "\n".join([format_to_str(item) for item in content])
     elif isinstance(content, dict):
-        return "\n".join([f"{k}: {format_to_str(v)}" for k, v in content.items()])
+        return "\n".join([f"{k} : {format_to_str(v)}" for k, v in content.items()])
     return str(content)
 
 def charger_historique():
@@ -482,19 +482,11 @@ SYMBOLES_GRAMMAIRE = {
     "determinant": {"label": "Déterminant", "emoji": "🔺", "couleur": "#e74c3c"},
     "det": {"label": "Déterminant", "emoji": "🔺", "couleur": "#e74c3c"},
     "pronom": {"label": "Pronom", "emoji": "💖", "couleur": "#9b59b6"},
-    "pron": {"label": "Pronom", "emoji": "💖", "couleur": "#9b59b6"},
-    "nom": {"label": "Nom commun", "emoji": "⭐", "couleur": "#f1c40f"},
-    "nom_commun": {"label": "Nom commun", "emoji": "⭐", "couleur": "#f1c40f"},
-    "nom_propre": {"label": "Nom propre", "emoji": "✨", "couleur": "#f1c40f"},
+    "nom": {"label": "Nom", "emoji": "⭐", "couleur": "#f39c12"},
     "verbe": {"label": "Verbe", "emoji": "🟩", "couleur": "#2ecc71"},
-    "v": {"label": "Verbe", "emoji": "🟩", "couleur": "#2ecc71"},
-    "invariable": {"label": "Mot invariable", "emoji": "⬛", "couleur": "#34495e"},
-    "mot_invariable": {"label": "Mot invariable", "emoji": "⬛", "couleur": "#34495e"},
     "adjectif": {"label": "Adjectif", "emoji": "🔵", "couleur": "#3498db"},
-    "adj": {"label": "Adjectif", "emoji": "🔵", "couleur": "#3498db"},
-    "autre": {"label": "Autre", "emoji": "❓", "couleur": "#95a5a6"}
+    "invariable": {"label": "Mot invariable", "emoji": "⬛", "couleur": "#7f8c8d"}
 }
-
 def afficher_phrase_symboles(phrase_data):
     mots = phrase_data.get("mots", [])
     if not mots:
