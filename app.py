@@ -224,21 +224,140 @@ def afficher_page_grammaire(fonction_appel_ia):
         type="primary",
         key="download_fiche_gram"
     )
-def generer_fiche_html_imprimable(phrase_data):
-    mots_html = []
-    for m in phrase_data["mots"]:
-        t = m["type"]
-        info_symb = SYMBOLES_GRAMMAIRE.get(t, {"emoji": ""})
-        emoji_display = info_symb["emoji"]
-        if m.get("is_sujet") and t != "sujet":
-            emoji_display = f"🔴 {info_symb['emoji']}"
-            
-        mots_html.append(f"""
-        <div style="display: inline-block; text-align: center; margin: 15px 20px; vertical-align: top;">
-            <div style="font-size: 28px; font-weight: bold; font-family: Arial, sans-serif; color: #2c3e50; margin-bottom: 8px;">{m['mot']}</div>
-            <div style="font-size: 26px;">{emoji_display}</div>
+def generer_fiche_html_imprimable(phrase):
+    mots = phrase.get("mots", [])
+    accord = phrase.get("accord", {})
+    
+    # Génération des blocs de mots pour la partie analyse/symboles
+    mots_html = ""
+    for m in mots:
+        mots_html += f"""
+        <div style="text-align: center; border: 1px solid #ddd; padding: 4px; border-radius: 4px; min-width: 50px; background: #fdfdfd;">
+            <div style="font-size: 9pt; color: #666; margin-bottom: 2px;">{m.get('type', '')}</div>
+            <div style="font-weight: bold; font-size: 11pt;">{m.get('mot', '')}</div>
         </div>
-        """)
+        """
+
+    html_content = f"""
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <style>
+            @page {{
+                size: A4 portrait;
+                margin: 8mm;
+            }}
+            body {{
+                font-family: Arial, sans-serif;
+                font-size: 10pt;
+                color: #2c3e50;
+                line-height: 1.25;
+                margin: 0;
+                padding: 0;
+            }}
+            .header {{
+                text-align: center;
+                border-bottom: 2px solid #3498db;
+                padding-bottom: 4px;
+                margin-bottom: 10px;
+            }}
+            .header h1 {{
+                font-size: 13pt;
+                margin: 0 0 3px 0;
+                color: #2c3e50;
+            }}
+            .header p {{
+                font-size: 9pt;
+                color: #555;
+                margin: 0;
+            }}
+            .section {{
+                border: 1px solid #bdc3c7;
+                border-radius: 4px;
+                padding: 6px 10px;
+                margin-bottom: 8px;
+                background-color: #fafafa;
+            }}
+            .section-title {{
+                font-weight: bold;
+                color: #2980b9;
+                font-size: 10pt;
+                margin-bottom: 5px;
+                border-bottom: 1px dashed #ddd;
+                padding-bottom: 2px;
+            }}
+            .mots-container {{
+                display: flex;
+                flex-wrap: wrap;
+                gap: 6px;
+                justify-content: center;
+                margin-top: 5px;
+            }}
+            .footer {{
+                text-align: center;
+                font-size: 8pt;
+                color: #888;
+                margin-top: 10px;
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>Fiche Mémo & Exercices : Grammaire Visuelle</h1>
+            <p>Niveau {phrase.get('niveau', 1)} | Application Pédagogique DYS</p>
+        </div>
+
+        <!-- Bloc 1 : Analyse de la phrase -->
+        <div class="section">
+            <div class="section-title">1. Découverte & Analyse de la phrase</div>
+            <p style="text-align: center; font-size: 11pt; font-weight: bold; margin: 5px 0;">
+                "{phrase.get('texte', '')}"
+            </p>
+            <div class="mots-container">
+                {mots_html}
+            </div>
+        </div>
+
+        <!-- Bloc 2 : Exercice de repérage des symboles -->
+        <div class="section">
+            <div class="section-title">2. Exercice : Associer chaque mot à sa nature</div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 5px;">
+                <tr>
+    """
+    
+    # Lignes pour l'exercice élève (cases vides à cocher ou relier)
+    for m in mots:
+        html_content += f"""
+                    <td style="text-align: center; border: 1px solid #ccc; padding: 6px;">
+                        <span style="font-weight: bold;">{m.get('mot', '')}</span>
+                        <div style="margin-top: 15px; border-bottom: 1px solid #999; width: 40px; display: inline-block;"></div>
+                    </td>
+        """
+
+    html_content += f"""
+                </tr>
+            </table>
+        </div>
+
+        <!-- Bloc 3 : Exercice d'accords -->
+        <div class="section">
+            <div class="section-title">3. Exercice d'Accords</div>
+            <p style="margin: 4px 0;"><b>Phrase à compléter :</b> {accord.get('phrase_trou', phrase.get('texte', ''))}</p>
+            <p style="margin: 4px 0; font-size: 9pt; color: #555;">Choix possibles : {", ".join(accord.get("options", ["s", "e", "ent"]))}</p>
+            <div style="margin-top: 10px; height: 25px; border-bottom: 1px dotted #666; width: 200px;">
+                <span style="font-size: 8pt; color: #777;">Réponse de l'élève : </span>
+            </div>
+        </div>
+
+        <div class="footer">
+            Document généré pour un usage pédagogique individualisé.
+        </div>
+    </body>
+    </html>
+    """
+    return html_content
+
 
     accord = phrase_data.get("accord", {})
     return f"""
