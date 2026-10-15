@@ -11,12 +11,24 @@ from openai import OpenAI
 import google.generativeai as genai
 import os
 
+
+def lire_cle_api(nom):
+    """Lit une clé depuis Streamlit Secrets ou les variables d'environnement."""
+    try:
+        valeur = st.secrets.get(nom)
+        if valeur:
+            return str(valeur).strip()
+    except Exception:
+        # Streamlit peut lever une exception si aucun fichier de secrets n'existe.
+        pass
+    return os.environ.get(nom, "").strip()
+
 # ==========================================
 # UTILITAIRE IA CENTRALISÉ (Groq / Gemini)
 # ==========================================
 def interroger_ia(prompt_texte, temperature=0.8):
     erreurs = []
-    groq_key = st.secrets.get("GROQ_API_KEY") if hasattr(st, "secrets") else os.environ.get("GROQ_API_KEY")
+    groq_key = lire_cle_api("GROQ_API_KEY")
     if groq_key:
         try:
             client = OpenAI(
@@ -46,7 +58,7 @@ def interroger_ia(prompt_texte, temperature=0.8):
     else:
         erreurs.append("Groq : Clé 'GROQ_API_KEY' absente")
 
-    gemini_key = st.secrets.get("GEMINI_API_KEY") if hasattr(st, "secrets") else os.environ.get("GEMINI_API_KEY")
+    gemini_key = lire_cle_api("GEMINI_API_KEY")
     if gemini_key:
         try:
             genai.configure(api_key=gemini_key.strip())
@@ -615,7 +627,7 @@ def afficher_page_grammaire(fonction_appel_ia):
         if st.button("Valider et analyser ma phrase", key="btn_valider_libre"):
             if texte_libre.strip():
                 with st.spinner("Analyse de votre phrase..."):
-                    nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_sur_mesure=texte_libre)
+                    nouvelle = generer_ou_analyser_phrase_ia(fonction_appel_ia, texte_force=texte_libre)
                 if nouvelle:
                     sauvegarder_phrase_dans_historique(nouvelle)
                     st.session_state.phrase_grammaire = nouvelle
@@ -713,7 +725,7 @@ def afficher_page_grammaire(fonction_appel_ia):
 # ==========================================
 # GESTION DES PAGES DU MENU LATÉRAL
 # ==========================================
-elif menu_selection == "🏠 Présentation":
+if menu_selection == "🏠 Présentation":
     st.title("✏️ Application Pédagogique & Adaptation DYS")
     st.subheader("Ophélie Bascou Drimaracci")
     st.write("---")
