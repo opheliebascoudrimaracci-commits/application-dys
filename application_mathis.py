@@ -911,7 +911,6 @@ menu_selection = st.sidebar.radio(
     "Choisissez un module :",
     [
         "🏠 Présentation",
-        "🖨️ Adapter et imprimer",
         "📄 Aide à la lecture (Texte & OCR)",
         "✨ Générateur d’histoires",
         "🎤 Aide à la dictée",
@@ -2149,16 +2148,6 @@ Les parents gardent la main. Cette application est un outil complémentaire issu
 
 **Parce que nos enfants n'ont pas besoin de devoirs supplémentaires. Ils ont besoin d'outils adaptés pour réussir ceux qu'ils ont déjà.** 💜
 """)
-
-elif menu_selection == "🖨️ Adapter et imprimer":
-    try:
-        # from atelier_familles import page as page_familles
-        st.warning("TEST : ouverture du module Adapter et imprimer")
-        # page_familles(eleve_actif, str(DB_PATH), interroger_ia)
-    except Exception:
-        import traceback
-        st.error("Erreur dans Adapter et imprimer")
-        st.code(traceback.format_exc())
 
 elif menu_selection == "📄 Aide à la lecture (Texte & OCR)":
     st.title("📄 Aide à la lecture & OCR")
