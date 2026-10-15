@@ -2153,6 +2153,7 @@ Les parents gardent la main. Cette application est un outil complémentaire issu
 elif menu_selection == "🖨️ Adapter et imprimer":
     try:
         from atelier_familles import page as page_familles
+        st.warning("TEST : ouverture du module Adapter et imprimer")
         page_familles(eleve_actif, str(DB_PATH), interroger_ia)
     except Exception:
         import traceback
