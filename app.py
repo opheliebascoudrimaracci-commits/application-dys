@@ -874,6 +874,13 @@ initialiser_extensions()
 
 # --- MENU LATÉRAL PRINCIPAL ---
 st.sidebar.title("📌 Navigation")
+st.sidebar.selectbox("🔤 Police de lecture", list(POLICES_DYS), key="police_dys_active")
+appliquer_police_dys()
+if st.session_state.get("police_dys_active") in ("Luciole", "OpenDyslexic"):
+    fichier = POLICES_DYS[st.session_state["police_dys_active"]][0]
+    if not (Path(__file__).resolve().parent / "fonts" / fichier).is_file():
+        st.sidebar.caption(f"⚠️ Police {st.session_state['police_dys_active']} non installée : ajoute fonts/{fichier} pour l'activer. Police de secours utilisée.")
+
 menu_selection = st.sidebar.radio(
     "Choisissez un module :",
     [
@@ -1373,7 +1380,34 @@ def render_full_dys_text(text, show_phonemes=True, show_colors=True, show_arcs=T
     style_bg = "background-color: #f4f6f9; padding: 15px; border-radius: 8px; border-left: 5px solid #4a90e2; color: #111111;" if soft_bg else ""
     
     st.markdown("### 👁️ Aperçu adapté :")
-    st.markdown(f"<div style='font-size: {size}px; {style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
+    _, famille = css_police_dys(kwargs.get("font_choice"))
+    interligne = float(kwargs.get("spacing", 2.0))
+    st.markdown(f"<div class='mathis-lecture' style='font-family:{famille};font-size:{size}px;line-height:{interligne};{style_bg}'>{full_content_adapted}</div>", unsafe_allow_html=True)
+
+# Polices locales facultatives : déposer les fichiers .ttf dans le dossier fonts/.
+# Sans fichier, le navigateur utilise une police de remplacement lisible.
+POLICES_DYS = {"Luciole": ("Luciole-Regular.ttf", "Arial, sans-serif"),
+               "OpenDyslexic": ("OpenDyslexic-Regular.otf", "Verdana, sans-serif"),
+               "Verdana": (None, "Verdana, sans-serif"),
+               "Arial": (None, "Arial, sans-serif")}
+
+def css_police_dys(nom=None):
+    nom = nom or st.session_state.get("police_dys_active", "Verdana")
+    fichier, secours = POLICES_DYS.get(nom, POLICES_DYS["Verdana"])
+    famille = f'"{nom}", {secours}' if fichier else secours
+    declaration = ""
+    if fichier:
+        chemin = Path(__file__).resolve().parent / "fonts" / fichier
+        if chemin.is_file():
+            extension = "opentype" if chemin.suffix.lower() == ".otf" else "truetype"
+            data = base64.b64encode(chemin.read_bytes()).decode("ascii")
+            declaration = (f"@font-face{{font-family:'{nom}';src:url(data:font/{'otf' if extension == 'opentype' else 'ttf'};base64,{data}) format('{extension}');font-display:swap;}}")
+    return declaration, famille
+
+def appliquer_police_dys():
+    nom = st.session_state.get("police_dys_active", "Verdana")
+    css, famille = css_police_dys(nom)
+    st.markdown(f"<style>{css}html,body,[data-testid='stAppViewContainer'],[data-testid='stSidebar'], .stMarkdown, .stMarkdown *, .stTextInput, .stTextArea, .stSelectbox, .stButton button, .stRadio, .stCheckbox {{font-family:{famille}!important;}} .mathis-lecture, .mathis-lecture * {{font-family:{famille}!important;}}</style>", unsafe_allow_html=True)
 
 def build_controls(key_prefix):
     st.write("### 🎛️ Options d’adaptation DYS (Cumulables)")
@@ -1401,13 +1435,13 @@ def build_controls(key_prefix):
         st.write("**Typographie & Police DYS :**")
         font_choice = st.selectbox(
             "Police d’écriture :",
-            [
-                "OpenDyslexic (Police DYS spécialisée)",
-                "Comic Sans MS / Lexie Readable (Anti-confusion b/d)",
-                "Arial / Luciole (Grande clarté)"
-            ],
+            list(POLICES_DYS),
+            index=list(POLICES_DYS).index(st.session_state.get("police_dys_active", "Verdana")),
             key=f"{key_prefix}_font"
         )
+        if font_choice != st.session_state.get("police_dys_active"):
+            st.session_state["police_dys_active"] = font_choice
+            appliquer_police_dys()
         size = st.slider("Taille de police (px) :", 16, 36, 24, key=f"{key_prefix}_size")
         spacing = st.slider("Espacement des lignes :", 1.5, 4.0, 2.5, 0.1, key=f"{key_prefix}_space")
         
@@ -1580,6 +1614,126 @@ def generer_fiche_html_imprimable(phrase):
     </html>
     """
     return html_content
+# Fonctions grammaticales : distinctes des natures de mots et de leurs symboles.
+COULEURS_FONCTIONS = {"sujet": "#0066cc", "verbe": "#cc0000", "cod": "#008000", "coi": "#800080"}
+EXEMPLES_FONCTIONS = {
+    "Lina mange une pomme.": {"sujet":"Lina", "verbe":"mange", "cod":"une pomme", "coi":""},
+    "Le médecin soigne le patient à l'hôpital.": {"sujet":"Le médecin", "verbe":"soigne", "cod":"le patient", "coi":""},
+    "Paul parle à sa sœur.": {"sujet":"Paul", "verbe":"parle", "cod":"", "coi":"à sa sœur"},
+    "Le chat dort.": {"sujet":"Le chat", "verbe":"dort", "cod":"", "coi":""},
+}
+
+def analyser_fonctions_ia(texte, appel_ia):
+    texte = texte.strip()
+    if texte in EXEMPLES_FONCTIONS:
+        return dict(EXEMPLES_FONCTIONS[texte]), "Exemple pédagogique vérifié"
+    prompt = ("Analyse grammaticalement cette phrase française : " + repr(texte) + "\n"
+              "Retourne UNIQUEMENT un objet JSON avec les quatre clés sujet, verbe, cod, coi. "
+              "Valeurs = segments EXACTS et continus de la phrase, ou chaîne vide si absent. "
+              "N'invente pas de COD/COI. Les compléments circonstanciels (lieu, temps) ne sont pas des COI. "
+              "Une phrase peut n'avoir ni COD ni COI. Analyse une seule proposition simple ; si ambigu, laisse vide. "
+              "Exemple : 'Il parle à son ami.' => {\"sujet\":\"Il\",\"verbe\":\"parle\",\"cod\":\"\",\"coi\":\"à son ami\"}.")
+    brut = appel_ia(prompt, temperature=0.1)
+    if not brut or brut.startswith("Erreur IA"):
+        return None, "Analyse IA indisponible. Renseigne la correction manuellement."
+    try:
+        obj = json.loads(re.sub(r"^```(?:json)?\s*|\s*```$", "", brut.strip(), flags=re.I))
+        valeurs = {k: str(obj.get(k, "") or "").strip() for k in COULEURS_FONCTIONS}
+        if any(v and v not in texte for v in valeurs.values()):
+            return None, "L'analyse proposée ne correspond pas exactement au texte. Correction adulte nécessaire."
+        return valeurs, "Proposition automatique : à vérifier par l'adulte"
+    except (ValueError, TypeError, AttributeError):
+        return None, "Réponse IA non exploitable. Correction adulte nécessaire."
+
+def afficher_memo_fonctions():
+    with st.expander("📚 Mémos : sujet, verbe, COD et COI", expanded=True):
+        a,b = st.columns(2)
+        with a:
+            st.markdown("🔵 **Sujet** — Qui est-ce qui ? Qu'est-ce qui ? Exemple : **Le chat** dort.")
+            st.markdown("🔴 **Verbe** — Action ou état. Exemple : Le chat **dort**.")
+        with b:
+            st.markdown("🟢 **COD** — Verbe + qui ? quoi ? Exemple : Lina mange **une pomme**.")
+            st.markdown("🟣 **COI** — Verbe + à qui ? à quoi ? de qui ? de quoi ? Exemple : Paul parle **à sa sœur**.")
+        st.caption("Attention : 'à l'hôpital' dans 'Le médecin soigne le patient à l'hôpital' est un complément de lieu, pas un COI. Certaines phrases n'ont ni COD ni COI.")
+
+def fiche_fonctions_pdf(texte, analyse, correction=False):
+    lignes = [texte, "", "COD : qui ? quoi ?  __________________________________", "", "COI : à qui ? à quoi ? de qui ? de quoi ?  _________________________"]
+    if correction:
+        lignes += ["", "CORRECTION ADULTE", "Sujet : " + (analyse.get("sujet") or "aucun"),
+                   "Verbe : " + (analyse.get("verbe") or "aucun"),
+                   "COD : " + (analyse.get("cod") or "aucun"),
+                   "COI : " + (analyse.get("coi") or "aucun")]
+    return generer_pdf_imprimable("Grammaire : je cherche les fonctions", "\n".join(lignes), "adulte" if correction else "enfant", taille=17, interligne=1.6)
+
+def afficher_atelier_fonctions(appel_ia):
+    st.subheader("🔎 Fonctions de la phrase : deux pages")
+    afficher_memo_fonctions()
+    tab_auto, tab_jeu = st.tabs(["📖 Page 1 — Analyse automatique", "✏️ Page 2 — Je cherche et je valide"])
+    with tab_auto:
+        texte = st.text_area("Phrase à analyser", value=st.session_state.get("fonctions_texte", "Lina mange une pomme."), key="fonctions_saisie", height=85)
+        if st.button("🔍 Analyser la phrase", key="fonctions_analyser"):
+            if texte.strip():
+                analyse, provenance = analyser_fonctions_ia(texte, appel_ia)
+                for _cle in COULEURS_FONCTIONS:
+                    st.session_state.pop(f"fonctions_edit_{_cle}", None)
+                    st.session_state.pop(f"fonctions_choix_{_cle}", None)
+                st.session_state["fonctions_texte"] = texte.strip()
+                st.session_state["fonctions_analyse"] = analyse or {k:"" for k in COULEURS_FONCTIONS}
+                st.session_state["fonctions_source"] = provenance
+                st.session_state["fonctions_revision"] = not bool(analyse)
+                st.session_state.pop("fonctions_valide", None)
+            else:
+                st.warning("Saisis une phrase.")
+        if "fonctions_analyse" in st.session_state:
+            st.caption(st.session_state.get("fonctions_source", ""))
+            analyse = st.session_state["fonctions_analyse"]
+            for cle, couleur in COULEURS_FONCTIONS.items():
+                st.markdown(f"<span style='color:{couleur};font-weight:700'>{cle.upper()} : {escape(analyse.get(cle) or '—')}</span>", unsafe_allow_html=True)
+            with st.expander("🔐 Adulte : vérifier ou corriger l'analyse", expanded=st.session_state.get("fonctions_revision", False)):
+                with st.form("fonctions_correction_adulte"):
+                    modif = {k:st.text_input(k.upper(), value=analyse.get(k, ""), key=f"fonctions_edit_{k}") for k in COULEURS_FONCTIONS}
+                    if st.form_submit_button("💾 Approuver la correction"):
+                        if any(v and v not in st.session_state["fonctions_texte"] for v in modif.values()):
+                            st.error("Chaque réponse doit être un groupe de mots exact de la phrase.")
+                        else:
+                            st.session_state["fonctions_analyse"] = modif
+                            st.session_state["fonctions_revision"] = False
+                            st.session_state["fonctions_approuvee"] = True
+                            st.success("Correction enregistrée pour cet exercice.")
+            if not st.session_state.get("fonctions_revision", False):
+                st.info("Passe à la page 2 : l'enfant pourra répondre sans voir la correction de cette page.")
+                st.download_button("📄 PDF enfant", fiche_fonctions_pdf(st.session_state["fonctions_texte"], st.session_state["fonctions_analyse"]), file_name="grammaire_enfant.pdf", mime="application/pdf", key="pdf_fonctions_enfant")
+                st.download_button("🔐 PDF corrigé adulte", fiche_fonctions_pdf(st.session_state["fonctions_texte"], st.session_state["fonctions_analyse"], True), file_name="grammaire_adulte.pdf", mime="application/pdf", key="pdf_fonctions_adulte")
+    with tab_jeu:
+        if "fonctions_analyse" not in st.session_state or st.session_state.get("fonctions_revision"):
+            st.info("L'adulte doit d'abord analyser et vérifier une phrase sur la page 1.")
+        else:
+            texte = st.session_state["fonctions_texte"]
+            analyse = st.session_state["fonctions_analyse"]
+            st.markdown("**Lis la phrase et cherche les groupes de mots :**")
+            st.markdown(f"<div class='mathis-lecture' style='font-size:24px;padding:12px;border:1px solid #ddd;border-radius:8px'>{escape(texte)}</div>", unsafe_allow_html=True)
+            # Sélection par mot ; plusieurs mots contigus peuvent former une réponse.
+            tokens = re.findall(r"[^\W_]+(?:['’][^\W_]+)*", texte, flags=re.UNICODE)
+            options = [f"{i+1}. {mot}" for i,mot in enumerate(tokens)]
+            selections = {}
+            for cle, question in [("cod", "🟢 COD : qui ? quoi ?"), ("coi", "🟣 COI : à qui ? à quoi ? de qui ? de quoi ?")]:
+                st.markdown(f"**{question}**")
+                selections[cle] = st.multiselect(f"Mots pour {cle.upper()} (laisser vide si absent)", options, key=f"fonctions_choix_{cle}")
+                st.caption("Une réponse peut être absente : ne sélectionne aucun mot dans ce cas.")
+            if st.button("✅ Valider mes réponses", key="fonctions_valider", type="primary"):
+                st.session_state["fonctions_valide"] = True
+            if st.session_state.get("fonctions_valide"):
+                for cle in ("cod", "coi"):
+                    indices = sorted(int(x.split(".",1)[0])-1 for x in selections[cle])
+                    proposition = " ".join(tokens[i] for i in indices)
+                    attendu = re.sub(r"\s+", " ", analyse.get(cle, "").strip())
+                    correct = re.sub(r"[^\wÀ-ÿ]+", "", proposition.lower()) == re.sub(r"[^\wÀ-ÿ]+", "", attendu.lower())
+                    if correct:
+                        st.success(f"{cle.upper()} : bravo ! " + (f"{attendu}" if attendu else "Il n'y en a pas dans cette phrase."))
+                    else:
+                        st.error(f"{cle.upper()} : à revoir. Réponse : " + (attendu if attendu else "aucun complément de cette fonction"))
+                st.caption("Les corrections sont celles vérifiées par l'adulte ; une analyse IA non vérifiée peut comporter des erreurs.")
+
 def afficher_page_grammaire(fonction_appel_ia):
     st.header("📐 Module Grammaire Visuelle & Accords")
 
@@ -1690,6 +1844,9 @@ def afficher_page_grammaire(fonction_appel_ia):
     phrase = st.session_state.phrase_grammaire
     st.divider()
     
+    afficher_atelier_fonctions(fonction_appel_ia)
+    st.divider()
+    st.subheader("Autres activités de grammaire conservées")
     tab_ex, tab_exo, tab_acc = st.tabs(["📖 Analyse", "✏️ Symboles", "✍️ Accords"])
     
     with tab_ex:
@@ -1756,6 +1913,13 @@ def afficher_page_grammaire(fonction_appel_ia):
         type="primary",
         key="download_fiche_gram"
 )
+st.sidebar.selectbox("🔤 Police de lecture", list(POLICES_DYS), key="police_dys_active")
+appliquer_police_dys()
+if st.session_state.get("police_dys_active") in ("Luciole", "OpenDyslexic"):
+    fichier_police = POLICES_DYS[st.session_state["police_dys_active"]][0]
+    if not (Path(__file__).resolve().parent / "fonts" / fichier_police).is_file():
+        st.sidebar.caption(f"⚠️ Fichier de police manquant : fonts/{fichier_police}. Police de remplacement utilisée.")
+
 # ==========================================
 # GESTION DES PAGES DU MENU LATÉRAL
 # ==========================================
