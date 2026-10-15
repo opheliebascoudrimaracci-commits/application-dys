@@ -668,23 +668,23 @@ def afficher_page_grammaire(fonction_appel_ia):
         afficher_legende_couleurs()
         afficher_phrase_symboles(phrase)
 
-    with tab_exo:
-        st.subheader("Identifie le symbole de chaque mot")
-        with st.expander("ℹ️ Rappel du code couleur"):
-            afficher_legende_couleurs()
-        mots = phrase.get("mots", [])
-        cols = st.columns(max(1, len(mots)))
-        choix_eleve = {}
-        for idx, m in enumerate(mots):
-            with cols[idx]:
-                st.markdown(f"<h4 style='text-align: center;'>{m['mot']}</h4>", unsafe_allow_html=True)
-                choix_eleve[idx] = st.selectbox(
-                    f"Symb {idx}",
-                    ["-- Choisir --"] + [s["label"] for s in SYMBOLES_GRAMMAIRE.values()],
-                    key=f"symb_sel_gram_{idx}",
-                    label_visibility="collapsed"
-                )
-        if st.button("Valider mes symboles", key="valider_symb_gram"):
+        with tab_exo:
+            st.subheader("Identifie le symbole de chaque mot")
+            with st.expander("ℹ️ Rappel du code couleur"):
+                afficher_legende_couleurs()
+            mots = phrase.get("mots", [])
+            cols = st.columns(max(1, len(mots)))
+            choix_eleve = {}
+            for idx, m in enumerate(mots):
+                with cols[idx]:
+                    st.markdown(f"<h4 style='text-align: center;'>{m['mot']}</h4>", unsafe_allow_html=True)
+                    choix_eleve[idx] = st.selectbox(
+                        f"Symb {idx}",
+                        ["-- Choisir --"] + [s["label"] for s in SYMBOLES_GRAMMAIRE.values()],
+                        key=f"symb_sel_gram_{idx}",
+                        label_visibility="collapsed"
+                    )
+            if st.button("Valider mes symboles", key="valider_symb_gram"):
             exact = True
             for idx, m in enumerate(mots):
                 label_attendu = SYMBOLES_GRAMMAIRE.get(m["type"], {}).get("label", "")
