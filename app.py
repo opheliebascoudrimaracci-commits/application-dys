@@ -1827,8 +1827,7 @@ elif menu_selection == "📊 Mes progrès":
 
 elif menu_selection == "⚙️ Profil & sauvegarde":
     st.title("⚙️ Profil et sauvegarde des données")
-    st.write("Le prénom/pseudonyme, le niveau et les résultats sont enregistrés dans une base SQLite locale sur la machine qui exécute Streamlit.")
-    st.info(f"Base de données : `{DB_PATH.resolve()}`")
+    st.write("Le prénom/pseudonyme, le niveau et les résultats sont enregistrés dans une base SQLite sur la machine qui exécute l’application. Si l’application est hébergée en ligne, cette machine est le serveur d’hébergement.")
     st.markdown("### Exporter mes résultats")
     resultats_export = lire_resultats(eleve_actif)
     if resultats_export:
