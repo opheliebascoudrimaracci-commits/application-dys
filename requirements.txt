@@ -1,9 +1,0 @@
-streamlit
-pytesseract
-Pillow
-groq
-google-generativeai
-openai
-reportlab
-python-docx
-pypdf
